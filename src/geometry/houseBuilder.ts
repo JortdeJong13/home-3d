@@ -562,15 +562,16 @@ function buildPlotAndEnvironment(
   // Garden Gate ("Tuinpoort" at Z = -13.72 m between Berging X = -3.27 m and Left Hedge) -> Staggered drop on Ground Floor!
   const gateLeftX = leftBoundaryXAtZ(-13.72) + 0.32;
   const gateW = Math.abs(-3.27 - gateLeftX);
+  const gateH = 1.90;
 
   const gatePivot = new THREE.Group();
-  gatePivot.position.set(gateLeftX, 0.725, -13.72);
+  gatePivot.position.set(gateLeftX, gateH / 2, -13.72);
 
   // Simple Dutch wooden-plank garden door ("Tuindeur" with vertical planks, backing ledges, diagonal brace & hardware)
   const plankCount = Math.max(6, Math.round(gateW / 0.13));
   const plankPitch = gateW / plankCount;
   const plankW = plankPitch - 0.006;
-  const plankH = 1.45;
+  const plankH = gateH;
   const plankD = 0.024;
 
   const plankGeos: THREE.BufferGeometry[] = [];
@@ -588,14 +589,15 @@ function buildPlotAndEnvironment(
   const ledgeH = 0.085;
   const ledgeD = 0.024;
   const ledgeZ = -ledgeD / 2;
-  for (const ly of [0.46, -0.46]) {
+  const ledgeY = 0.64;
+  for (const ly of [ledgeY, -ledgeY]) {
     const ledge = new THREE.BoxGeometry(gateW - 0.04, ledgeH, ledgeD);
     ledge.translate(gateW / 2, ly, ledgeZ);
     frameGeos.push(ledge);
   }
   // Diagonal brace from bottom hinge side (hedge) to top latch side (berging)
   const braceDx = gateW - 0.12;
-  const braceDy = 0.92 - ledgeH;
+  const braceDy = ledgeY * 2 - ledgeH;
   const braceLen = Math.hypot(braceDx, braceDy);
   const braceAngle = Math.atan2(braceDy, braceDx);
   const braceGeo = new THREE.BoxGeometry(braceLen, 0.07, ledgeD);
@@ -610,7 +612,7 @@ function buildPlotAndEnvironment(
 
   // Dark metal strap hinges ("hengsels") near the hedge and simple latch ("klink") near the berging
   const hardwareGeos: THREE.BufferGeometry[] = [];
-  for (const hy of [0.46, -0.46]) {
+  for (const hy of [ledgeY, -ledgeY]) {
     const strap = new THREE.BoxGeometry(0.32, 0.032, 0.008);
     strap.translate(0.17, hy, -ledgeD - 0.004);
     hardwareGeos.push(strap);
@@ -631,8 +633,8 @@ function buildPlotAndEnvironment(
 
   registerMesh(gateMesh, 'plot_gate_timber', {
     id: 'garden_gate',
-    label: `Tuinpoort naast Berging (${gateW.toFixed(2)} × 1.45 m)`,
-    dimensionsLabel: `${gateW.toFixed(2)} × 1.45 m`,
+    label: `Tuinpoort naast Berging (${gateW.toFixed(2)} × ${gateH.toFixed(2)} m)`,
+    dimensionsLabel: `${gateW.toFixed(2)} × ${gateH.toFixed(2)} m`,
     provenance: 'user_supplied',
     source: 'Garden layout.png "Garden gate" (Onderdeel van Begane Grond opbouw)',
     floor: 'ground',
@@ -640,7 +642,7 @@ function buildPlotAndEnvironment(
   });
 
   const gateTrigger = new THREE.Mesh(
-    new THREE.BoxGeometry(gateW + 0.15, 1.55, 0.45),
+    new THREE.BoxGeometry(gateW + 0.15, gateH + 0.10, 0.45),
     new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
   );
   gateTrigger.position.set(gateW / 2, 0, 0);
@@ -649,7 +651,7 @@ function buildPlotAndEnvironment(
   if (doorManager) {
     doorManager.register({
       id: 'garden_gate',
-      label: `Tuinpoort naast Berging (${gateW.toFixed(2)} × 1.45 m)`,
+      label: `Tuinpoort naast Berging (${gateW.toFixed(2)} × ${gateH.toFixed(2)} m)`,
       floor: 'ground',
       pivots: [
         {
@@ -666,7 +668,7 @@ function buildPlotAndEnvironment(
   }
 
   groundGroup.add(gatePivot);
-  registerStaggered('garden_gate', gatePivot, 'ground', 0.725);
+  registerStaggered('garden_gate', gatePivot, 'ground', gateH / 2);
 
   // Square Driveway Paver Tiles ("Oprit tegels") -> Staggered drop on Ground Floor!
   for (let row = 0; row < 7; row++) {
