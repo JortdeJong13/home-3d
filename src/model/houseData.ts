@@ -809,10 +809,10 @@ export function getHouseWalls(): WallSpec[] {
       end: [5.87, -0.20],
       thickness: 0.40,
       baseY: Y2,
-      height: 0.43,
+      height: 0.42,
       gablePeak: {
         offsetAlongWall: 2.985,
-        peakHeight: 5.06, // Outer brick leaf rises cleanly under the gevelpannen (14 cm below +10.90 m ridge)
+        peakHeight: 5.08, // Outer brick leaf rises cleanly to 10.78 m (2 cm under the 10 cm roof tile shell)
       },
       exteriorMaterial: 'exterior_brick_main',
       interiorMaterial: 'interior_wall_plaster',
@@ -841,10 +841,10 @@ export function getHouseWalls(): WallSpec[] {
       end: [0.00, -10.26],
       thickness: 0.40,
       baseY: Y2,
-      height: 0.43,
+      height: 0.42,
       gablePeak: {
         offsetAlongWall: 2.885,
-        peakHeight: 5.06, // Outer brick leaf rises cleanly under the gevelpannen (14 cm below +10.90 m ridge)
+        peakHeight: 5.08, // Outer brick leaf rises cleanly to 10.78 m (2 cm under the 10 cm roof tile shell)
       },
       exteriorMaterial: 'exterior_brick_main',
       interiorMaterial: 'interior_wall_plaster',
@@ -866,7 +866,7 @@ export function getHouseWalls(): WallSpec[] {
 
     // 3. Left Exterior Eaves Wall on Zolder (40 cm dik, X = 0.20 m, Z: -10.06 -> -0.40 m)
     // Extends 25 cm downward (Y: +5.45 -> +5.70 m) to cover the 2nd-floor slab & stairwell gap on the exterior,
-    // and rises 0.43 m above the Zolder floor to the eaves at +6.13 m!
+    // and rises to the underside of the roof tiles at goothoogte (+6.12 m).
     {
       id: 'sf_wall_left_outer',
       label: 'Linkerzijgevel Borstwering (Zolder — 40 cm dik)',
@@ -875,7 +875,7 @@ export function getHouseWalls(): WallSpec[] {
       end: [0.20, -0.40],
       thickness: 0.40,
       baseY: Y2,
-      height: 0.43,
+      height: 0.42,
       exteriorMaterial: 'exterior_brick_main',
       interiorMaterial: 'interior_wall_plaster',
       isExterior: true,
@@ -901,7 +901,7 @@ export function getHouseWalls(): WallSpec[] {
     },
 
     // 4. Right Shared Party Wall on Zolder (30 cm dik, X = 5.72 m, Z: -10.06 -> -0.40 m, length = 9.66 m)
-    // Pointy gable profile matching the intersecting Langskap underside (0.43 m at eaves -> 4.54 m peak at Z = -5.23 m)!
+    // Pointy gable profile matching the intersecting Langskap underside (0.42 m at eaves -> 4.54 m peak at Z = -5.23 m)!
     {
       id: 'sf_wall_party_zolder',
       label: 'Woningscheidende Wand met Buren (Zolder — 30 cm dik, Puntgevel onder Kap)',
@@ -910,7 +910,7 @@ export function getHouseWalls(): WallSpec[] {
       end: [5.72, -0.40],
       thickness: 0.30,
       baseY: Y2,
-      height: 0.43,
+      height: 0.42,
       gablePeak: {
         offsetAlongWall: 4.83,
         peakHeight: 4.54, // Matches getZolderRoofUndersideY(5.72, -5.23) - Y2 = 10.24 - 5.70 = 4.54 m
@@ -924,10 +924,10 @@ export function getHouseWalls(): WallSpec[] {
     // 5. Attic Stair Hall (Overloop) Inner Walls — All 12.5 cm (0.125 m) thick, clipped directly to roof underside!
     {
       id: 'sf_int_overloop_front',
-      label: 'Voorwand Overloop Zolder (1.90 m — 12.5 cm dik)',
+      label: 'Voorwand Overloop Zolder (1.78 m vrij — 12.5 cm dik)',
       floor: 'second',
       start: [1.14, -3.9225],
-      end: [3.045, -3.9225],
+      end: [2.92, -3.9225],
       thickness: 0.125,
       baseY: Y2,
       height: 4.95,
@@ -939,10 +939,10 @@ export function getHouseWalls(): WallSpec[] {
     },
     {
       id: 'sf_int_overloop_rear',
-      label: 'Achterwand Overloop Zolder (1.90 m — 12.5 cm dik)',
+      label: 'Achterwand Overloop Zolder (1.78 m vrij — 12.5 cm dik)',
       floor: 'second',
       start: [1.14, -6.2975],
-      end: [3.045, -6.2975],
+      end: [2.92, -6.2975],
       thickness: 0.125,
       baseY: Y2,
       height: 4.95,
@@ -1079,7 +1079,7 @@ export function getHouseWalls(): WallSpec[] {
       end: [10.05, -0.42],
       thickness: 0.40,
       baseY: Y2,
-      height: 0.43,
+      height: 0.42,
       exteriorMaterial: 'neighbour_wall_grey',
       interiorMaterial: 'neighbour_wall_grey',
       isExterior: true,
@@ -1095,7 +1095,7 @@ export function getHouseWalls(): WallSpec[] {
       end: [5.87, -10.04],
       thickness: 0.40,
       baseY: Y2,
-      height: 0.43,
+      height: 0.42,
       exteriorMaterial: 'neighbour_wall_grey',
       interiorMaterial: 'neighbour_wall_grey',
       isExterior: true,

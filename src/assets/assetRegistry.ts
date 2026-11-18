@@ -91,7 +91,7 @@ export const PLACED_ASSETS: PlacedAssetSpec[] = [
     elevationOffsetY: -0.25,
     rotationDeg: 270,
     dimensionsOverride: {
-      height: m(0.55, 'verified_drawing', 'Zolder borstwering incl. vloerrand tot onderkant bakgoot (+5.45 -> +6.00 m)'),
+      height: m(0.52, 'verified_drawing', 'Zolder borstwering incl. vloerrand tot onderkant bakgoot (+5.45 -> +5.97 m)'),
     },
     provenance: 'verified_drawing',
     source: 'Verkooptekening VK-06 linkerzijgevel: HWA regenpijp bij voorhoek (zolder tot goot +6.13 m)',
@@ -119,7 +119,7 @@ export const PLACED_ASSETS: PlacedAssetSpec[] = [
     elevationOffsetY: -0.25,
     rotationDeg: 270,
     dimensionsOverride: {
-      height: m(0.55, 'verified_drawing', 'Zolder borstwering incl. vloerrand tot onderkant bakgoot (+5.45 -> +6.00 m)'),
+      height: m(0.52, 'verified_drawing', 'Zolder borstwering incl. vloerrand tot onderkant bakgoot (+5.45 -> +5.97 m)'),
     },
     provenance: 'verified_drawing',
     source: 'Verkooptekening VK-06 linkerzijgevel: HWA regenpijp bij achterhoek (zolder tot goot +6.13 m)',
