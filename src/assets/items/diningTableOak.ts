@@ -87,11 +87,7 @@ function noise3D(x: number, y: number, z: number, seed: number): number {
 
 interface OakTextureSet {
   topMap: THREE.DataTexture;
-  topBump: THREE.DataTexture;
-  topRoughness: THREE.DataTexture;
   legMap: THREE.DataTexture;
-  legBump: THREE.DataTexture;
-  legRoughness: THREE.DataTexture;
 }
 
 let cachedOakTextures: OakTextureSet | null = null;
@@ -114,171 +110,101 @@ function createTextureFromBytes(
 }
 
 /**
- * Generates seamless procedural natural European oak DataTextures for both
- * the laminated-stave tabletop (grain along U / length) and the solid-turned
- * cylindrical legs (vertical cathedral grain along V, zero seam around U).
+ * Generates soft, low-contrast procedural oak DataTextures tuned to the clean,
+ * powdery matte architectural diorama style of the house (no harsh pores or speckles).
  * Uses THREE.DataTexture so it runs identically in Node verification and browser.
  */
 function getOakWoodTextures(): OakTextureSet {
   if (cachedOakTextures) return cachedOakTextures;
 
   const topAlbedo = new Uint8Array(TEX_SIZE * TEX_SIZE * 4);
-  const topBump = new Uint8Array(TEX_SIZE * TEX_SIZE * 4);
-  const topRough = new Uint8Array(TEX_SIZE * TEX_SIZE * 4);
-
   const legAlbedo = new Uint8Array(TEX_SIZE * TEX_SIZE * 4);
-  const legBump = new Uint8Array(TEX_SIZE * TEX_SIZE * 4);
-  const legRough = new Uint8Array(TEX_SIZE * TEX_SIZE * 4);
 
-  // 1. Tabletop: 6 solid-oak staves running horizontally along U
-  const NUM_STAVES = 6;
+  // 1. Tabletop: gentle warm-oak staves running smoothly along U (no harsh seams or dark pores)
+  const NUM_STAVES = 5;
   for (let py = 0; py < TEX_SIZE; py++) {
     const v = py / TEX_SIZE;
     const staveFloat = v * NUM_STAVES;
     const staveIdx = Math.floor(staveFloat) % NUM_STAVES;
     const staveFrac = staveFloat - Math.floor(staveFloat);
 
-    // Subtle tonal & grain-offset variation per oak stave
-    const staveTone = 0.965 + hash2(staveIdx, 3, 19) * 0.075;
-    const staveOffsetU = hash2(staveIdx, 11, 29) * 16.0;
-    const staveOffsetV = hash2(staveIdx, 17, 41) * 10.0;
+    // Very soft plank-to-plank warmth variation (±2.5%)
+    const staveTone = 0.975 + hash2(staveIdx, 3, 19) * 0.05;
+    const staveOffsetU = hash2(staveIdx, 11, 29) * 12.0;
+    const staveOffsetV = hash2(staveIdx, 17, 41) * 8.0;
 
-    // Hairline glue joint between laminated oak planks
+    // Barely perceptible soft transition between staves
     const seamDist = Math.min(staveFrac, 1.0 - staveFrac);
-    const seamMask = smoothstep(0.0, 0.012, seamDist);
+    const seamMask = smoothstep(0.0, 0.025, seamDist);
 
     for (let px = 0; px < TEX_SIZE; px++) {
       const u = px / TEX_SIZE;
 
-      // Low-frequency warp for organic oak cathedral & wavy fibers (stretched along U)
-      const warp1 = periodicNoise2D(u * 4 + staveOffsetU, v * 12 + staveOffsetV, 4, 12, 71);
-      const warp2 = periodicNoise2D(u * 10 + staveOffsetU, v * 28 + staveOffsetV, 10, 28, 97);
+      // Smooth low-frequency flowing oak grain ribbons
+      const warp1 = periodicNoise2D(u * 3 + staveOffsetU, v * 8 + staveOffsetV, 3, 8, 71);
+      const warp2 = periodicNoise2D(u * 6 + staveOffsetU, v * 16 + staveOffsetV, 6, 16, 97);
       const ringCoord =
-        (v * 6.5 + staveOffsetV) * 3.8 +
-        warp1 * 3.6 +
-        warp2 * 0.95 +
-        Math.sin((u + staveOffsetU * 0.1) * Math.PI * 2) * 0.45;
+        (v * 4.5 + staveOffsetV) * 2.6 +
+        warp1 * 2.4 +
+        warp2 * 0.55 +
+        Math.sin((u + staveOffsetU * 0.1) * Math.PI * 2) * 0.3;
 
-      // Asymmetric sawtooth-like wood ring profile (broad light earlywood, crisp latewood line)
       const ringPhase = fract(ringCoord);
-      const ringBand = Math.pow(Math.sin(ringPhase * Math.PI), 0.55);
-      const latewood = 1.0 - smoothstep(0.10, 0.42, ringBand);
+      const ringBand = Math.sin(ringPhase * Math.PI);
+      const latewood = 1.0 - smoothstep(0.15, 0.72, ringBand);
 
-      // Fine longitudinal oak vessels / open pores
-      const poreNoise = periodicNoise2D(u * 28 + staveOffsetU, v * 160 + staveOffsetV, 28, 160, 131);
-      const poreStreak = smoothstep(0.66, 0.90, poreNoise);
-
-      // Micro fiber shimmer
-      const micro = periodicNoise2D(u * 64, v * 256, 64, 256, 173);
-
-      // Natural light-warm European oak palette calibrated to tabletop photo
-      // Earlywood (#dab996) -> Midtone (#cca279) -> Latewood (#ab7e53) -> Pores (#91653d)
-      let r = lerp(218, 171, latewood);
-      let g = lerp(185, 126, latewood);
-      let b = lerp(150, 83, latewood);
-
-      r = lerp(r, 145, poreStreak * 0.55);
-      g = lerp(g, 101, poreStreak * 0.55);
-      b = lerp(b, 61, poreStreak * 0.55);
-
-      const grainShade = (0.97 + micro * 0.06) * staveTone * (0.92 + 0.08 * seamMask);
-      r = Math.min(255, Math.max(0, Math.round(r * grainShade)));
-      g = Math.min(255, Math.max(0, Math.round(g * grainShade)));
-      b = Math.min(255, Math.max(0, Math.round(b * grainShade)));
+      // Soft warm diorama oak palette harmonious with floor_living_oak (#dfc7a4) & photo
+      // Earlywood (#dfc3a4) -> Soft grain (#cca67e)
+      const shade = staveTone * (0.985 + 0.015 * seamMask);
+      const r = Math.min(255, Math.round(lerp(223, 204, latewood) * shade));
+      const g = Math.min(255, Math.round(lerp(195, 166, latewood) * shade));
+      const b = Math.min(255, Math.round(lerp(164, 126, latewood) * shade));
 
       const idx = (py * TEX_SIZE + px) * 4;
       topAlbedo[idx] = r;
       topAlbedo[idx + 1] = g;
       topAlbedo[idx + 2] = b;
       topAlbedo[idx + 3] = 255;
-
-      // Bump: smooth surface with recessed oak pores and stave seam
-      const bumpVal = Math.round(235 - latewood * 22 - poreStreak * 55 - (1 - seamMask) * 40);
-      topBump[idx] = bumpVal;
-      topBump[idx + 1] = bumpVal;
-      topBump[idx + 2] = bumpVal;
-      topBump[idx + 3] = 255;
-
-      // Roughness: satin-matte oiled oak (pores & latewood slightly more matte)
-      const roughVal = Math.round(156 + latewood * 26 + poreStreak * 46 + micro * 12);
-      topRough[idx] = roughVal;
-      topRough[idx + 1] = roughVal;
-      topRough[idx + 2] = roughVal;
-      topRough[idx + 3] = 255;
     }
   }
 
-  // 2. Cylindrical Legs: seamless 3D solid-wood cathedral grain (vertical along V)
+  // 2. Cylindrical Legs: silky low-contrast vertical cathedral grain (seamless around U)
   for (let py = 0; py < TEX_SIZE; py++) {
     const v = py / TEX_SIZE;
     for (let px = 0; px < TEX_SIZE; px++) {
       const u = px / TEX_SIZE;
       const angle = u * Math.PI * 2;
-      // Cylindrical cross-section coordinates so radial growth rings create authentic
-      // cathedral arches on opposite sides of the turned timber column
       const cx = Math.cos(angle);
       const cz = Math.sin(angle);
 
-      const warpA = noise3D(cx * 1.8 + 4.1, cz * 1.8 + 2.3, v * 2.2, 211);
-      const warpB = noise3D(cx * 4.5 + 9.7, cz * 4.5 + 5.1, v * 6.0, 241);
+      const warpA = noise3D(cx * 1.4 + 4.1, cz * 1.4 + 2.3, v * 1.6, 211);
+      const warpB = noise3D(cx * 3.0 + 9.7, cz * 3.0 + 5.1, v * 3.8, 241);
 
-      // Virtual log center slightly offset from cylinder axis to yield realistic cathedral arches
-      const lx = cx * 0.85 + 0.28 + warpA * 0.48 + warpB * 0.14;
-      const lz = cz * 0.85 + 0.14 + warpA * 0.35;
+      const lx = cx * 0.8 + 0.25 + warpA * 0.38 + warpB * 0.10;
+      const lz = cz * 0.8 + 0.12 + warpA * 0.28;
       const radialDist = Math.hypot(lx, lz);
-      const ringCoord = radialDist * 13.5 + v * 0.55;
+      const ringCoord = radialDist * 9.5 + v * 0.4;
 
       const ringPhase = fract(ringCoord);
-      const ringBand = Math.pow(Math.sin(ringPhase * Math.PI), 0.52);
-      const latewood = 1.0 - smoothstep(0.11, 0.44, ringBand);
+      const ringBand = Math.sin(ringPhase * Math.PI);
+      const latewood = 1.0 - smoothstep(0.16, 0.72, ringBand);
 
-      // Vertical oak vessels/pores along V
-      const poreNoise = periodicNoise2D(u * 140, v * 22, 140, 22, 283);
-      const poreStreak = smoothstep(0.65, 0.90, poreNoise);
-      const micro = periodicNoise2D(u * 220, v * 48, 220, 48, 313);
-
-      // Slightly richer warm honey-oak tone matching the turned legs in the photo
-      // Earlywood (#cc9d70) -> Latewood (#9b693e) -> Pores (#7f512c)
-      let r = lerp(204, 155, latewood);
-      let g = lerp(157, 105, latewood);
-      let b = lerp(112, 62, latewood);
-
-      r = lerp(r, 127, poreStreak * 0.58);
-      g = lerp(g, 81, poreStreak * 0.58);
-      b = lerp(b, 44, poreStreak * 0.58);
-
-      const shade = 0.96 + micro * 0.08;
-      r = Math.min(255, Math.max(0, Math.round(r * shade)));
-      g = Math.min(255, Math.max(0, Math.round(g * shade)));
-      b = Math.min(255, Math.max(0, Math.round(b * shade)));
+      // Soft warm honey-oak leg palette (#cfa479 -> #bd8d5f) matching the photo's warmer legs
+      const r = Math.round(lerp(207, 189, latewood));
+      const g = Math.round(lerp(164, 141, latewood));
+      const b = Math.round(lerp(121, 95, latewood));
 
       const idx = (py * TEX_SIZE + px) * 4;
       legAlbedo[idx] = r;
       legAlbedo[idx + 1] = g;
       legAlbedo[idx + 2] = b;
       legAlbedo[idx + 3] = 255;
-
-      const bumpVal = Math.round(234 - latewood * 24 - poreStreak * 56);
-      legBump[idx] = bumpVal;
-      legBump[idx + 1] = bumpVal;
-      legBump[idx + 2] = bumpVal;
-      legBump[idx + 3] = 255;
-
-      const roughVal = Math.round(160 + latewood * 28 + poreStreak * 45 + micro * 12);
-      legRough[idx] = roughVal;
-      legRough[idx + 1] = roughVal;
-      legRough[idx + 2] = roughVal;
-      legRough[idx + 3] = 255;
     }
   }
 
   cachedOakTextures = {
     topMap: createTextureFromBytes(topAlbedo, TEX_SIZE, THREE.SRGBColorSpace),
-    topBump: createTextureFromBytes(topBump, TEX_SIZE, THREE.NoColorSpace),
-    topRoughness: createTextureFromBytes(topRough, TEX_SIZE, THREE.NoColorSpace),
     legMap: createTextureFromBytes(legAlbedo, TEX_SIZE, THREE.SRGBColorSpace),
-    legBump: createTextureFromBytes(legBump, TEX_SIZE, THREE.NoColorSpace),
-    legRoughness: createTextureFromBytes(legRough, TEX_SIZE, THREE.NoColorSpace),
   };
   return cachedOakTextures;
 }
@@ -422,25 +348,19 @@ export const diningTableOakPrefab: AssetPrefabDefinition = {
   },
   build3D: ({ width, depth, height }) => {
     const group = new THREE.Group();
-    const { topMap, topBump, topRoughness, legMap, legBump, legRoughness } = getOakWoodTextures();
+    const { topMap, legMap } = getOakWoodTextures();
 
     const topMat = new THREE.MeshStandardMaterial({
       color: '#ffffff',
       map: topMap,
-      bumpMap: topBump,
-      bumpScale: 0.0018,
-      roughnessMap: topRoughness,
-      roughness: 0.72,
+      roughness: 0.86,
       metalness: 0.0,
     });
 
     const legMat = new THREE.MeshStandardMaterial({
       color: '#ffffff',
       map: legMap,
-      bumpMap: legBump,
-      bumpScale: 0.0022,
-      roughnessMap: legRoughness,
-      roughness: 0.75,
+      roughness: 0.87,
       metalness: 0.0,
     });
 
