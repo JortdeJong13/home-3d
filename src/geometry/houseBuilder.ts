@@ -1854,6 +1854,78 @@ function buildStructuralSlabCollars(
 }
 
 /**
+ * Split upward-facing top-of-wall triangles from an extruded wall geometry so
+ * exterior brick walls get a clean white cutaway cap on top (without affecting window sills).
+ */
+function splitWallTopCapGeometry(
+  geo: THREE.BufferGeometry,
+  openingRects: Array<{ u0: number; u1: number; v0: number; v1: number }>
+): { mainGeo: THREE.BufferGeometry; topCapGeo: THREE.BufferGeometry | null } {
+  const pos = geo.getAttribute('position');
+  const norm = geo.getAttribute('normal');
+  const triCount = Math.floor(pos.count / 3);
+
+  const mainPos: number[] = [];
+  const mainNorm: number[] = [];
+  const topPos: number[] = [];
+  const topNorm: number[] = [];
+
+  for (let t = 0; t < triCount; t++) {
+    const i0 = t * 3;
+    const i1 = i0 + 1;
+    const i2 = i0 + 2;
+
+    const x0 = pos.getX(i0), y0 = pos.getY(i0), z0 = pos.getZ(i0);
+    const x1 = pos.getX(i1), y1 = pos.getY(i1), z1 = pos.getZ(i1);
+    const x2 = pos.getX(i2), y2 = pos.getY(i2), z2 = pos.getZ(i2);
+
+    const ux = x1 - x0, uy = y1 - y0, uz = z1 - z0;
+    const vx = x2 - x0, vy = y2 - y0, vz = z2 - z0;
+    const nx = uy * vz - uz * vy;
+    const ny = uz * vx - ux * vz;
+    const nz = ux * vy - uy * vx;
+    const nLen = Math.hypot(nx, ny, nz) || 1;
+    const nyUnit = ny / nLen;
+
+    const cx = (x0 + x1 + x2) / 3;
+    const cy = (y0 + y1 + y2) / 3;
+    const isOpeningSill = openingRects.some(
+      (r) => Math.abs(cy - r.v0) < 0.02 && cx >= r.u0 - 0.02 && cx <= r.u1 + 0.02
+    );
+
+    const isTopCap = nyUnit > 0.45 && cy > 0.05 && !isOpeningSill;
+    const targetPos = isTopCap ? topPos : mainPos;
+    const targetNorm = isTopCap ? topNorm : mainNorm;
+
+    for (const idx of [i0, i1, i2]) {
+      targetPos.push(pos.getX(idx), pos.getY(idx), pos.getZ(idx));
+      if (norm) {
+        targetNorm.push(norm.getX(idx), norm.getY(idx), norm.getZ(idx));
+      }
+    }
+  }
+
+  if (topPos.length === 0) {
+    return { mainGeo: geo, topCapGeo: null };
+  }
+
+  const mainGeo = new THREE.BufferGeometry();
+  mainGeo.setAttribute('position', new THREE.Float32BufferAttribute(mainPos, 3));
+  if (mainNorm.length > 0) {
+    mainGeo.setAttribute('normal', new THREE.Float32BufferAttribute(mainNorm, 3));
+  }
+
+  const topCapGeo = new THREE.BufferGeometry();
+  topCapGeo.setAttribute('position', new THREE.Float32BufferAttribute(topPos, 3));
+  if (topNorm.length > 0) {
+    topCapGeo.setAttribute('normal', new THREE.Float32BufferAttribute(topNorm, 3));
+  }
+
+  geo.dispose();
+  return { mainGeo, topCapGeo };
+}
+
+/**
  * Build a wall (rectangular, roof-clipped trapezoidal, or gable-peaked) with exact openings
  * resolved from the centralized `OPENING_PREFABS` catalog (`src/geometry/componentCatalog.ts`).
  */
@@ -1956,10 +2028,19 @@ function buildWallWithOpenings(
   extrudeGeo.translate(0, 0, -wall.thickness / 2);
 
   const matId = wall.isExterior ? wall.exteriorMaterial : wall.interiorMaterial;
+  let mainWallGeo: THREE.BufferGeometry = extrudeGeo;
   if (matId === 'exterior_brick_main') {
-    applyWorldBrickUVs(extrudeGeo, 0, wall.baseY, 0);
+    const split = splitWallTopCapGeometry(extrudeGeo, openingRects);
+    mainWallGeo = split.mainGeo;
+    applyWorldBrickUVs(mainWallGeo, 0, wall.baseY, 0);
+    if (split.topCapGeo) {
+      const topCapMesh = new THREE.Mesh(split.topCapGeo, getMat('slab_structural_edge'));
+      topCapMesh.castShadow = true;
+      topCapMesh.receiveShadow = true;
+      wallContainer.add(topCapMesh);
+    }
   }
-  const wallMesh = new THREE.Mesh(extrudeGeo, getMat(matId));
+  const wallMesh = new THREE.Mesh(mainWallGeo, getMat(matId));
   registerMesh(wallMesh, matId, {
     id: wall.id,
     label: wall.label,
