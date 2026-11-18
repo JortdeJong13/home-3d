@@ -941,7 +941,7 @@ function buildPlotAndEnvironment(
     label: 'Schutting Achterzijde Buurkavel (2.00 m hoog)',
     panelMatId: 'neighbour_wall_grey',
     postMatId: 'neighbour_roof_grey',
-    x0: rightX,
+    x0: rightX + 0.05,
     z0: rearZ + 0.08,
     x1: ctxRightX - 0.3,
     z1: rearZ + 0.08,
