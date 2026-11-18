@@ -1,0 +1,23 @@
+{
+  "name": "home-3d-visualiser",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dimensionally accurate interactive 3D architectural visualiser for Bouwnummer 55 (Wonen aan de Hulk, Scharwoude)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build && cp dist/index.html ./house-visualiser.html",
+    "preview": "vite preview",
+    "verify": "npx tsx src/scripts/verifyDimensions.ts"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.170.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5",
+    "vite-plugin-singlefile": "^2.0.2"
+  }
+}
