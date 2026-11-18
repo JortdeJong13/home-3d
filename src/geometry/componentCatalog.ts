@@ -177,15 +177,15 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
   // 10. Rear Double Garden Doors with Sidelights (Option B13)
   door_garden_double_b13: {
     prefabId: 'door_garden_double_b13',
-    defaultLabel: 'Dubbele Tuindeuren met Zijlichten B13 (258 × 235 cm)',
-    width: 2.58,
+    defaultLabel: 'Dubbele Tuindeuren met Zijlichten B13 (340 × 235 cm)',
+    width: 3.40,
     height: 2.35,
     sillHeight: 0.00,
     frameMaterial: 'window_frame_cream',
     panelMaterial: 'window_glass_day',
     hasTerracottaSurround: true,
     provenance: 'user_supplied',
-    source: 'Plattegrond.png (2.58 m) & Tekening 55.1 (B13)',
+    source: 'User specification: 180 cm dubbele tuindeuren + 80 cm zijlichten weerszijden (340 × 235 cm)',
   },
 
   // 11. Berging Garage Kanteldeur (Up-and-Over Tilt Door)
@@ -695,71 +695,110 @@ export function instantiateOpeningPrefab3D(
     }
 
     case 'door_garden_double_b13': {
-      // Fixed sidelights on outer edges
-      const sidelightW = innerW * 0.22;
-      const leftSidelight = new THREE.Mesh(
-        new THREE.BoxGeometry(sidelightW, innerH, 0.025),
-        getMat(op.panelMaterial)
-      );
-      leftSidelight.position.set(-innerW * 0.39, 0, frameCenterZ);
-      group.add(leftSidelight);
+      // 1.80 m center double doors (2 x 0.90 m leaves) flanked by 0.80 m sidelights on each side (3.40 m total)
+      const doorOpeningHalfW = 0.90; // 1.80 m clear double-door opening
+      const mullionW = 0.055;
+      const mullionCenterX = doorOpeningHalfW + mullionW / 2; // 0.9275 m
+      const sidelightInnerX = mullionCenterX + mullionW / 2; // 0.955 m
+      const sidelightOuterX = innerW / 2; // 1.635 m
+      const sidelightGlassW = Math.max(0.20, sidelightOuterX - sidelightInnerX);
+      const sidelightCenterX = (sidelightInnerX + sidelightOuterX) / 2;
+      const sidelightSillH = 0.045;
 
-      const rightSidelight = new THREE.Mesh(
-        new THREE.BoxGeometry(sidelightW, innerH, 0.025),
-        getMat(op.panelMaterial)
-      );
-      rightSidelight.position.set(innerW * 0.39, 0, frameCenterZ);
-      group.add(rightSidelight);
+      // Fixed sidelights + bottom sill bars on outer edges
+      for (const side of [-1, 1]) {
+        const sidelight = new THREE.Mesh(
+          new THREE.BoxGeometry(sidelightGlassW, innerH - sidelightSillH, 0.022),
+          getMat(op.panelMaterial)
+        );
+        sidelight.position.set(side * sidelightCenterX, sidelightSillH / 2, frameCenterZ);
+        group.add(sidelight);
 
-      // Mullion bars separating sidelights from center French doors
-      const mullionPositions = [-innerW * 0.28, innerW * 0.28];
-      for (const mx of mullionPositions) {
-        const mBar = new THREE.Mesh(
-          new THREE.BoxGeometry(0.055, innerH, frameDepth * 0.9),
+        const bottomSill = new THREE.Mesh(
+          new THREE.BoxGeometry(sidelightGlassW, sidelightSillH, frameDepth * 0.9),
           getMat(op.frameMaterial)
         );
-        mBar.position.set(mx, 0, frameCenterZ);
+        bottomSill.position.set(side * sidelightCenterX, -innerH / 2 + sidelightSillH / 2, frameCenterZ);
+        group.add(bottomSill);
+
+        // Mullion bar separating sidelight from center French doors
+        const mBar = new THREE.Mesh(
+          new THREE.BoxGeometry(mullionW, innerH, frameDepth * 0.9),
+          getMat(op.frameMaterial)
+        );
+        mBar.position.set(side * mullionCenterX, 0, frameCenterZ);
         group.add(mBar);
       }
 
-      // Center French double doors (each width innerW * 0.28)
-      const doorW = innerW * 0.28;
+      // Center French double doors (each leaf 0.90 m wide, framed in white/cream with rounded brushed-steel handles)
+      const doorW = doorOpeningHalfW; // 0.90 m
+      const leafThick = 0.054;
+      const stileW = 0.09;
+      const topRailH = 0.09;
+      const bottomRailH = 0.11;
+      const glassW = doorW - stileW * 2;
+      const glassH = innerH - topRailH - bottomRailH;
+      const glassCenterY = (bottomRailH - topRailH) / 2;
 
-      // Left leaf (hinged at x = -innerW * 0.28)
-      const leftPivot = new THREE.Group();
-      leftPivot.position.set(-innerW * 0.28, 0, frameCenterZ);
-      const leftGlass = new THREE.Mesh(
-        new THREE.BoxGeometry(doorW - 0.01, innerH, 0.025),
-        getMat(op.panelMaterial)
-      );
-      leftGlass.position.set(doorW / 2, 0, 0);
-      leftPivot.add(leftGlass);
+      const handleMat = new THREE.MeshStandardMaterial({
+        color: '#a8aeb5',
+        roughness: 0.35,
+        metalness: 0.75,
+        name: 'door_handle_steel',
+      });
 
-      const leftHandle = new THREE.Mesh(
-        new THREE.BoxGeometry(0.08, 0.02, 0.06),
-        getMat('roof_tile_anthracite')
-      );
-      leftHandle.position.set(doorW - 0.04, -0.12, 0);
-      leftPivot.add(leftHandle);
-      group.add(leftPivot);
+      const buildFrenchDoorLeaf = (side: -1 | 1) => {
+        // side = -1: left leaf hinged at -doorOpeningHalfW, extends +X to 0
+        // side = +1: right leaf hinged at +doorOpeningHalfW, extends -X to 0
+        const pivot = new THREE.Group();
+        pivot.position.set(side * doorOpeningHalfW, -frameThick / 2, frameCenterZ);
 
-      // Right leaf (hinged at x = +innerW * 0.28)
-      const rightPivot = new THREE.Group();
-      rightPivot.position.set(innerW * 0.28, 0, frameCenterZ);
-      const rightGlass = new THREE.Mesh(
-        new THREE.BoxGeometry(doorW - 0.01, innerH, 0.025),
-        getMat(op.panelMaterial)
-      );
-      rightGlass.position.set(-doorW / 2, 0, 0);
-      rightPivot.add(rightGlass);
+        const dir = -side; // +1 for left leaf, -1 for right leaf
+        const leafCenterX = dir * (doorW / 2);
 
-      const rightHandle = new THREE.Mesh(
-        new THREE.BoxGeometry(0.08, 0.02, 0.06),
-        getMat('roof_tile_anthracite')
-      );
-      rightHandle.position.set(-doorW + 0.04, -0.12, 0);
-      rightPivot.add(rightHandle);
-      group.add(rightPivot);
+        const frameGeos: THREE.BufferGeometry[] = [];
+        const addBar = (w: number, h: number, d: number, x: number, y: number) => {
+          const g = new THREE.BoxGeometry(w, h, d);
+          g.translate(x, y, 0);
+          frameGeos.push(g);
+        };
+
+        // Hinge stile, meeting stile, top rail, bottom rail
+        addBar(stileW, innerH, leafThick, dir * (stileW / 2), 0);
+        addBar(stileW, innerH, leafThick, dir * (doorW - stileW / 2), 0);
+        addBar(glassW, topRailH, leafThick, leafCenterX, innerH / 2 - topRailH / 2);
+        addBar(glassW, bottomRailH, leafThick, leafCenterX, -innerH / 2 + bottomRailH / 2);
+
+        const mergedFrame = mergeGeometries(frameGeos, false);
+        for (const g of frameGeos) g.dispose();
+        const frameMesh = new THREE.Mesh(mergedFrame, getMat(op.frameMaterial));
+        frameMesh.castShadow = true;
+        frameMesh.receiveShadow = true;
+        pivot.add(frameMesh);
+
+        // Full-height transparent glass pane (inset cleanly inside the white door frame)
+        const glassMesh = new THREE.Mesh(
+          new THREE.BoxGeometry(glassW + 0.008, glassH + 0.008, 0.014),
+          getMat(op.panelMaterial)
+        );
+        glassMesh.position.set(leafCenterX, glassCenterY, 0);
+        pivot.add(glassMesh);
+
+        // Rounded brushed-steel lever handle on the meeting stile
+        const handleGroup = createBrushedSteelLeverHandle({
+          leafThickness: leafThick,
+          handleMat,
+          leverDirection: -dir as 1 | -1,
+        });
+        handleGroup.position.set(dir * (doorW - stileW / 2), -0.02, 0);
+        pivot.add(handleGroup);
+
+        group.add(pivot);
+        return { pivot, frameMesh, glassMesh };
+      };
+
+      const leftLeaf = buildFrenchDoorLeaf(-1);
+      const rightLeaf = buildFrenchDoorLeaf(1);
 
       const meta = {
         id: op.id,
@@ -769,8 +808,8 @@ export function instantiateOpeningPrefab3D(
         source: op.source,
         floor,
       };
-      registerMesh(leftGlass, op.panelMaterial, meta, false, false);
-      registerMesh(rightGlass, op.panelMaterial, meta, false, false);
+      registerMesh(leftLeaf.glassMesh, op.panelMaterial, meta, false, false);
+      registerMesh(rightLeaf.glassMesh, op.panelMaterial, meta, false, false);
 
       const trigger = createTrigger();
       if (onRegisterDoor) {
@@ -780,19 +819,19 @@ export function instantiateOpeningPrefab3D(
           floor,
           pivots: [
             {
-              group: leftPivot,
+              group: leftLeaf.pivot,
               openAngle: -Math.PI * 0.45, // swings outward (+Z) to garden
               closedAngle: 0,
               currentAngle: 0,
             },
             {
-              group: rightPivot,
+              group: rightLeaf.pivot,
               openAngle: Math.PI * 0.45, // swings outward (+Z) to garden
               closedAngle: 0,
               currentAngle: 0,
             },
           ],
-          triggerMeshes: [trigger, leftGlass, rightGlass],
+          triggerMeshes: [trigger, leftLeaf.frameMesh, rightLeaf.frameMesh, leftLeaf.glassMesh, rightLeaf.glassMesh],
           isHovered: false,
           isPinned: false,
         });
