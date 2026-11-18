@@ -574,9 +574,9 @@ export function getHouseWalls(): WallSpec[] {
       openings: [
         {
           id: 'ff_win_side_overloop',
-          prefabId: 'window_gable_slot',
-          label: 'Smalle Raamstrook Overloop (42 × 145 cm)',
-          offsetAlongWall: 4.96, // Z = -10.06 + 4.96 = -5.10 m (in Overloop)
+          prefabId: 'window_slim_1st',
+          label: 'Smal Zijraam Overloop (35 × 160 cm)',
+          offsetAlongWall: 4.225, // Z = -10.06 + 4.225 = -5.835 m (170 cm from 12 cm stair wall -3.96 m, 22 cm from Badkamer wall -6.23 m)
         },
         {
           id: 'ff_win_side_bedroom2',
@@ -612,8 +612,9 @@ export function getHouseWalls(): WallSpec[] {
         },
         {
           id: 'ff_win_rear_badkamer',
-          prefabId: 'window_bathroom_rear',
-          offsetAlongWall: 4.45,
+          prefabId: 'window_slim_1st',
+          label: 'Badkamerraam Achtergevel (35 × 160 cm)',
+          offsetAlongWall: 4.575, // X = 5.87 - 4.575 = 1.295 m (94 cm from Kantoor wall 2.41 m, 72 cm from outer left wall 0.40 m)
         },
       ],
     },

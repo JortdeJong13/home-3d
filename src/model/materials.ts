@@ -382,8 +382,8 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     isNeighbourContext: true,
   },
   neighbour_trim_grey: {
-    colorDay: '#747678',
-    colorNight: '#3f4247',
+    colorDay: '#adb0b4',
+    colorNight: '#43474e',
     roughness: 0.91,
     metalness: 0.0,
     isNeighbourContext: true,

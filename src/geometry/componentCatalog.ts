@@ -20,8 +20,8 @@ export type OpeningPrefabId =
   | 'door_inner_standard_b77b'   // Standard inner door across ground, 1st, and 2nd floor (B77b)
   | 'door_inner_living_glass_b72'// Special oak + 4-light glass door from Hal to Woonkamer (B72, Eetkamer 3.png)
   | 'window_french_balcony_1st'  // 1st floor front & back French balcony double casement windows
-  | 'window_gable_slot'          // Narrow vertical slot window (1st floor overloop & 2nd floor front/rear gables)
-  | 'window_bathroom_rear'       // 1st floor rear bathroom window
+  | 'window_gable_slot'          // Narrow vertical slot window (2nd floor front/rear gables)
+  | 'window_slim_1st'            // Shared 1st floor slim window (35 × 160 cm, Overloop & Badkamer)
   | 'window_bedroom_side'        // 1st floor side bedroom window
   | 'window_living_front'        // Ground floor wide front living room window
   | 'window_living_side'         // Ground floor side living room window
@@ -91,7 +91,7 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
     source: 'User specification (140 × 230 cm: 2 × 70 cm doors, sill 0 cm, front 64 cm from shared wall)',
   },
 
-  // 4. Narrow Vertical Slot Window (Shared on 1st Floor Overloop & 2nd Floor Front/Rear Gables)
+  // 4. Narrow Vertical Slot Window (2nd Floor Front/Rear Gables)
   window_gable_slot: {
     prefabId: 'window_gable_slot',
     defaultLabel: 'Smalle Verticale Raamstrook (42 × 145 cm)',
@@ -105,18 +105,18 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
     source: 'Verkooptekening VK-06 gevels & Woning.jpg',
   },
 
-  // 5. First Floor Rear Bathroom Window
-  window_bathroom_rear: {
-    prefabId: 'window_bathroom_rear',
-    defaultLabel: 'Badkamerraam Achtergevel (55 × 145 cm)',
-    width: 0.55,
-    height: 1.45,
-    sillHeight: 0.85,
+  // 5. Shared 1st Floor Slim Window (Overloop Side & Badkamer Rear)
+  window_slim_1st: {
+    prefabId: 'window_slim_1st',
+    defaultLabel: 'Smal Raam 1e Verdieping (35 × 160 cm)',
+    width: 0.35,
+    height: 1.60,
+    sillHeight: 0.70,
     frameMaterial: 'window_frame_cream',
     panelMaterial: 'window_glass_day',
     hasTerracottaSurround: true,
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 achtergevel & HomeByMe 1st Floor',
+    provenance: 'user_supplied',
+    source: 'User specification (35 × 160 cm, sill 70 cm — shared Overloop & Badkamer)',
   },
 
   // 6. First Floor Side Bedroom Window (matched to ground floor side living room window)
