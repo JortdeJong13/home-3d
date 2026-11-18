@@ -219,27 +219,27 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
   // 13. Neighbour Context Ground Window
   neighbour_window_ground: {
     prefabId: 'neighbour_window_ground',
-    defaultLabel: 'Buurwoning Voorraam (Begane Grond)',
-    width: 1.50,
-    height: 1.85,
-    sillHeight: 0.45,
+    defaultLabel: 'Buurwoning Voorraam (Begane Grond — 260 × 180 cm)',
+    width: 2.60,
+    height: 1.80,
+    sillHeight: 0.50,
     frameMaterial: 'neighbour_window_grey',
     panelMaterial: 'neighbour_glass_grey',
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 voorgevel bnr. 56',
+    provenance: 'user_supplied',
+    source: 'Verkooptekening VK-06 voorgevel bnr. 56 & user specification (260 × 180 cm, sill 50 cm)',
   },
 
   // 14. Neighbour Context 1st Floor French Balcony
   neighbour_french_balcony: {
     prefabId: 'neighbour_french_balcony',
-    defaultLabel: 'Buurwoning Frans Balkon (1e Verdieping)',
-    width: 1.36,
-    height: 2.15,
-    sillHeight: 0.15,
+    defaultLabel: 'Buurwoning Frans Balkon (1e Verdieping — 140 × 230 cm)',
+    width: 1.40,
+    height: 2.30,
+    sillHeight: 0.00,
     frameMaterial: 'neighbour_window_grey',
     panelMaterial: 'neighbour_glass_grey',
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 voorgevel bnr. 56',
+    provenance: 'user_supplied',
+    source: 'Verkooptekening VK-06 voorgevel bnr. 56 & user specification (140 × 230 cm, sill 0 cm)',
   },
 };
 
@@ -1439,12 +1439,13 @@ export function instantiateOpeningPrefab3D(
       // Exterior Windows & Exterior Single Doors
       const isGlassWindow = op.panelMaterial.includes('glass');
       if (isGlassWindow && op.width >= 1.2) {
-        // Asymmetrical vertical mullion (matching the photo!)
+        // Asymmetrical vertical mullion (185 cm fixed + 75 cm casement for neighbour_window_ground)
+        const mullionRatio = op.prefabId === 'neighbour_window_ground' ? 0.55 / 2.60 : 0.14;
         const mullion = new THREE.Mesh(
           new THREE.BoxGeometry(0.055, innerH, frameDepth * 0.9),
           getMat(op.frameMaterial)
         );
-        mullion.position.set(op.width * 0.14, 0, frameCenterZ);
+        mullion.position.set(op.width * mullionRatio, 0, frameCenterZ);
         group.add(mullion);
       }
 

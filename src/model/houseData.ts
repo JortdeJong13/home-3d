@@ -1042,7 +1042,7 @@ export function getHouseWalls(): WallSpec[] {
         {
           id: 'nb_gf_win_front',
           prefabId: 'neighbour_window_ground',
-          offsetAlongWall: 1.25,
+          offsetAlongWall: 1.70, // Left edge 40 cm from shared wall (X = 5.87 + 0.40 = 6.27 m) -> center = 6.27 + 1.30 = 7.57 m
         },
       ],
     },
@@ -1081,7 +1081,7 @@ export function getHouseWalls(): WallSpec[] {
         {
           id: 'nb_ff_win_front',
           prefabId: 'neighbour_french_balcony',
-          offsetAlongWall: 1.20,
+          offsetAlongWall: 1.10, // Left-aligned with nb_gf_win_front (X = 6.27 m) -> center = 6.27 + 0.70 = 6.97 m
         },
       ],
     },
