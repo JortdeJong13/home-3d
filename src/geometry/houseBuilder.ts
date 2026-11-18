@@ -555,10 +555,11 @@ function buildPlotAndEnvironment(
   );
   gravelShape.lineTo(leftBoundaryXAtZ(gravelRearZ) + 0.32, -gravelRearZ);
 
-  // Curvy garden path branching from the gravel behind the berging (Z = -14.70) to the rear lounge terrace (Z = -17.73)
+  // Curvy garden path branching perpendicularly from the gravel behind the berging (Z = -14.70)
+  // to the front edge of the rear lounge terrace (Z = -17.73)
   const pathP0 = { x: -0.11, y: -gravelRearZ };
-  const pathP1 = { x: -0.55, y: 15.65 };
-  const pathP2 = { x: 1.55, y: 16.85 };
+  const pathP1 = { x: -0.11, y: 15.70 };
+  const pathP2 = { x: 2.46, y: 16.75 };
   const pathP3 = { x: 2.46, y: 17.73 };
   const evalPath = (t: number) => {
     const u = 1 - t;
@@ -770,7 +771,15 @@ function buildPlotAndEnvironment(
   };
 
   // True 2D Voronoi flagstone mosaic in path-local (u, v) space (u: 0..L along curve, v: -0.40..+0.40 across)
-  const pathLen = 3.95;
+  let pathLen = 0;
+  {
+    let prev = evalPath(0);
+    for (let i = 1; i <= 40; i++) {
+      const cur = evalPath(i / 40);
+      pathLen += Math.hypot(cur.x - prev.x, cur.y - prev.y);
+      prev = cur;
+    }
+  }
   const pathVMax = 0.40;
   let vs = (4242 * 1664525 + 1013904223) >>> 0;
   const vRand = () => {
