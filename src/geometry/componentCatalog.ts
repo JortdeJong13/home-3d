@@ -121,43 +121,43 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
   // 6. First Floor Side Bedroom Window (matched to ground floor side living room window)
   window_bedroom_side: {
     prefabId: 'window_bedroom_side',
-    defaultLabel: 'Zijraam Slaapkamer 1e Verdieping (140 × 185 cm)',
+    defaultLabel: 'Zijraam Slaapkamer 1e Verdieping (140 × 180 cm)',
     width: 1.40,
-    height: 1.85,
-    sillHeight: 0.45,
+    height: 1.80,
+    sillHeight: 0.50,
     frameMaterial: 'window_frame_cream',
     panelMaterial: 'window_glass_day',
     hasTerracottaSurround: true,
     provenance: 'user_supplied',
-    source: 'User specification (140 × 185 cm, 86 cm from inside front wall)',
+    source: 'User specification (140 × 180 cm, sill 50 cm, 86 cm from inside front wall)',
   },
 
   // 7. Ground Floor Wide Front Living Room Window
   window_living_front: {
     prefabId: 'window_living_front',
-    defaultLabel: 'Voorraam Woonkamer (260 × 185 cm)',
+    defaultLabel: 'Voorraam Woonkamer (260 × 180 cm)',
     width: 2.60,
-    height: 1.85,
-    sillHeight: 0.45,
+    height: 1.80,
+    sillHeight: 0.50,
     frameMaterial: 'window_frame_cream',
     panelMaterial: 'window_glass_day',
     hasTerracottaSurround: true,
     provenance: 'user_supplied',
-    source: 'User specification (260 × 185 cm: 185 cm fixed + 75 cm casement, 91 cm from inside left wall)',
+    source: 'User specification (260 × 180 cm, sill 50 cm: 185 cm fixed + 75 cm casement, 91 cm from inside left wall)',
   },
 
   // 8. Ground Floor Side Living Room Window
   window_living_side: {
     prefabId: 'window_living_side',
-    defaultLabel: 'Zijraam Woonkamer (140 × 185 cm)',
+    defaultLabel: 'Zijraam Woonkamer (140 × 180 cm)',
     width: 1.40,
-    height: 1.85,
-    sillHeight: 0.45,
+    height: 1.80,
+    sillHeight: 0.50,
     frameMaterial: 'window_frame_cream',
     panelMaterial: 'window_glass_day',
     hasTerracottaSurround: true,
     provenance: 'user_supplied',
-    source: 'User specification (140 × 185 cm, 86 cm from inside front wall)',
+    source: 'User specification (140 × 180 cm, sill 50 cm, 86 cm from inside front wall)',
   },
 
   // 9. Front Entrance Door with Exterior-Only Decorative Brick Arch
