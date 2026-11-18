@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import {
   HOUSE_DIMENSIONS,
   WallSpec,
@@ -636,49 +637,74 @@ function buildPlotAndEnvironment(
     }
   }
 
-  // 4. CONTINUOUS SLANTED LEFT BEECH HEDGE (along the angled left boundary from Rear-Left to Front-Left!)
-  const hedgeStartX = rearLeftX + 0.18;
-  const hedgeStartZ = rearZ + 0.08;
-  const hedgeEndX = frontLeftX + 0.18;
-  const hedgeEndZ = frontZ - 0.08;
-  const hedgeDx = hedgeEndX - hedgeStartX;
-  const hedgeDz = hedgeEndZ - hedgeStartZ;
-  const hedgeLen = Math.hypot(hedgeDx, hedgeDz);
-  const hedgeAngle = Math.atan2(hedgeDx, hedgeDz);
+  // 4. STYLISED BALL HEDGES ALONG LEFT & FRONT BOUNDARIES
+  // Left boundary splits at the Garden Gate ("Tuinpoort", Z = -13.72 m):
+  // - Front/side section (Z: +4.92 -> -13.72 m): 55 cm (0.55 m) tall
+  // - Rear/garden section (Z: -13.72 -> -20.55 m): 200 cm (2.00 m) tall
+  const gateZ = -13.72;
+  const gateBoundaryX = leftBoundaryXAtZ(gateZ) + 0.18;
 
-  // Rear/middle section (1.50 m high behind Z = -7.73 m, and 0.90 m high along front driveway)
-  const leftHedgeGeo = new THREE.BoxGeometry(0.32, 1.35, hedgeLen);
-  const leftHedge = new THREE.Mesh(leftHedgeGeo, getMat('plot_hedge_beech'));
-  leftHedge.position.set(
-    (hedgeStartX + hedgeEndX) / 2,
-    0.675,
-    (hedgeStartZ + hedgeEndZ) / 2
-  );
-  leftHedge.rotation.y = hedgeAngle;
-  registerMesh(leftHedge, 'plot_hedge_beech', {
-    id: 'hedge_left_beech',
-    label: 'Doorlopende Beukenhaag Links (Schuine Kavelgrens 25.64 m)',
-    dimensionsLabel: `0.32 × ${hedgeLen.toFixed(2)} × 1.35 m`,
+  buildBallHedgeSegment(plotGroup, getMat, registerMesh, {
+    id: 'hedge_left_front_beech',
+    label: 'Beukenhaag Links Voorzijde (tot Tuinpoort · 55 cm hoog)',
+    matId: 'plot_hedge_beech',
+    x0: frontLeftX + 0.18,
+    z0: frontZ - 0.08,
+    x1: gateBoundaryX,
+    z1: gateZ,
+    width: 0.34,
+    height: 0.55,
+    seed: 101,
     provenance: 'user_supplied',
-    source: 'User plot plan (loopt schuin van 1015 cm achter naar 1087 cm voor)',
-    floor: 'plot',
+    source: 'User specification: 55 cm side hedge up to garden door next to garage',
   });
-  plotGroup.add(leftHedge);
 
-  // Front street low hedge on right half of front boundary (X: 0.40 -> +5.85 m at Z = +4.82 m, matching user screenshot!)
-  const frontStreetHedgeGeo = new THREE.BoxGeometry(5.45, 0.75, 0.32);
-  const frontStreetHedge = new THREE.Mesh(frontStreetHedgeGeo, getMat('plot_hedge_beech'));
-  frontStreetHedge.position.set(3.125, 0.375, frontZ - 0.18);
-  frontStreetHedge.castShadow = true;
-  frontStreetHedge.receiveShadow = true;
-  plotGroup.add(frontStreetHedge);
+  buildBallHedgeSegment(plotGroup, getMat, registerMesh, {
+    id: 'hedge_left_rear_beech',
+    label: 'Beukenhaag Links Achtertuin (vanaf Tuinpoort · 2.00 m hoog)',
+    matId: 'plot_hedge_beech',
+    x0: gateBoundaryX,
+    z0: gateZ,
+    x1: rearLeftX + 0.18,
+    z1: rearZ + 0.08,
+    width: 0.40,
+    height: 2.00,
+    seed: 202,
+    provenance: 'user_supplied',
+    source: 'User specification: 2.00 m hedge from garden door to the back',
+  });
 
-  const nbHedgeGeo = new THREE.BoxGeometry(4.15, 0.75, 0.32);
-  const nbHedge = new THREE.Mesh(nbHedgeGeo, getMat('neighbour_hedge_grey'));
-  nbHedge.position.set(7.945, 0.375, frontZ - 0.18);
-  nbHedge.castShadow = true;
-  nbHedge.receiveShadow = true;
-  plotGroup.add(nbHedge);
+  // Front street low hedge on right half of front boundary (X: 0.40 -> +5.85 m at Z = +4.82 m, 50 cm tall)
+  buildBallHedgeSegment(plotGroup, getMat, registerMesh, {
+    id: 'hedge_front_beech',
+    label: 'Beukenhaag Voorzijde (50 cm hoog)',
+    matId: 'plot_hedge_beech',
+    x0: 0.40,
+    z0: frontZ - 0.18,
+    x1: 5.85,
+    z1: frontZ - 0.18,
+    width: 0.34,
+    height: 0.50,
+    seed: 303,
+    provenance: 'user_supplied',
+    source: 'User specification: 50 cm front hedge',
+  });
+
+  // Neighbour front street low hedge (neutral grey, 50 cm tall)
+  buildBallHedgeSegment(plotGroup, getMat, registerMesh, {
+    id: 'hedge_front_neighbour',
+    label: 'Haag Voorzijde Buurkavel (50 cm hoog)',
+    matId: 'neighbour_hedge_grey',
+    x0: 5.87,
+    z0: frontZ - 0.18,
+    x1: 10.02,
+    z1: frontZ - 0.18,
+    width: 0.34,
+    height: 0.50,
+    seed: 404,
+    provenance: 'assumed',
+    source: 'Neighbour context matching 50 cm front hedge',
+  });
 
   // 5. SOFT ARCHITECTURAL DIORAMA TREES (Matching positions in user's plot screenshot!)
   // Two trees in back garden + two small trees in front garden
@@ -686,7 +712,7 @@ function buildPlotAndEnvironment(
   addStylisedDioramaTree(plotGroup, getMat, 3.15, -16.10, 3.1, 1.40, 'plot_tree_foliage_sage');
   addStylisedDioramaTree(plotGroup, getMat, 1.65, 2.35, 2.0, 0.65, 'plot_tree_foliage_warm');
 
-  // 6. SURROUNDINGS (outside the owned plot, neutral grey): pavement strip, hedges and context trees
+  // 6. SURROUNDINGS (outside the owned plot, neutral grey): pavement strip & garden fences (schuttingen)
   const ctxRightX = rightX + CONTEXT_MARGIN;
   const ctxLeftX = Math.min(rearLeftX, frontLeftX) - CONTEXT_MARGIN;
   const addCtxBox = (
@@ -719,26 +745,48 @@ function buildPlotAndEnvironment(
   addCtxBox('ctx_kerb', 'Stoeprand', 'neighbour_kerb_grey',
     ctxLeftX, ctxRightX, frontZ + 1.8, frontZ + 1.95, -0.04, 0.03);
 
-  // Boundary hedges: rear boundary (plot in green, neighbour side in grey) + right garden boundary behind the terrace
-  const addPlotHedge = (id: string, label: string, matId: MaterialId, x0: number, x1: number, z0: number, z1: number) => {
-    const hMesh = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, 1.35, z1 - z0), getMat(matId));
-    hMesh.position.set((x0 + x1) / 2, 0.675, (z0 + z1) / 2);
-    registerMesh(hMesh, matId, {
-      id,
-      label,
-      dimensionsLabel: `${(x1 - x0).toFixed(2)} × ${(z1 - z0).toFixed(2)} × 1.35 m`,
-      provenance: 'assumed',
-      source: 'Hedges along the plot boundary (reference photos)',
-      floor: 'plot',
-    }, true, true);
-    plotGroup.add(hMesh);
-  };
-  addPlotHedge('hedge_rear_plot', 'Haag achterzijde kavel', 'plot_hedge_beech',
-    rearLeftX + 0.18, rightX, rearZ, rearZ + 0.32);
-  addPlotHedge('hedge_right_plot', 'Haag rechter kavelgrens (achtertuin)', 'plot_hedge_beech',
-    rightX - 0.32, rightX, rearZ + 0.32, -14.3);
-  addPlotHedge('hedge_rear_neighbour', 'Haag achterzijde buurkavel', 'neighbour_hedge_grey',
-    rightX, ctxRightX - 0.3, rearZ, rearZ + 0.32);
+  // Timber & concrete garden fences ("Schutting") at rear boundary and right boundary with neighbours
+  buildSchuttingSegment(plotGroup, getMat, registerMesh, {
+    id: 'schutting_rear_plot',
+    label: 'Schutting Achterzijde Kavel (2.00 m hoog)',
+    panelMatId: 'plot_gate_timber',
+    postMatId: 'plot_fence_post',
+    x0: rearLeftX + 0.18,
+    z0: rearZ + 0.08,
+    x1: rightX - 0.05,
+    z1: rearZ + 0.08,
+    height: 2.00,
+    provenance: 'user_supplied',
+    source: 'User specification: schutting at back of garden',
+  });
+
+  buildSchuttingSegment(plotGroup, getMat, registerMesh, {
+    id: 'schutting_right_plot',
+    label: 'Schutting Rechter Kavelgrens met Buren (2.00 m hoog)',
+    panelMatId: 'plot_gate_timber',
+    postMatId: 'plot_fence_post',
+    x0: rightX - 0.05,
+    z0: rearZ + 0.08,
+    x1: rightX - 0.05,
+    z1: -12.86,
+    height: 2.00,
+    provenance: 'user_supplied',
+    source: 'User specification: schutting on backgarden side with neighbors',
+  });
+
+  buildSchuttingSegment(plotGroup, getMat, registerMesh, {
+    id: 'schutting_rear_neighbour',
+    label: 'Schutting Achterzijde Buurkavel (2.00 m hoog)',
+    panelMatId: 'neighbour_wall_grey',
+    postMatId: 'neighbour_roof_grey',
+    x0: rightX,
+    z0: rearZ + 0.08,
+    x1: ctxRightX - 0.3,
+    z1: rearZ + 0.08,
+    height: 2.00,
+    provenance: 'assumed',
+    source: 'Neighbour rear boundary schutting in neutral grey',
+  });
 
   // Context trees: part of the base plot layer (stationary environment)
   addStylisedDioramaTree(plotGroup, getMat, ctxLeftX + 1.9, frontZ + 0.95, 4.6, 1.5, 'neighbour_tree_grey', 'neighbour_trunk_grey');
@@ -786,6 +834,207 @@ function addStylisedDioramaTree(
 
   group.add(treeGroup);
   return treeGroup;
+}
+
+interface BallHedgeSegmentOptions {
+  id: string;
+  label: string;
+  matId: MaterialId;
+  x0: number;
+  z0: number;
+  x1: number;
+  z1: number;
+  width: number;
+  height: number;
+  seed: number;
+  provenance: ProvenanceType;
+  source: string;
+}
+
+/**
+ * Build a stylised architectural diorama hedge composed of clustered low-poly foliage balls
+ * (matching the icosahedron aesthetic of `addStylisedDioramaTree`) merged into a single mesh.
+ */
+function buildBallHedgeSegment(
+  group: THREE.Group,
+  getMat: (id: MaterialId) => THREE.MeshStandardMaterial,
+  registerMesh: RegisterMeshFn,
+  opts: BallHedgeSegmentOptions
+) {
+  const { id, label, matId, x0, z0, x1, z1, width, height, seed, provenance, source } = opts;
+  const dx = x1 - x0;
+  const dz = z1 - z0;
+  const length = Math.hypot(dx, dz);
+  const angle = Math.atan2(dx, dz);
+
+  // Deterministic LCG PRNG so foliage clusters are reproducible across rebuilds
+  let s = (seed * 1664525 + 1013904223) >>> 0;
+  const rand = () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+
+  const baseR = Math.min(0.19, Math.max(0.11, Math.min(width * 0.42, height * 0.30)));
+  const yMin = baseR * 0.72;
+  const yMax = Math.max(yMin, height - baseR * 0.78);
+  const numY = Math.max(2, Math.round((yMax - yMin) / (baseR * 1.15)) + 1);
+  const numX = width >= 0.30 ? 2 : 1;
+  const zMin = -length / 2 + baseR * 0.65;
+  const zMax = length / 2 - baseR * 0.65;
+  const numZ = Math.max(2, Math.round(length / (baseR * 1.25)) + 1);
+
+  const geometries: THREE.BufferGeometry[] = [];
+  const xSpread = numX === 2 ? width * 0.22 : 0;
+
+  for (let iy = 0; iy < numY; iy++) {
+    const ty = numY > 1 ? iy / (numY - 1) : 0.5;
+    const baseY = yMin + ty * (yMax - yMin);
+
+    for (let ix = 0; ix < numX; ix++) {
+      const baseX = numX === 2 ? (ix === 0 ? -xSpread : xSpread) : 0;
+      const staggerZ = ((iy + ix) % 2) * (baseR * 0.42);
+
+      for (let iz = 0; iz < numZ; iz++) {
+        const tz = numZ > 1 ? iz / (numZ - 1) : 0.5;
+        let pz = zMin + tz * (zMax - zMin) + (iz > 0 && iz < numZ - 1 ? staggerZ * 0.5 : 0);
+        pz = Math.max(zMin, Math.min(zMax, pz));
+
+        const rScale = 0.85 + rand() * 0.32;
+        const r = baseR * rScale;
+        const ballGeo = new THREE.IcosahedronGeometry(r, 1);
+        ballGeo.scale(0.95 + rand() * 0.12, 0.88 + rand() * 0.16, 0.95 + rand() * 0.12);
+
+        const jx = (rand() - 0.5) * baseR * 0.38;
+        const jy = (rand() - 0.5) * baseR * 0.28;
+        const jz = (rand() - 0.5) * baseR * 0.38;
+        const finalY = Math.max(r * 0.65, Math.min(height - r * 0.55, baseY + jy));
+
+        ballGeo.translate(baseX + jx, finalY, pz + jz);
+        geometries.push(ballGeo);
+      }
+    }
+  }
+
+  const mergedGeo = mergeGeometries(geometries, false);
+  for (const g of geometries) g.dispose();
+  mergedGeo.computeBoundingBox();
+
+  const mesh = new THREE.Mesh(mergedGeo, getMat(matId));
+  mesh.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2);
+  mesh.rotation.y = angle;
+  registerMesh(
+    mesh,
+    matId,
+    {
+      id,
+      label,
+      dimensionsLabel: `${width.toFixed(2)} × ${length.toFixed(2)} × ${height.toFixed(2)} m`,
+      provenance,
+      source,
+      floor: 'plot',
+    },
+    true,
+    true
+  );
+  group.add(mesh);
+}
+
+interface SchuttingSegmentOptions {
+  id: string;
+  label: string;
+  panelMatId: MaterialId;
+  postMatId: MaterialId;
+  x0: number;
+  z0: number;
+  x1: number;
+  z1: number;
+  height: number;
+  provenance: ProvenanceType;
+  source: string;
+}
+
+/**
+ * Build a Dutch wood-concrete garden fence ("Hout-beton schutting") with posts,
+ * bottom plinths, timber panels, and top cap rails.
+ */
+function buildSchuttingSegment(
+  group: THREE.Group,
+  getMat: (id: MaterialId) => THREE.MeshStandardMaterial,
+  registerMesh: RegisterMeshFn,
+  opts: SchuttingSegmentOptions
+) {
+  const { id, label, panelMatId, postMatId, x0, z0, x1, z1, height, provenance, source } = opts;
+  const dx = x1 - x0;
+  const dz = z1 - z0;
+  const length = Math.hypot(dx, dz);
+  const angle = Math.atan2(dx, dz);
+
+  const numPanels = Math.max(1, Math.round(length / 1.80));
+  const panelLen = length / numPanels;
+  const postSize = 0.095;
+  const plinthH = 0.22;
+  const topRailH = 0.045;
+  const timberH = height - plinthH - topRailH;
+
+  const postGeos: THREE.BufferGeometry[] = [];
+  const panelGeos: THREE.BufferGeometry[] = [];
+
+  for (let i = 0; i <= numPanels; i++) {
+    const pz = -length / 2 + i * panelLen;
+    const post = new THREE.BoxGeometry(postSize, height + 0.02, postSize);
+    post.translate(0, (height + 0.02) / 2, pz);
+    postGeos.push(post);
+  }
+
+  for (let i = 0; i < numPanels; i++) {
+    const centerZ = -length / 2 + (i + 0.5) * panelLen;
+    const bayLen = Math.max(0.10, panelLen - postSize * 0.75);
+
+    const plinth = new THREE.BoxGeometry(0.055, plinthH, bayLen);
+    plinth.translate(0, plinthH / 2, centerZ);
+    postGeos.push(plinth);
+
+    const panel = new THREE.BoxGeometry(0.04, timberH, bayLen);
+    panel.translate(0, plinthH + timberH / 2, centerZ);
+    panelGeos.push(panel);
+
+    const topRail = new THREE.BoxGeometry(0.06, topRailH, bayLen + 0.02);
+    topRail.translate(0, height - topRailH / 2, centerZ);
+    panelGeos.push(topRail);
+  }
+
+  const mergedPosts = mergeGeometries(postGeos, false);
+  const mergedPanels = mergeGeometries(panelGeos, false);
+  for (const g of postGeos) g.dispose();
+  for (const g of panelGeos) g.dispose();
+
+  const fenceGroup = new THREE.Group();
+  fenceGroup.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2);
+  fenceGroup.rotation.y = angle;
+
+  const postMesh = new THREE.Mesh(mergedPosts, getMat(postMatId));
+  postMesh.castShadow = true;
+  postMesh.receiveShadow = true;
+  fenceGroup.add(postMesh);
+
+  const panelMesh = new THREE.Mesh(mergedPanels, getMat(panelMatId));
+  registerMesh(
+    panelMesh,
+    panelMatId,
+    {
+      id,
+      label,
+      dimensionsLabel: `0.10 × ${length.toFixed(2)} × ${height.toFixed(2)} m`,
+      provenance,
+      source,
+      floor: 'plot',
+    },
+    true,
+    true
+  );
+  fenceGroup.add(panelMesh);
+
+  group.add(fenceGroup);
 }
 
 /**

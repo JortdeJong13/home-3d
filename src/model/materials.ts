@@ -41,6 +41,7 @@ export type MaterialId =
   | 'plot_tree_foliage_blossom'
   | 'plot_tree_trunk'
   | 'plot_gate_timber'
+  | 'plot_fence_post'
   | 'plinth_base_white'
   | 'neighbour_wall_grey'
   | 'neighbour_roof_grey'
@@ -301,6 +302,12 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     colorDay: '#c29b70',
     colorNight: '#5c4935',
     roughness: 0.88,
+    metalness: 0.0,
+  },
+  plot_fence_post: {
+    colorDay: '#52565c',
+    colorNight: '#282b30',
+    roughness: 0.92,
     metalness: 0.0,
   },
   plinth_base_white: {
