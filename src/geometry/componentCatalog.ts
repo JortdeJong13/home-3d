@@ -388,6 +388,166 @@ function createVerticalWindowHandle(
   return hGroup;
 }
 
+/**
+ * Shared configuration for asymmetrical fixed + inward-opening casement windows
+ * (`window_living_front`, `window_living_side`, `window_bedroom_side`).
+ */
+interface AsymmetricCasementConfig {
+  casementSide: 'left' | 'right';
+  mullionOffsetRatio: number;
+}
+
+const ASYMMETRIC_CASEMENT_WINDOWS: Partial<Record<OpeningPrefabId, AsymmetricCasementConfig>> = {
+  window_living_front: { casementSide: 'right', mullionOffsetRatio: 0.17 },
+  window_living_side: { casementSide: 'left', mullionOffsetRatio: -0.14 },
+  window_bedroom_side: { casementSide: 'left', mullionOffsetRatio: -0.14 },
+};
+
+/**
+ * Shared builder for asymmetrical fixed + inward-opening casement windows ("draairaam")
+ * with a white downward-pointing window handle.
+ */
+function buildAsymmetricCasementWindow(params: {
+  group: THREE.Group;
+  op: ResolvedOpeningInstance;
+  config: AsymmetricCasementConfig;
+  innerW: number;
+  innerH: number;
+  frameDepth: number;
+  frameCenterZ: number;
+  wallThickness: number;
+  floor: FloorLayerId;
+  getMat: (id: MaterialId) => THREE.MeshStandardMaterial;
+  registerMesh: RegisterMeshFn;
+  onRegisterDoor?: (door: InteractiveDoor) => void;
+}) {
+  const {
+    group,
+    op,
+    config,
+    innerW,
+    innerH,
+    frameDepth,
+    frameCenterZ,
+    wallThickness,
+    floor,
+    getMat,
+    registerMesh,
+    onRegisterDoor,
+  } = params;
+
+  const isLeft = config.casementSide === 'left';
+  const mullionW = 0.055;
+  const mullionX = op.width * config.mullionOffsetRatio;
+
+  const mullion = new THREE.Mesh(
+    new THREE.BoxGeometry(mullionW, innerH, frameDepth * 0.9),
+    getMat(op.frameMaterial)
+  );
+  mullion.position.set(mullionX, 0, frameCenterZ);
+  group.add(mullion);
+
+  const fixedW = isLeft
+    ? (innerW / 2 - (mullionX + mullionW / 2))
+    : ((mullionX - mullionW / 2) - (-innerW / 2));
+  const fixedCenterX = isLeft
+    ? (mullionX + mullionW / 2 + fixedW / 2)
+    : (-innerW / 2 + fixedW / 2);
+
+  const fixedGlass = new THREE.Mesh(
+    new THREE.BoxGeometry(fixedW, innerH, 0.022),
+    getMat(op.panelMaterial)
+  );
+  fixedGlass.position.set(fixedCenterX, 0, frameCenterZ);
+  registerMesh(
+    fixedGlass,
+    op.panelMaterial,
+    {
+      id: op.id,
+      label: op.label,
+      dimensionsLabel: `${op.width.toFixed(2)} × ${op.height.toFixed(2)} m`,
+      provenance: op.provenance,
+      source: op.source,
+      floor,
+    },
+    false,
+    false
+  );
+  group.add(fixedGlass);
+
+  const casementW = isLeft
+    ? ((mullionX - mullionW / 2) - (-innerW / 2))
+    : (innerW / 2 - (mullionX + mullionW / 2));
+  const hingeX = isLeft ? -innerW / 2 : innerW / 2;
+  const dir = isLeft ? 1 : -1;
+
+  const sashPivot = new THREE.Group();
+  sashPivot.position.set(hingeX, 0, frameCenterZ);
+
+  const sashThick = 0.05;
+  const sashBarW = 0.056;
+  const sashGlassW = Math.max(0.10, casementW - sashBarW * 2);
+  const sashGlassH = Math.max(0.20, innerH - sashBarW * 2);
+  const sashCenterX = dir * (casementW / 2);
+
+  const sashGeos: THREE.BufferGeometry[] = [];
+  const addSashBar = (w: number, h: number, d: number, x: number, y: number) => {
+    const g = new THREE.BoxGeometry(w, h, d);
+    g.translate(x, y, 0);
+    sashGeos.push(g);
+  };
+  addSashBar(sashBarW, innerH, sashThick, dir * (sashBarW / 2), 0);
+  addSashBar(sashBarW, innerH, sashThick, dir * (casementW - sashBarW / 2), 0);
+  addSashBar(sashGlassW, sashBarW, sashThick, sashCenterX, innerH / 2 - sashBarW / 2);
+  addSashBar(sashGlassW, sashBarW, sashThick, sashCenterX, -innerH / 2 + sashBarW / 2);
+
+  const mergedSash = mergeGeometries(sashGeos, false);
+  for (const g of sashGeos) g.dispose();
+  const sashFrameMesh = new THREE.Mesh(mergedSash, getMat(op.frameMaterial));
+  sashFrameMesh.castShadow = true;
+  sashFrameMesh.receiveShadow = true;
+  sashPivot.add(sashFrameMesh);
+
+  const casementGlass = new THREE.Mesh(
+    new THREE.BoxGeometry(sashGlassW + 0.008, sashGlassH + 0.008, 0.014),
+    getMat(op.panelMaterial)
+  );
+  casementGlass.position.set(sashCenterX, 0, 0);
+  sashPivot.add(casementGlass);
+
+  const casementHandle = createVerticalWindowHandle(sashThick, getMat(op.frameMaterial), true);
+  casementHandle.position.set(dir * (casementW - sashBarW / 2), -0.05, 0);
+  sashPivot.add(casementHandle);
+
+  group.add(sashPivot);
+
+  const casementTrigger = new THREE.Mesh(
+    new THREE.BoxGeometry(casementW + 0.08, innerH, Math.max(0.40, wallThickness + 0.18)),
+    new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
+  );
+  casementTrigger.position.set(hingeX + sashCenterX, 0, frameCenterZ);
+  group.add(casementTrigger);
+
+  if (onRegisterDoor) {
+    onRegisterDoor({
+      id: `${op.id}_casement`,
+      label: `${op.label} (Draairaam)`,
+      floor,
+      pivots: [
+        {
+          group: sashPivot,
+          openAngle: isLeft ? Math.PI * 0.42 : -Math.PI * 0.42, // swings inward (-Z)
+          closedAngle: 0,
+          currentAngle: 0,
+        },
+      ],
+      triggerMeshes: [casementTrigger, sashFrameMesh, casementGlass],
+      isHovered: false,
+      isPinned: false,
+    });
+  }
+}
+
 export function instantiateOpeningPrefab3D(
   wallContainer: THREE.Group,
   op: ResolvedOpeningInstance,
@@ -1156,122 +1316,23 @@ export function instantiateOpeningPrefab3D(
     }
 
     case 'window_living_front':
-    case 'window_living_side': {
-      // Wide fixed pane + smaller inward-opening casement window ("draairaam") with white downward-pointing handle
-      const isSide = op.prefabId === 'window_living_side';
-      const mullionW = 0.055;
-      // Front window: smaller casement on right (+X); Side window: smaller casement on left/rear (-X)
-      const mullionX = isSide ? -op.width * 0.14 : op.width * 0.17;
-
-      const mullion = new THREE.Mesh(
-        new THREE.BoxGeometry(mullionW, innerH, frameDepth * 0.9),
-        getMat(op.frameMaterial)
-      );
-      mullion.position.set(mullionX, 0, frameCenterZ);
-      group.add(mullion);
-
-      // Fixed pane bounds vs casement pane bounds
-      const fixedW = isSide
-        ? (innerW / 2 - (mullionX + mullionW / 2))
-        : ((mullionX - mullionW / 2) - (-innerW / 2));
-      const fixedCenterX = isSide
-        ? (mullionX + mullionW / 2 + fixedW / 2)
-        : (-innerW / 2 + fixedW / 2);
-
-      const fixedGlass = new THREE.Mesh(
-        new THREE.BoxGeometry(fixedW, innerH, 0.022),
-        getMat(op.panelMaterial)
-      );
-      fixedGlass.position.set(fixedCenterX, 0, frameCenterZ);
-      registerMesh(
-        fixedGlass,
-        op.panelMaterial,
-        {
-          id: op.id,
-          label: op.label,
-          dimensionsLabel: `${op.width.toFixed(2)} × ${op.height.toFixed(2)} m`,
-          provenance: op.provenance,
-          source: op.source,
-          floor,
-        },
-        false,
-        false
-      );
-      group.add(fixedGlass);
-
-      // Smaller inward-opening casement sash
-      const casementW = isSide
-        ? ((mullionX - mullionW / 2) - (-innerW / 2))
-        : (innerW / 2 - (mullionX + mullionW / 2));
-      const hingeX = isSide ? -innerW / 2 : innerW / 2;
-      const dir = isSide ? 1 : -1; // +1 extends +X from left hinge; -1 extends -X from right hinge
-
-      const sashPivot = new THREE.Group();
-      sashPivot.position.set(hingeX, 0, frameCenterZ);
-
-      const sashThick = 0.05;
-      const sashBarW = 0.056;
-      const sashGlassW = Math.max(0.10, casementW - sashBarW * 2);
-      const sashGlassH = Math.max(0.20, innerH - sashBarW * 2);
-      const sashCenterX = dir * (casementW / 2);
-
-      const sashGeos: THREE.BufferGeometry[] = [];
-      const addSashBar = (w: number, h: number, d: number, x: number, y: number) => {
-        const g = new THREE.BoxGeometry(w, h, d);
-        g.translate(x, y, 0);
-        sashGeos.push(g);
-      };
-      addSashBar(sashBarW, innerH, sashThick, dir * (sashBarW / 2), 0);
-      addSashBar(sashBarW, innerH, sashThick, dir * (casementW - sashBarW / 2), 0);
-      addSashBar(sashGlassW, sashBarW, sashThick, sashCenterX, innerH / 2 - sashBarW / 2);
-      addSashBar(sashGlassW, sashBarW, sashThick, sashCenterX, -innerH / 2 + sashBarW / 2);
-
-      const mergedSash = mergeGeometries(sashGeos, false);
-      for (const g of sashGeos) g.dispose();
-      const sashFrameMesh = new THREE.Mesh(mergedSash, getMat(op.frameMaterial));
-      sashFrameMesh.castShadow = true;
-      sashFrameMesh.receiveShadow = true;
-      sashPivot.add(sashFrameMesh);
-
-      const casementGlass = new THREE.Mesh(
-        new THREE.BoxGeometry(sashGlassW + 0.008, sashGlassH + 0.008, 0.014),
-        getMat(op.panelMaterial)
-      );
-      casementGlass.position.set(sashCenterX, 0, 0);
-      sashPivot.add(casementGlass);
-
-      // White downward-pointing window handle on the inside of the latch stile
-      const casementHandle = createVerticalWindowHandle(sashThick, getMat(op.frameMaterial), true);
-      casementHandle.position.set(dir * (casementW - sashBarW / 2), -0.05, 0);
-      sashPivot.add(casementHandle);
-
-      group.add(sashPivot);
-
-      const casementTrigger = new THREE.Mesh(
-        new THREE.BoxGeometry(casementW + 0.08, innerH, Math.max(0.40, wallThickness + 0.18)),
-        new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
-      );
-      casementTrigger.position.set(hingeX + sashCenterX, 0, frameCenterZ);
-      group.add(casementTrigger);
-
-      if (onRegisterDoor) {
-        onRegisterDoor({
-          id: `${op.id}_casement`,
-          label: `${op.label} (Draairaam)`,
-          floor,
-          pivots: [
-            {
-              group: sashPivot,
-              openAngle: isSide ? Math.PI * 0.42 : -Math.PI * 0.42, // swings inward (-Z)
-              closedAngle: 0,
-              currentAngle: 0,
-            },
-          ],
-          triggerMeshes: [casementTrigger, sashFrameMesh, casementGlass],
-          isHovered: false,
-          isPinned: false,
-        });
-      }
+    case 'window_living_side':
+    case 'window_bedroom_side': {
+      const config = ASYMMETRIC_CASEMENT_WINDOWS[op.prefabId]!;
+      buildAsymmetricCasementWindow({
+        group,
+        op,
+        config,
+        innerW,
+        innerH,
+        frameDepth,
+        frameCenterZ,
+        wallThickness,
+        floor,
+        getMat,
+        registerMesh,
+        onRegisterDoor,
+      });
       break;
     }
 
