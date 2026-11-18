@@ -296,35 +296,37 @@ export function instantiateOpeningPrefab3D(
   const frameCenterZ = isInteriorDoor ? 0.0 : wallThickness / 2 - 0.11;
   const frameThick = 0.065;
 
-  // 1. Standard Window / Door Casing Frame
-  const topBar = new THREE.Mesh(
-    new THREE.BoxGeometry(op.width, frameThick, frameDepth),
-    getMat(op.frameMaterial)
-  );
-  topBar.position.set(0, op.height / 2 - frameThick / 2, frameCenterZ);
-  group.add(topBar);
-
-  const leftBar = new THREE.Mesh(
-    new THREE.BoxGeometry(frameThick, op.height, frameDepth),
-    getMat(op.frameMaterial)
-  );
-  leftBar.position.set(-op.width / 2 + frameThick / 2, 0, frameCenterZ);
-  group.add(leftBar);
-
-  const rightBar = new THREE.Mesh(
-    new THREE.BoxGeometry(frameThick, op.height, frameDepth),
-    getMat(op.frameMaterial)
-  );
-  rightBar.position.set(op.width / 2 - frameThick / 2, 0, frameCenterZ);
-  group.add(rightBar);
-
-  if (op.sillHeight > 0.05) {
-    const sillBar = new THREE.Mesh(
-      new THREE.BoxGeometry(op.width, frameThick, frameDepth + 0.02),
+  // 1. Standard Window / Door Casing Frame (omitted for the frameless kanteldeur garage door)
+  if (op.prefabId !== 'door_berging_garage_double') {
+    const topBar = new THREE.Mesh(
+      new THREE.BoxGeometry(op.width, frameThick, frameDepth),
       getMat(op.frameMaterial)
     );
-    sillBar.position.set(0, -op.height / 2 + frameThick / 2, frameCenterZ + 0.01);
-    group.add(sillBar);
+    topBar.position.set(0, op.height / 2 - frameThick / 2, frameCenterZ);
+    group.add(topBar);
+
+    const leftBar = new THREE.Mesh(
+      new THREE.BoxGeometry(frameThick, op.height, frameDepth),
+      getMat(op.frameMaterial)
+    );
+    leftBar.position.set(-op.width / 2 + frameThick / 2, 0, frameCenterZ);
+    group.add(leftBar);
+
+    const rightBar = new THREE.Mesh(
+      new THREE.BoxGeometry(frameThick, op.height, frameDepth),
+      getMat(op.frameMaterial)
+    );
+    rightBar.position.set(op.width / 2 - frameThick / 2, 0, frameCenterZ);
+    group.add(rightBar);
+
+    if (op.sillHeight > 0.05) {
+      const sillBar = new THREE.Mesh(
+        new THREE.BoxGeometry(op.width, frameThick, frameDepth + 0.02),
+        getMat(op.frameMaterial)
+      );
+      sillBar.position.set(0, -op.height / 2 + frameThick / 2, frameCenterZ + 0.01);
+      group.add(sillBar);
+    }
   }
 
   // 2. Decorative Red-Brown Brick Surround (ONLY on the exterior facade surface, z = +wallThickness / 2!)
@@ -737,9 +739,9 @@ export function instantiateOpeningPrefab3D(
     }
 
     case 'door_berging_garage_double': {
-      // 1. Red-brown facade brick soldier course (rollaag) ONLY across the top of the garage door
+      // 1. Red-brown facade brick soldier course (rollaag) ONLY across the top, matching front door arch relief (0.044 m)
       const lintelHeight = 0.19;
-      const reliefDepth = 0.032;
+      const reliefDepth = 0.044;
       const exteriorFaceZ = wallThickness / 2 + reliefDepth / 2 - 0.002;
       const lintelWidth = op.width + 0.06;
       const numBricks = Math.round(lintelWidth / 0.068);
@@ -769,22 +771,24 @@ export function instantiateOpeningPrefab3D(
       });
       group.add(lintelMesh);
 
-      // 2. Single-piece sage-green kanteldeur (up-and-over tilt door) with crisp vertical ribs
+      // 2. Frameless single-piece sage-green kanteldeur (up-and-over tilt door) with crisp vertical ribs
+      const doorW = op.width;
+      const doorH = op.height;
       const doorPivot = new THREE.Group();
-      doorPivot.position.set(0, -frameThick / 2, frameCenterZ);
+      doorPivot.position.set(0, 0, frameCenterZ);
 
       const doorGeos: THREE.BufferGeometry[] = [];
       const plateDepth = 0.036;
-      const backingPlate = new THREE.BoxGeometry(innerW, innerH, plateDepth);
+      const backingPlate = new THREE.BoxGeometry(doorW, doorH, plateDepth);
       doorGeos.push(backingPlate);
 
-      const numSlats = 24;
-      const slatPitch = innerW / numSlats;
+      const numSlats = 25;
+      const slatPitch = doorW / numSlats;
       const slatW = slatPitch - 0.012; // 1.2 cm vertical shadow groove between slats
       const slatDepth = 0.016;
       for (let i = 0; i < numSlats; i++) {
-        const sx = -innerW / 2 + (i + 0.5) * slatPitch;
-        const slat = new THREE.BoxGeometry(slatW, innerH - 0.015, slatDepth);
+        const sx = -doorW / 2 + (i + 0.5) * slatPitch;
+        const slat = new THREE.BoxGeometry(slatW, doorH - 0.01, slatDepth);
         slat.translate(sx, 0, plateDepth / 2 + slatDepth / 2);
         doorGeos.push(slat);
       }
@@ -799,7 +803,7 @@ export function instantiateOpeningPrefab3D(
         new THREE.BoxGeometry(0.14, 0.028, 0.035),
         getMat('roof_tile_anthracite')
       );
-      handle.position.set(0, -innerH / 2 + 0.48, plateDepth / 2 + slatDepth + 0.012);
+      handle.position.set(0, -doorH / 2 + 0.48, plateDepth / 2 + slatDepth + 0.012);
       doorPivot.add(handle);
 
       group.add(doorPivot);
@@ -829,8 +833,8 @@ export function instantiateOpeningPrefab3D(
               onUpdate: (angle, t) => {
                 doorPivot.rotation.x = angle;
                 // Keep top edge gliding cleanly below the lintel while retracting ~65% into the garage
-                doorPivot.position.y = -frameThick / 2 + (innerH / 2) * (1 - Math.cos(angle)) - 0.03 * t;
-                doorPivot.position.z = frameCenterZ - (innerH * 0.35) * Math.sin(-angle);
+                doorPivot.position.y = (doorH / 2) * (1 - Math.cos(angle)) - 0.03 * t;
+                doorPivot.position.z = frameCenterZ - (doorH * 0.35) * Math.sin(-angle);
               },
             },
           ],
