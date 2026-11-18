@@ -2976,7 +2976,8 @@ function buildBoxGutterAndKlossen(
   yTop: number,
   fasciaMat: THREE.Material,
   zincMat: THREE.Material,
-  skipZones: number[] = []
+  skipZones: number[] = [],
+  klossenMat: THREE.Material = fasciaMat
 ) {
   const length = Math.abs(spanEnd - spanStart);
   const mid = (spanStart + spanEnd) / 2;
@@ -3008,7 +3009,7 @@ function buildBoxGutterAndKlossen(
     for (let i = 0; i <= count; i++) {
       const zPos = spanStart + 0.35 + (i / count) * (length - 0.70);
       if (skipZones.some((sz) => Math.abs(zPos - sz) < 0.16)) continue;
-      addBox(0.16, 0.065, 0.055, eavesCoord + outwardSign * 0.08, yTop - gutterHeight - 0.0325, zPos, fasciaMat);
+      addBox(0.16, 0.065, 0.055, eavesCoord + outwardSign * 0.08, yTop - gutterHeight - 0.0325, zPos, klossenMat);
     }
   } else {
     // Gutter running along X (front & rear eaves of bnr. 56)
@@ -3022,7 +3023,7 @@ function buildBoxGutterAndKlossen(
     const count = Math.max(2, Math.round(length / 0.68));
     for (let i = 0; i <= count; i++) {
       const xPos = spanStart + 0.25 + (i / count) * (length - 0.50);
-      addBox(0.055, 0.065, 0.16, xPos, yTop - gutterHeight - 0.0325, eavesCoord + outwardSign * 0.08, fasciaMat);
+      addBox(0.055, 0.065, 0.16, xPos, yTop - gutterHeight - 0.0325, eavesCoord + outwardSign * 0.08, klossenMat);
     }
   }
 }
@@ -3423,9 +3424,10 @@ function buildPitchedRoofSystem(
     -0.005,
     -1,
     gutterTopY,
-    getMat('roof_fascia_white'),
     getMat('roof_daktrim_zinc'),
-    [-0.22, -10.24]
+    getMat('roof_daktrim_zinc'),
+    [-0.22, -10.24],
+    getMat('roof_fascia_white')
   );
   buildBoxGutterAndKlossen(
     roofGroup,
