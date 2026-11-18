@@ -3,6 +3,10 @@ import { MaterialId } from '../model/materials';
 import { FloorLayerId, ProvenanceType } from '../model/houseData';
 import { InspectableMetadata, ElementCategory, RegisterMeshFn } from './houseBuilder';
 import { InteractiveDoor } from '../viewer/interactiveDoors';
+import {
+  buildDecorativeBrickArchMeshes,
+  buildDoorLeafWithVisionCutout,
+} from '../assets/items/frontDoorArch';
 
 /**
  * Canonical Architectural Component Prefab IDs
@@ -373,60 +377,28 @@ export function instantiateOpeningPrefab3D(
 
   // 3. Decorative Red-Brown Brick Portal & Arch around Front Entrance Door (ONLY on the exterior facade surface!)
   if (op.hasArchTrim) {
-    const pilasterW = 0.13;
-    const reliefDepth = 0.036; // 3.6 cm relief strictly on the outside face of the wall
-    const exteriorFaceZ = wallThickness / 2 + reliefDepth / 2 - 0.002;
+    // Door opening (1.05 m) sits asymmetrically on the left of the 1.50 m portal:
+    // Portal center is +9.5 cm to the right of the door center.
+    const archResult = buildDecorativeBrickArchMeshes(getMat, 0.038, 0.022);
+    archResult.group.position.set(0.095, -op.height / 2, wallThickness / 2 - 0.002);
 
-    // Left & right decorative red-brown brick pilasters flanking the doorway on the outside face
-    const pilasterL = new THREE.Mesh(
-      new THREE.BoxGeometry(pilasterW, op.height, reliefDepth),
-      getMat('exterior_arch_brick')
-    );
-    pilasterL.position.set(-op.width / 2 - pilasterW / 2, 0, exteriorFaceZ);
-    pilasterL.castShadow = true;
-    group.add(pilasterL);
-
-    const pilasterR = new THREE.Mesh(
-      new THREE.BoxGeometry(pilasterW, op.height, reliefDepth),
-      getMat('exterior_arch_brick')
-    );
-    pilasterR.position.set(op.width / 2 + pilasterW / 2, 0, exteriorFaceZ);
-    pilasterR.castShadow = true;
-    group.add(pilasterR);
-
-    // Semicircular decorative red-brown brick arch + recessed tympanum mounted strictly on the outside wall surface above the door
-    const outerRadius = op.width / 2 + pilasterW;
-    const innerRadius = op.width / 2;
-
-    // Outer arch ring (voussoir brickwork)
-    const archRingShape = new THREE.Shape();
-    archRingShape.absarc(0, 0, outerRadius, 0, Math.PI, false);
-    archRingShape.absarc(0, 0, innerRadius, Math.PI, 0, true);
-    archRingShape.closePath();
-
-    const archRingGeo = new THREE.ExtrudeGeometry(archRingShape, {
-      depth: reliefDepth,
-      bevelEnabled: false,
-      curveSegments: 24,
+    registerMesh(archResult.outerBorderMesh, 'exterior_arch_brick', {
+      id: `${op.id}_arch_border`,
+      label: 'Decoratieve Gemetselde Boog (Rollaag)',
+      dimensionsLabel: '1.50 × 2.83 m (Asymmetrisch Portaal)',
+      provenance: op.provenance,
+      source: op.source,
+      floor,
     });
-    const archRingMesh = new THREE.Mesh(archRingGeo, getMat('exterior_arch_brick'));
-    archRingMesh.position.set(0, op.height / 2, wallThickness / 2 - 0.002);
-    archRingMesh.castShadow = true;
-    group.add(archRingMesh);
-
-    // Subtle inset red-brown brick tympanum panel inside the arch (1.6 cm proud of the main brick wall)
-    const tympanumShape = new THREE.Shape();
-    tympanumShape.absarc(0, 0, innerRadius, 0, Math.PI, false);
-    tympanumShape.closePath();
-
-    const tympanumGeo = new THREE.ExtrudeGeometry(tympanumShape, {
-      depth: reliefDepth * 0.55,
-      bevelEnabled: false,
-      curveSegments: 24,
+    registerMesh(archResult.recessedInfillMesh, 'exterior_arch_brick', {
+      id: `${op.id}_arch_infill`,
+      label: 'Gemetseld Boogveld & Rechter Penant',
+      dimensionsLabel: 'Verdiept metselwerk (1.6 cm terugliggend)',
+      provenance: op.provenance,
+      source: op.source,
+      floor,
     });
-    const tympanumMesh = new THREE.Mesh(tympanumGeo, getMat('window_trim_terracotta'));
-    tympanumMesh.position.set(0, op.height / 2, wallThickness / 2 - 0.002);
-    group.add(tympanumMesh);
+    group.add(archResult.group);
   }
 
   const innerW = Math.max(0.1, op.width - frameThick * 2);
@@ -446,11 +418,41 @@ export function instantiateOpeningPrefab3D(
     const pivot = new THREE.Group();
     pivot.position.set(-innerW / 2, -frameThick / 2, frameCenterZ);
 
-    const leaf = new THREE.Mesh(
-      new THREE.BoxGeometry(innerW, innerH, leafThickness),
-      getMat(op.panelMaterial)
-    );
-    leaf.position.set(innerW / 2, 0, 0);
+    let leaf: THREE.Mesh;
+    if (hasVisionGlass) {
+      const handleMat = new THREE.MeshStandardMaterial({
+        color: '#a8aeb5',
+        roughness: 0.35,
+        metalness: 0.75,
+        name: 'door_handle_steel',
+      });
+      const built = buildDoorLeafWithVisionCutout({
+        innerW,
+        innerH,
+        leafThickness,
+        doorMat: getMat(op.panelMaterial),
+        frameMat: getMat(op.frameMaterial),
+        glassMat: getMat('window_glass_day'),
+        handleMat,
+      });
+      leaf = built.leafMesh;
+      pivot.add(built.leafPivotContent);
+    } else {
+      leaf = new THREE.Mesh(
+        new THREE.BoxGeometry(innerW, innerH, leafThickness),
+        getMat(op.panelMaterial)
+      );
+      leaf.position.set(innerW / 2, 0, 0);
+      pivot.add(leaf);
+
+      const handle = new THREE.Mesh(
+        new THREE.BoxGeometry(0.11, 0.02, 0.09),
+        getMat('roof_tile_anthracite')
+      );
+      handle.position.set(innerW - 0.08, -0.12 - (-frameThick / 2), 0);
+      pivot.add(handle);
+    }
+
     registerMesh(leaf, op.panelMaterial, {
       id: op.id,
       label: op.label,
@@ -459,23 +461,6 @@ export function instantiateOpeningPrefab3D(
       source: op.source,
       floor,
     });
-    pivot.add(leaf);
-
-    if (hasVisionGlass) {
-      const visionGlass = new THREE.Mesh(
-        new THREE.BoxGeometry(0.14, innerH * 0.68, leafThickness + 0.007),
-        getMat('window_glass_day')
-      );
-      visionGlass.position.set(innerW / 2 + 0.08, -0.05 - (-frameThick / 2), 0);
-      pivot.add(visionGlass);
-    }
-
-    const handle = new THREE.Mesh(
-      new THREE.BoxGeometry(0.11, 0.02, 0.09),
-      getMat('roof_tile_anthracite')
-    );
-    handle.position.set(innerW - 0.08, -0.12 - (-frameThick / 2), 0);
-    pivot.add(handle);
     group.add(pivot);
 
     const trigger = createTrigger();

@@ -85,9 +85,9 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     metalness: 0.0,
   },
   exterior_arch_brick: {
-    colorDay: '#c9886b',
-    colorNight: '#6e493a',
-    roughness: 0.9,
+    colorDay: '#9c5240',
+    colorNight: '#5a3025',
+    roughness: 0.92,
     metalness: 0.0,
   },
 
@@ -205,8 +205,8 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     emissiveIntensityNight: 0.65,
   },
   door_exterior_sage: {
-    colorDay: '#7fa882',
-    colorNight: '#465e48',
+    colorDay: '#8ab393',
+    colorNight: '#49614e',
     roughness: 0.85,
     metalness: 0.02,
   },
