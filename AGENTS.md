@@ -14,6 +14,8 @@ This file is the canonical context & operating manual for AI agents working in `
   npm run verify && npm run build
   ```
   and commit a clean Git checkpoint (`git add -A && git commit -m "..."`) when a task is completed.
+- **No Self-Testing in Browser**:
+  Do not launch a dev server or open/test the app in a browser yourself to visually validate the house — the user will validate the rendered house directly. Rely on `npm run verify && npm run build` for automated checks.
 
 ---
 

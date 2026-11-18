@@ -217,7 +217,7 @@ export function buildHouseScene(): HouseSceneGroups {
         ? {
             map: groundTileTextures.map,
             bumpMap: groundTileTextures.bumpMap,
-            bumpScale: 0.003,
+            bumpScale: 0.018,
             roughnessMap: groundTileTextures.roughnessMap,
           }
         : {}),
