@@ -135,15 +135,15 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
   // 7. Ground Floor Wide Front Living Room Window
   window_living_front: {
     prefabId: 'window_living_front',
-    defaultLabel: 'Voorraam Woonkamer (240 × 185 cm)',
-    width: 2.40,
+    defaultLabel: 'Voorraam Woonkamer (260 × 185 cm)',
+    width: 2.60,
     height: 1.85,
     sillHeight: 0.45,
     frameMaterial: 'window_frame_cream',
     panelMaterial: 'window_glass_day',
     hasTerracottaSurround: true,
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 voorgevel & Woning.jpg',
+    provenance: 'user_supplied',
+    source: 'User specification (260 × 185 cm: 185 cm fixed + 75 cm casement, 91 cm from inside left wall)',
   },
 
   // 8. Ground Floor Side Living Room Window
@@ -398,7 +398,7 @@ interface AsymmetricCasementConfig {
 }
 
 const ASYMMETRIC_CASEMENT_WINDOWS: Partial<Record<OpeningPrefabId, AsymmetricCasementConfig>> = {
-  window_living_front: { casementSide: 'right', mullionOffsetRatio: 0.17 },
+  window_living_front: { casementSide: 'right', mullionOffsetRatio: 0.55 / 2.60 }, // 185 cm fixed left + 75 cm casement right
   window_living_side: { casementSide: 'left', mullionOffsetRatio: 0 },
   window_bedroom_side: { casementSide: 'left', mullionOffsetRatio: 0 },
 };

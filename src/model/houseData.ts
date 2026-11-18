@@ -260,7 +260,7 @@ export function getHouseWalls(): WallSpec[] {
         {
           id: 'gf_win_front_living',
           prefabId: 'window_living_front',
-          offsetAlongWall: 2.51, // Left edge at X = 0.40 + 0.91 = 1.31 m -> center = 2.51 m (91 cm from inside left wall)
+          offsetAlongWall: 2.61, // Left edge at X = 0.40 + 0.91 = 1.31 m -> center = 1.31 + 1.30 = 2.61 m (91 cm from inside left wall)
         },
       ],
     },
