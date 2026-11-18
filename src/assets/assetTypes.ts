@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Dimension, ProvenanceType } from '../model/units';
 import { MaterialId } from '../model/materials';
 import { FloorLayerId } from '../model/houseData';
+import { InteractiveDoorPivot } from '../viewer/interactiveDoors';
 
 /**
  * Target Dimensions for an Asset in Canonical Metres.
@@ -16,6 +17,13 @@ export interface AssetDimensions {
   height: Dimension; // Y-axis vertical height from floor
 }
 
+export interface InteractiveDoorRegistration {
+  /** Optional suffix if an asset has multiple interactive doors (e.g. 'left', 'right') */
+  subId?: string;
+  pivots: InteractiveDoorPivot[];
+  triggerMeshes: THREE.Object3D[];
+}
+
 export interface AssetBuilderContext {
   /** Exact target width (X), depth (Z), and height (Y) in metres */
   width: number;
@@ -23,6 +31,12 @@ export interface AssetBuilderContext {
   height: number;
   /** Retrieve a shared scene material by semantic MaterialId (or create a custom diorama material) */
   getMat: (id: MaterialId) => THREE.MeshStandardMaterial;
+  /**
+   * Optional hook to register hover-to-open / click-to-pin hinged doors on furniture assets
+   * (e.g. wardrobes, kitchen cabinets, refrigerators). Mark invisible trigger meshes with
+   * `mesh.userData.isInteractiveTrigger = true` so they are excluded from shadow/inspector registration.
+   */
+  registerInteractiveDoor?: (registration: InteractiveDoorRegistration) => void;
 }
 
 export interface AssetPrefabDefinition {

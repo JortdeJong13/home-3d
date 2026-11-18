@@ -333,4 +333,40 @@ assertClose(
   'Geometry bounding box height unchanged between Day and Night modes'
 );
 
+// Verify Interactive Doors & Gate Animation System
+const doors = house.doorManager.getDoors();
+if (doors.length < 12) {
+  throw new Error(`Expected at least 12 interactive doors/gates registered, got ${doors.length}`);
+}
+for (const door of doors) {
+  if (door.pivots.length === 0) {
+    throw new Error(`Interactive door "${door.id}" has no pivots`);
+  }
+  if (door.triggerMeshes.length === 0) {
+    throw new Error(`Interactive door "${door.id}" has no triggerMeshes`);
+  }
+  for (const pivot of door.pivots) {
+    assertClose(pivot.group.rotation.y, 0.0, 0.0001, `Door ${door.id} starts closed at 0.000 rad`);
+  }
+}
+// Simulate hover open + close on first registered door
+const sampleDoor = doors[0];
+sampleDoor.isHovered = true;
+for (let i = 0; i < 60; i++) house.doorManager.update(0.05);
+assertClose(
+  sampleDoor.pivots[0].group.rotation.y,
+  sampleDoor.pivots[0].openAngle,
+  0.002,
+  `Door ${sampleDoor.id} opens smoothly to target openAngle when hovered`
+);
+sampleDoor.isHovered = false;
+for (let i = 0; i < 60; i++) house.doorManager.update(0.05);
+assertClose(
+  sampleDoor.pivots[0].group.rotation.y,
+  0.0,
+  0.002,
+  `Door ${sampleDoor.id} closes smoothly back to 0.000 rad when unhovered`
+);
+console.log(`  ✓ All ${doors.length} interactive doors & gate verified (pivots, triggers, open/close animation)`);
+
 console.log('\nALL DIMENSIONAL, PREFAB & 3D SCENE CHECKS PASSED SUCCESSFULLY.');

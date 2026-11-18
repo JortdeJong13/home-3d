@@ -327,7 +327,7 @@ export function buildHouseScene(): HouseSceneGroups {
   // ===========================================================================
   // 8. PLACED 3D ASSETS (Furniture, Kitchen, Garden Objects from assetRegistry.ts)
   // ===========================================================================
-  buildPlacedAssets(furnitureGroups, getMat, registerMesh, registerStaggered);
+  buildPlacedAssets(furnitureGroups, getMat, registerMesh, registerStaggered, doorManager);
 
   // ===========================================================================
   // 9. WARM INTERIOR LIGHTS (For Night Mode)
@@ -1500,7 +1500,8 @@ function buildPlacedAssets(
   furnitureGroups: Record<FloorLayerId, THREE.Group>,
   getMat: (id: MaterialId) => THREE.MeshStandardMaterial,
   registerMesh: RegisterMeshFn,
-  registerStaggered: (id: string, object: THREE.Object3D, floor: FloorLayerId, baseY: number) => void
+  registerStaggered: (id: string, object: THREE.Object3D, floor: FloorLayerId, baseY: number) => void,
+  doorManager?: InteractiveDoorManager
 ) {
   const floorBaseY: Record<FloorLayerId, number> = {
     plot: 0.0,
@@ -1525,14 +1526,32 @@ function buildPlacedAssets(
     const depth = dDim.metres;
     const height = hDim.metres;
 
-    const assetGroup = prefab.build3D({ width, depth, height, getMat });
+    const label = placed.label ?? prefab.defaultLabel;
+    const assetGroup = prefab.build3D({
+      width,
+      depth,
+      height,
+      getMat,
+      registerInteractiveDoor: doorManager
+        ? (reg) => {
+            doorManager.register({
+              id: reg.subId ? `${placed.id}_${reg.subId}` : placed.id,
+              label,
+              floor: placed.floor,
+              pivots: reg.pivots,
+              triggerMeshes: reg.triggerMeshes,
+              isHovered: false,
+              isPinned: false,
+            });
+          }
+        : undefined,
+    });
     const baseY = floorBaseY[placed.floor] + (placed.elevationOffsetY ?? 0.0);
     assetGroup.position.set(placed.positionXZ[0], baseY, placed.positionXZ[1]);
     if (placed.rotationDeg) {
       assetGroup.rotation.y = THREE.MathUtils.degToRad(placed.rotationDeg);
     }
 
-    const label = placed.label ?? prefab.defaultLabel;
     const dimsLabel = `${width.toFixed(2)} × ${depth.toFixed(2)} × ${height.toFixed(2)} m`;
     const prov = placed.provenance ?? wDim.provenance;
     const src = placed.source ?? wDim.source;
@@ -1540,6 +1559,7 @@ function buildPlacedAssets(
     assetGroup.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
+        if (mesh.userData?.isInteractiveTrigger) return;
         const matName = (mesh.material as THREE.Material)?.name as MaterialId | undefined;
         registerMesh(mesh, matName && MATERIAL_PALETTE[matName] ? matName : 'interior_wall_plaster', {
           id: placed.id,

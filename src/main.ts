@@ -206,6 +206,14 @@ function inspectAtPointer(clientX: number, clientY: number) {
   }
 }
 
+let pointerDownX = 0;
+let pointerDownY = 0;
+
+canvas.addEventListener('pointerdown', (e) => {
+  pointerDownX = e.clientX;
+  pointerDownY = e.clientY;
+});
+
 canvas.addEventListener('pointermove', (e) => {
   if (e.buttons === 0) {
     inspectAtPointer(e.clientX, e.clientY);
@@ -213,12 +221,14 @@ canvas.addEventListener('pointermove', (e) => {
 });
 
 canvas.addEventListener('pointerleave', () => {
-  raycaster.set(new THREE.Vector3(9999, 9999, 9999), new THREE.Vector3(0, 1, 0));
-  houseGroups.doorManager.handlePointerMove(raycaster);
+  houseGroups.doorManager.clearHover();
   canvas.style.cursor = 'default';
 });
 
 canvas.addEventListener('click', (e) => {
+  const dragDist = Math.hypot(e.clientX - pointerDownX, e.clientY - pointerDownY);
+  if (dragDist > 5) return;
+
   pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
   pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(pointer, cameraController.camera);

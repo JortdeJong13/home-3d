@@ -116,6 +116,12 @@ Use `m(value, provenance, source)` or `cm(value, provenance, source)` from [src/
    };
    ```
 
+4. **Optional Interactive Doors / Hinged Parts (`registerInteractiveDoor`):**
+   If your asset has hinged doors (e.g. a wardrobe, kitchen cabinet, or refrigerator) that should open on hover and toggle-pin on click:
+   - Mount the door mesh inside a `THREE.Group` pivot positioned at the hinge edge.
+   - Create an invisible stationary trigger mesh covering the door opening with `mesh.userData.isInteractiveTrigger = true` and `new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })` so it is excluded from shadow/inspector registration.
+   - Call `registerInteractiveDoor?.({ subId: 'door', pivots: [{ group: pivot, openAngle: -Math.PI * 0.45, closedAngle: 0, currentAngle: 0 }], triggerMeshes: [trigger, doorMesh] })`.
+
 ---
 
 ## 4. Copy-Paste Prompt Template for a New Chat

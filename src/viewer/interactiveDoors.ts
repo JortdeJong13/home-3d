@@ -19,7 +19,8 @@ export interface InteractiveDoor {
 }
 
 /**
- * Manages hover and click-to-pin animations for doors and gates in Bouwnummer 55.
+ * Manages hover-to-open and click-to-pin animations for doors, gates, and
+ * interactive furniture assets in Bouwnummer 55.
  */
 export class InteractiveDoorManager {
   private doors: InteractiveDoor[] = [];
@@ -37,6 +38,15 @@ export class InteractiveDoorManager {
   }
 
   /**
+   * Clear hover state across all doors (e.g. when the pointer leaves the canvas).
+   */
+  public clearHover(): void {
+    for (const door of this.doors) {
+      door.isHovered = false;
+    }
+  }
+
+  /**
    * Check if a door's hierarchy is currently visible in the Three.js scene graph.
    */
   private isDoorVisible(door: InteractiveDoor): boolean {
@@ -50,58 +60,7 @@ export class InteractiveDoorManager {
     return true;
   }
 
-  /**
-   * Raycast against all visible doors to update hover state.
-   */
-  public handlePointerMove(raycaster: THREE.Raycaster): boolean {
-    const candidateMeshes: THREE.Object3D[] = [];
-    const meshToDoor = new Map<THREE.Object3D, InteractiveDoor>();
-
-    for (const door of this.doors) {
-      if (!this.isDoorVisible(door)) {
-        door.isHovered = false;
-        continue;
-      }
-      for (const mesh of door.triggerMeshes) {
-        candidateMeshes.push(mesh);
-        meshToDoor.set(mesh, door);
-      }
-    }
-
-    if (candidateMeshes.length === 0) {
-      for (const door of this.doors) door.isHovered = false;
-      return false;
-    }
-
-    const hits = raycaster.intersectObjects(candidateMeshes, true);
-    let hoveredDoor: InteractiveDoor | null = null;
-
-    if (hits.length > 0) {
-      for (const hit of hits) {
-        let obj: THREE.Object3D | null = hit.object;
-        while (obj) {
-          const match = meshToDoor.get(obj);
-          if (match) {
-            hoveredDoor = match;
-            break;
-          }
-          obj = obj.parent;
-        }
-        if (hoveredDoor) break;
-      }
-    }
-
-    for (const door of this.doors) {
-      door.isHovered = door === hoveredDoor;
-    }
-
-    return hoveredDoor !== null;
-  }
-
-  /**
-   * Clicking a door toggles its pinned open state.
-   */
-  public handleClick(raycaster: THREE.Raycaster): InteractiveDoor | null {
+  private findHitDoor(raycaster: THREE.Raycaster): InteractiveDoor | null {
     const candidateMeshes: THREE.Object3D[] = [];
     const meshToDoor = new Map<THREE.Object3D, InteractiveDoor>();
 
@@ -113,29 +72,44 @@ export class InteractiveDoorManager {
       }
     }
 
-    const hits = raycaster.intersectObjects(candidateMeshes, true);
-    if (hits.length > 0) {
-      for (const hit of hits) {
-        let obj: THREE.Object3D | null = hit.object;
-        while (obj) {
-          const match = meshToDoor.get(obj);
-          if (match) {
-            match.isPinned = !match.isPinned;
-            return match;
-          }
-          obj = obj.parent;
-        }
-      }
-    }
+    if (candidateMeshes.length === 0) return null;
 
+    const hits = raycaster.intersectObjects(candidateMeshes, false);
+    for (const hit of hits) {
+      const match = meshToDoor.get(hit.object);
+      if (match) return match;
+    }
     return null;
   }
 
   /**
-   * Smoothly interpolate pivot rotation angles toward their target.
+   * Raycast against all visible doors to update hover state.
+   */
+  public handlePointerMove(raycaster: THREE.Raycaster): boolean {
+    const hoveredDoor = this.findHitDoor(raycaster);
+    for (const door of this.doors) {
+      door.isHovered = door === hoveredDoor;
+    }
+    return hoveredDoor !== null;
+  }
+
+  /**
+   * Clicking a door toggles its pinned-open state.
+   */
+  public handleClick(raycaster: THREE.Raycaster): InteractiveDoor | null {
+    const hitDoor = this.findHitDoor(raycaster);
+    if (hitDoor) {
+      hitDoor.isPinned = !hitDoor.isPinned;
+      return hitDoor;
+    }
+    return null;
+  }
+
+  /**
+   * Smoothly interpolate pivot rotation angles toward their target using
+   * frame-rate-independent exponential damping.
    */
   public update(dt: number): void {
-    // Easing speed: snappy yet organic swing
     const lambda = 1 - Math.exp(-dt * 9.5);
 
     for (const door of this.doors) {

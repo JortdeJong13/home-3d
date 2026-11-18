@@ -92,6 +92,10 @@ All chains are automatically asserted by `npm run verify` (`src/scripts/verifyDi
    - Secondary/furniture assets (`staggeredAssets`: the 14 *Oprit* pavers, *Tuinpoort*, Zolder WP warmtepomp unit, and any furniture in `PLACED_ASSETS`) drop right behind their floor (`8%–26%` start offset, `6.5 m` relative drop height) in a pseudo-random staggered cascade.
 6. **Removed UI Toggles**:
    - Do **not** re-add the `Optie B33: Inloopkast Open` toggle (the 1st-floor walk-in closet is permanently enclosed) or the `Maatvoering & Bronnen` toggle (dimensions and provenance are inspected directly via the bottom-right selection card).
+7. **Interactive Doors, Gate & Animated Assets (`src/viewer/interactiveDoors.ts`)**:
+   - All architectural doors (`door_inner_standard_b77b`, `door_inner_living_glass_b72`, `door_entrance_front`, `door_garden_double_b13`, `door_berging_garage_double`, `door_berging_garden_rear`) and the timber `garden_gate` (*Tuinpoort*) are mounted on hinge pivots with stationary invisible doorway trigger meshes so they swing open smoothly on pointer hover and close when the pointer moves away.
+   - Clicking a door/gate (without dragging the camera) toggles its `isPinned` state to keep it open while inspecting rooms.
+   - Furniture assets in `PLACED_ASSETS` can also register hinged doors via `ctx.registerInteractiveDoor` in `AssetBuilderContext`.
 
 ---
 
@@ -111,6 +115,7 @@ All chains are automatically asserted by `npm run verify` (`src/scripts/verifyDi
 - `src/geometry/houseBuilder.ts` — Procedural 3D scene builder (`buildHouseScene`, `getZolderRoofUndersideY`, `buildPitchedRoofSystem`).
 - `src/assets/assetTypes.ts` & `src/assets/assetRegistry.ts` — Modular 3D furniture/asset registry (`ASSET_PREFABS`, `PLACED_ASSETS`).
 - `src/viewer/scrollTimeline.ts` — Scroll-driven floor & staggered furniture drop animation.
+- `src/viewer/interactiveDoors.ts` — Hover-to-open and click-to-pin animation manager for doors, gate, and interactive furniture.
 - `src/viewer/dayNightController.ts` — Day/Night lighting transition and 180° rotating celestial backdrop wheel.
 - `src/viewer/cameraController.ts` — Orthographic isometric diorama camera controller.
 - `src/scripts/verifyDimensions.ts` — Automated dimensional chain, wall orientation, roof intersection, and 3D scene verification suite.

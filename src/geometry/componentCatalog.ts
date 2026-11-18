@@ -442,56 +442,64 @@ export function instantiateOpeningPrefab3D(
     return trigger;
   };
 
+  const buildSingleSwingingDoor = (leafThickness: number, openAngle: number, hasVisionGlass = false) => {
+    const pivot = new THREE.Group();
+    pivot.position.set(-innerW / 2, -frameThick / 2, frameCenterZ);
+
+    const leaf = new THREE.Mesh(
+      new THREE.BoxGeometry(innerW, innerH, leafThickness),
+      getMat(op.panelMaterial)
+    );
+    leaf.position.set(innerW / 2, 0, 0);
+    registerMesh(leaf, op.panelMaterial, {
+      id: op.id,
+      label: op.label,
+      dimensionsLabel: `${op.width.toFixed(2)} × ${op.height.toFixed(2)} m`,
+      provenance: op.provenance,
+      source: op.source,
+      floor,
+    });
+    pivot.add(leaf);
+
+    if (hasVisionGlass) {
+      const visionGlass = new THREE.Mesh(
+        new THREE.BoxGeometry(0.14, innerH * 0.68, leafThickness + 0.007),
+        getMat('window_glass_day')
+      );
+      visionGlass.position.set(innerW / 2 + 0.08, -0.05 - (-frameThick / 2), 0);
+      pivot.add(visionGlass);
+    }
+
+    const handle = new THREE.Mesh(
+      new THREE.BoxGeometry(0.11, 0.02, 0.09),
+      getMat('roof_tile_anthracite')
+    );
+    handle.position.set(innerW - 0.08, -0.12 - (-frameThick / 2), 0);
+    pivot.add(handle);
+    group.add(pivot);
+
+    const trigger = createTrigger();
+    if (onRegisterDoor) {
+      onRegisterDoor({
+        id: op.id,
+        label: op.label,
+        floor,
+        pivots: [{ group: pivot, openAngle, closedAngle: 0, currentAngle: 0 }],
+        triggerMeshes: [trigger, leaf],
+        isHovered: false,
+        isPinned: false,
+      });
+    }
+  };
+
   // 4. Prefab-Specific 3D Inner Assembly
   switch (op.prefabId) {
     case 'door_inner_standard_b77b': {
-      const pivot = new THREE.Group();
-      pivot.position.set(-innerW / 2, -frameThick / 2, frameCenterZ);
-
-      const leaf = new THREE.Mesh(
-        new THREE.BoxGeometry(innerW, innerH, 0.042),
-        getMat(op.panelMaterial)
-      );
-      leaf.position.set(innerW / 2, 0, 0);
-      registerMesh(leaf, op.panelMaterial, {
-        id: op.id,
-        label: op.label,
-        dimensionsLabel: `${op.width.toFixed(2)} × ${op.height.toFixed(2)} m`,
-        provenance: op.provenance,
-        source: op.source,
-        floor,
-      });
-      pivot.add(leaf);
-
-      const handleGeo = new THREE.BoxGeometry(0.11, 0.02, 0.09);
-      const handle = new THREE.Mesh(handleGeo, getMat('roof_tile_anthracite'));
-      handle.position.set(innerW - 0.08, -0.12 - (-frameThick / 2), 0);
-      pivot.add(handle);
-      group.add(pivot);
-
-      const trigger = createTrigger();
-      if (onRegisterDoor) {
-        const openAngle =
-          op.id === 'ff_door_badkamer' || op.id === 'ff_door_kantoor'
-            ? Math.PI * 0.44
-            : -Math.PI * 0.44;
-        onRegisterDoor({
-          id: op.id,
-          label: op.label,
-          floor,
-          pivots: [
-            {
-              group: pivot,
-              openAngle,
-              closedAngle: 0,
-              currentAngle: 0,
-            },
-          ],
-          triggerMeshes: [trigger, leaf],
-          isHovered: false,
-          isPinned: false,
-        });
-      }
+      const openAngle =
+        op.id === 'ff_door_badkamer' || op.id === 'ff_door_kantoor'
+          ? Math.PI * 0.44
+          : -Math.PI * 0.44;
+      buildSingleSwingingDoor(0.042, openAngle);
       break;
     }
 
@@ -703,20 +711,16 @@ export function instantiateOpeningPrefab3D(
       rightPivot.add(rightHandle);
       group.add(rightPivot);
 
-      registerMesh(
-        leftGlass,
-        op.panelMaterial,
-        {
-          id: op.id,
-          label: op.label,
-          dimensionsLabel: `${op.width.toFixed(2)} × ${op.height.toFixed(2)} m`,
-          provenance: op.provenance,
-          source: op.source,
-          floor,
-        },
-        false,
-        false
-      );
+      const meta = {
+        id: op.id,
+        label: op.label,
+        dimensionsLabel: `${op.width.toFixed(2)} × ${op.height.toFixed(2)} m`,
+        provenance: op.provenance,
+        source: op.source,
+        floor,
+      };
+      registerMesh(leftGlass, op.panelMaterial, meta, false, false);
+      registerMesh(rightGlass, op.panelMaterial, meta, false, false);
 
       const trigger = createTrigger();
       if (onRegisterDoor) {
@@ -727,13 +731,13 @@ export function instantiateOpeningPrefab3D(
           pivots: [
             {
               group: leftPivot,
-              openAngle: Math.PI * 0.45, // swings outward to garden
+              openAngle: -Math.PI * 0.45, // swings outward (+Z) to garden
               closedAngle: 0,
               currentAngle: 0,
             },
             {
               group: rightPivot,
-              openAngle: -Math.PI * 0.45, // swings outward to garden
+              openAngle: Math.PI * 0.45, // swings outward (+Z) to garden
               closedAngle: 0,
               currentAngle: 0,
             },
@@ -785,14 +789,16 @@ export function instantiateOpeningPrefab3D(
       rightPivot.add(rightHandle);
       group.add(rightPivot);
 
-      registerMesh(leftPanel, op.panelMaterial, {
+      const meta = {
         id: op.id,
         label: op.label,
         dimensionsLabel: `${op.width.toFixed(2)} × ${op.height.toFixed(2)} m`,
         provenance: op.provenance,
         source: op.source,
         floor,
-      });
+      };
+      registerMesh(leftPanel, op.panelMaterial, meta);
+      registerMesh(rightPanel, op.panelMaterial, meta);
 
       const trigger = createTrigger();
       if (onRegisterDoor) {
@@ -803,13 +809,13 @@ export function instantiateOpeningPrefab3D(
           pivots: [
             {
               group: leftPivot,
-              openAngle: Math.PI * 0.45, // swings outward to driveway
+              openAngle: -Math.PI * 0.45, // swings outward (+Z) to driveway
               closedAngle: 0,
               currentAngle: 0,
             },
             {
               group: rightPivot,
-              openAngle: -Math.PI * 0.45, // swings outward to driveway
+              openAngle: Math.PI * 0.45, // swings outward (+Z) to driveway
               closedAngle: 0,
               currentAngle: 0,
             },
@@ -823,104 +829,14 @@ export function instantiateOpeningPrefab3D(
     }
 
     case 'door_entrance_front': {
-      // Sage-green front entrance door with vertical glass vision panel
-      const pivot = new THREE.Group();
-      pivot.position.set(-innerW / 2, -frameThick / 2, frameCenterZ);
-
-      const panel = new THREE.Mesh(
-        new THREE.BoxGeometry(innerW, innerH, 0.055),
-        getMat(op.panelMaterial)
-      );
-      panel.position.set(innerW / 2, 0, 0);
-      registerMesh(panel, op.panelMaterial, {
-        id: op.id,
-        label: op.label,
-        dimensionsLabel: `${op.width.toFixed(2)} × ${op.height.toFixed(2)} m`,
-        provenance: op.provenance,
-        source: op.source,
-        floor,
-      });
-      pivot.add(panel);
-
-      const visionGlass = new THREE.Mesh(
-        new THREE.BoxGeometry(0.14, innerH * 0.68, 0.062),
-        getMat('window_glass_day')
-      );
-      visionGlass.position.set(innerW / 2 + 0.08, -0.05 - (-frameThick / 2), 0);
-      pivot.add(visionGlass);
-
-      const handleGeo = new THREE.BoxGeometry(0.11, 0.02, 0.09);
-      const handle = new THREE.Mesh(handleGeo, getMat('roof_tile_anthracite'));
-      handle.position.set(innerW - 0.08, -0.12 - (-frameThick / 2), 0);
-      pivot.add(handle);
-      group.add(pivot);
-
-      const trigger = createTrigger();
-      if (onRegisterDoor) {
-        onRegisterDoor({
-          id: op.id,
-          label: op.label,
-          floor,
-          pivots: [
-            {
-              group: pivot,
-              openAngle: Math.PI * 0.45, // swings inward into Hal
-              closedAngle: 0,
-              currentAngle: 0,
-            },
-          ],
-          triggerMeshes: [trigger, panel],
-          isHovered: false,
-          isPinned: false,
-        });
-      }
+      // Sage-green front entrance door with vertical glass vision panel, swings inward (-Z) into Hal
+      buildSingleSwingingDoor(0.055, Math.PI * 0.45, true);
       break;
     }
 
     case 'door_berging_garden_rear': {
-      const pivot = new THREE.Group();
-      pivot.position.set(-innerW / 2, -frameThick / 2, frameCenterZ);
-
-      const panel = new THREE.Mesh(
-        new THREE.BoxGeometry(innerW, innerH, 0.055),
-        getMat(op.panelMaterial)
-      );
-      panel.position.set(innerW / 2, 0, 0);
-      registerMesh(panel, op.panelMaterial, {
-        id: op.id,
-        label: op.label,
-        dimensionsLabel: `${op.width.toFixed(2)} × ${op.height.toFixed(2)} m`,
-        provenance: op.provenance,
-        source: op.source,
-        floor,
-      });
-      pivot.add(panel);
-
-      const handleGeo = new THREE.BoxGeometry(0.11, 0.02, 0.09);
-      const handle = new THREE.Mesh(handleGeo, getMat('roof_tile_anthracite'));
-      handle.position.set(innerW - 0.08, -0.12 - (-frameThick / 2), 0);
-      pivot.add(handle);
-      group.add(pivot);
-
-      const trigger = createTrigger();
-      if (onRegisterDoor) {
-        onRegisterDoor({
-          id: op.id,
-          label: op.label,
-          floor,
-          pivots: [
-            {
-              group: pivot,
-              openAngle: Math.PI * 0.45, // swings outward to garden
-              closedAngle: 0,
-              currentAngle: 0,
-            },
-          ],
-          triggerMeshes: [trigger, panel],
-          isHovered: false,
-          isPinned: false,
-        });
-      }
+      // Single rear Berging door, swings outward (+Z) into the garden
+      buildSingleSwingingDoor(0.055, -Math.PI * 0.45, false);
       break;
     }
 
