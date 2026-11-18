@@ -710,10 +710,11 @@ function buildPlotAndEnvironment(
   });
 
   // 5. SOFT ARCHITECTURAL DIORAMA TREES (Matching positions in user's plot screenshot!)
-  // Two trees in back garden + two small trees in front garden
-  addStylisedDioramaTree(plotGroup, getMat, -1.65, -16.85, 3.4, 1.55, 'plot_tree_foliage_sage');
-  addStylisedDioramaTree(plotGroup, getMat, 3.15, -16.10, 3.1, 1.40, 'plot_tree_foliage_sage');
-  addStylisedDioramaTree(plotGroup, getMat, 1.65, 2.35, 2.0, 0.65, 'plot_tree_foliage_warm');
+  // Two trees in back garden + two small trees in front garden (varied sizes & rotations)
+  addStylisedDioramaTree(plotGroup, getMat, -1.65, -16.85, 3.6, 1.65, 'plot_tree_foliage_sage', 'plot_tree_trunk', 20);
+  addStylisedDioramaTree(plotGroup, getMat, 3.15, -16.10, 3.1, 1.40, 'plot_tree_foliage_sage', 'plot_tree_trunk', 145);
+  addStylisedDioramaTree(plotGroup, getMat, 1.65, 2.35, 2.0, 0.65, 'plot_tree_foliage_warm', 'plot_tree_trunk', 0);
+  addStylisedDioramaTree(plotGroup, getMat, 4.15, 2.45, 2.25, 0.74, 'plot_tree_foliage_warm', 'plot_tree_trunk', 135);
 
   // 6. SURROUNDINGS (outside the owned plot, neutral grey): pavement strip & garden fences (schuttingen)
   const ctxRightX = rightX + CONTEXT_MARGIN;
@@ -792,9 +793,7 @@ function buildPlotAndEnvironment(
   });
 
   // Context trees: part of the base plot layer (stationary environment)
-  addStylisedDioramaTree(plotGroup, getMat, ctxLeftX + 1.9, frontZ + 0.95, 4.6, 1.5, 'neighbour_tree_grey', 'neighbour_trunk_grey');
-
-  addStylisedDioramaTree(plotGroup, getMat, 4.15, 2.45, 2.0, 0.65, 'plot_tree_foliage_warm');
+  addStylisedDioramaTree(plotGroup, getMat, ctxLeftX + 1.9, frontZ + 0.95, 4.6, 1.5, 'neighbour_tree_grey', 'neighbour_trunk_grey', 60);
 }
 
 function addStylisedDioramaTree(
@@ -805,10 +804,12 @@ function addStylisedDioramaTree(
   height: number,
   crownRadius: number,
   foliageMat: MaterialId,
-  trunkMat: MaterialId = 'plot_tree_trunk'
+  trunkMat: MaterialId = 'plot_tree_trunk',
+  rotationDeg = 0
 ): THREE.Group {
   const treeGroup = new THREE.Group();
   treeGroup.position.set(x, 0, z);
+  treeGroup.rotation.y = THREE.MathUtils.degToRad(rotationDeg);
 
   const trunkH = height * 0.48;
   const trunkGeo = new THREE.CylinderGeometry(0.07, 0.11, trunkH, 10);
