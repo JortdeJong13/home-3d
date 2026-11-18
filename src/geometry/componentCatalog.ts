@@ -1455,6 +1455,85 @@ export function instantiateOpeningPrefab3D(
       break;
     }
 
+    case 'window_slim_1st':
+    case 'window_gable_slot': {
+      // Single-sash inward-opening casement window ("draairaam")
+      const sashPivot = new THREE.Group();
+      sashPivot.position.set(-innerW / 2, 0, frameCenterZ);
+
+      const sashThick = 0.05;
+      const sashBarW = 0.048;
+      const sashGlassW = Math.max(0.08, innerW - sashBarW * 2);
+      const sashGlassH = Math.max(0.20, innerH - sashBarW * 2);
+      const sashCenterX = innerW / 2;
+
+      const sashGeos: THREE.BufferGeometry[] = [];
+      const addSashBar = (w: number, h: number, d: number, x: number, y: number) => {
+        const g = new THREE.BoxGeometry(w, h, d);
+        g.translate(x, y, 0);
+        sashGeos.push(g);
+      };
+      addSashBar(sashBarW, innerH, sashThick, sashBarW / 2, 0);
+      addSashBar(sashBarW, innerH, sashThick, innerW - sashBarW / 2, 0);
+      addSashBar(sashGlassW, sashBarW, sashThick, sashCenterX, innerH / 2 - sashBarW / 2);
+      addSashBar(sashGlassW, sashBarW, sashThick, sashCenterX, -innerH / 2 + sashBarW / 2);
+
+      const mergedSash = mergeGeometries(sashGeos, false);
+      for (const g of sashGeos) g.dispose();
+      const sashFrameMesh = new THREE.Mesh(mergedSash, getMat(op.frameMaterial));
+      sashFrameMesh.castShadow = true;
+      sashFrameMesh.receiveShadow = true;
+      sashPivot.add(sashFrameMesh);
+
+      const casementGlass = new THREE.Mesh(
+        new THREE.BoxGeometry(sashGlassW + 0.008, sashGlassH + 0.008, 0.014),
+        getMat(op.panelMaterial)
+      );
+      casementGlass.position.set(sashCenterX, 0, 0);
+      registerMesh(
+        casementGlass,
+        op.panelMaterial,
+        {
+          id: op.id,
+          label: op.label,
+          dimensionsLabel: `${op.width.toFixed(2)} × ${op.height.toFixed(2)} m`,
+          provenance: op.provenance,
+          source: op.source,
+          floor,
+        },
+        false,
+        false
+      );
+      sashPivot.add(casementGlass);
+
+      const casementHandle = createVerticalWindowHandle(sashThick, getMat(op.frameMaterial), true);
+      casementHandle.position.set(innerW - sashBarW / 2, -0.05, 0);
+      sashPivot.add(casementHandle);
+
+      group.add(sashPivot);
+
+      const trigger = createTrigger();
+      if (onRegisterDoor) {
+        onRegisterDoor({
+          id: op.id,
+          label: op.label,
+          floor,
+          pivots: [
+            {
+              group: sashPivot,
+              openAngle: Math.PI * 0.42, // swings inward (-Z)
+              closedAngle: 0,
+              currentAngle: 0,
+            },
+          ],
+          triggerMeshes: [trigger, sashFrameMesh, casementGlass],
+          isHovered: false,
+          isPinned: false,
+        });
+      }
+      break;
+    }
+
     default: {
       // Exterior Windows & Exterior Single Doors
       const isGlassWindow = op.panelMaterial.includes('glass');
