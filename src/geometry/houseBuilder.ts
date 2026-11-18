@@ -21,11 +21,7 @@ import {
 } from './componentCatalog';
 import { ASSET_PREFABS, PLACED_ASSETS } from '../assets/assetRegistry';
 import { InteractiveDoorManager } from '../viewer/interactiveDoors';
-import {
-  HEDGE_STYLE_OPTIONS,
-  buildStyledHedgeSegment,
-  buildHedgeSamplePlaque,
-} from './hedgeStyles';
+import { buildBushHedgeSegment } from './hedgeStyles';
 
 export type ElementCategory = 'construction' | 'furniture' | 'site';
 
@@ -292,20 +288,20 @@ void main() {`
           .replace(
             '#include <color_fragment>',
             `#include <color_fragment>
-float sUp = smoothstep(0.24, 0.76, vSeasonWorldNormal.y);
+float sUp = smoothstep(0.32, 0.78, vSeasonWorldNormal.y);
 float sNoise = 0.5 + 0.5 * sin(vSeasonWorldPos.x * 1.9 + sin(vSeasonWorldPos.z * 1.4) * 1.2) * cos(vSeasonWorldPos.z * 1.7);
 float snowMask = clamp(uSeasonSnow * uSnowStrength * sUp * (0.86 + 0.14 * sNoise), 0.0, 1.0);
 diffuseColor.rgb = mix(diffuseColor.rgb, uSnowColor, snowMask);
 float wetMask = clamp(uSeasonWet * uWetStrength * sUp, 0.0, 1.0);
-diffuseColor.rgb *= mix(1.0, 0.88, wetMask);`
+diffuseColor.rgb *= mix(1.0, 0.90, wetMask);`
           )
           .replace(
             '#include <roughnessmap_fragment>',
             `#include <roughnessmap_fragment>
-float sUpR = smoothstep(0.24, 0.76, vSeasonWorldNormal.y);
+float sUpR = smoothstep(0.32, 0.78, vSeasonWorldNormal.y);
 float wetMaskR = clamp(uSeasonWet * uWetStrength * sUpR, 0.0, 1.0);
 float snowMaskR = clamp(uSeasonSnow * uSnowStrength * sUpR, 0.0, 1.0);
-roughnessFactor = mix(roughnessFactor, 0.36, wetMaskR);
+roughnessFactor = mix(roughnessFactor, 0.68, wetMaskR);
 roughnessFactor = mix(roughnessFactor, 0.92, snowMaskR);`
           );
       };
@@ -1174,14 +1170,14 @@ function buildPlotAndEnvironment(
     }
   }
 
-  // 4. STYLISED ARCHITECTURAL MAQUETTE HEDGES ALONG LEFT & FRONT BOUNDARIES
+  // 4. BUSH-CLUSTER ARCHITECTURAL DIORAMA HEDGES ALONG LEFT & FRONT BOUNDARIES
   // Left boundary splits at the Garden Gate ("Tuinpoort", Z = -13.72 m):
   // - Front/side section (Z: +4.92 -> -13.72 m): 90 cm (0.90 m) tall
   // - Rear/garden section (Z: -13.72 -> -20.55 m): 210 cm (2.10 m) tall
   const gateZ = -13.72;
   const gateBoundaryX = leftBoundaryXAtZ(gateZ) + 0.18;
 
-  buildMaquetteHedgeSegment(plotGroup, getMat, registerMesh, {
+  buildBushHedgeSegment(plotGroup, getMat, registerMesh, {
     id: 'hedge_left_front_beech',
     label: 'Beukenhaag Links Voorzijde (tot Tuinpoort · 90 cm hoog)',
     matId: 'plot_hedge_beech',
@@ -1197,7 +1193,7 @@ function buildPlotAndEnvironment(
     source: 'User specification: 90 cm side hedge up to garden door next to garage',
   });
 
-  buildMaquetteHedgeSegment(plotGroup, getMat, registerMesh, {
+  buildBushHedgeSegment(plotGroup, getMat, registerMesh, {
     id: 'hedge_left_rear_beech',
     label: 'Beukenhaag Links Achtertuin (vanaf Tuinpoort · 2.10 m hoog)',
     matId: 'plot_hedge_beech',
@@ -1214,7 +1210,7 @@ function buildPlotAndEnvironment(
   });
 
   // Front street low hedge on right half of front boundary (X: 0.40 -> +5.85 m at Z = +4.82 m, 75 cm tall)
-  buildMaquetteHedgeSegment(plotGroup, getMat, registerMesh, {
+  buildBushHedgeSegment(plotGroup, getMat, registerMesh, {
     id: 'hedge_front_beech',
     label: 'Beukenhaag Voorzijde (75 cm hoog)',
     matId: 'plot_hedge_beech',
@@ -1231,7 +1227,7 @@ function buildPlotAndEnvironment(
   });
 
   // Neighbour front street low hedge (neutral grey, 75 cm tall)
-  buildMaquetteHedgeSegment(plotGroup, getMat, registerMesh, {
+  buildBushHedgeSegment(plotGroup, getMat, registerMesh, {
     id: 'hedge_front_neighbour',
     label: 'Haag Voorzijde Buurkavel (75 cm hoog)',
     matId: 'neighbour_hedge_grey',
@@ -1244,40 +1240,6 @@ function buildPlotAndEnvironment(
     seed: 404,
     provenance: 'assumed',
     source: 'Neighbour context matching 75 cm front hedge',
-  });
-
-  // Side-by-side comparison showcase of 6 bush- & low-poly-inspired hedge styles on the open front lawn (Z = 2.25 m)
-  const sampleLength = 0.75;
-  const sampleGap = 0.16;
-  const sampleStartX = 0.40;
-  const sampleZ = 2.25;
-  HEDGE_STYLE_OPTIONS.forEach((opt, idx) => {
-    const sx0 = sampleStartX + idx * (sampleLength + sampleGap);
-    const sx1 = sx0 + sampleLength;
-    buildStyledHedgeSegment(plotGroup, getMat, registerMesh, {
-      id: `hedge_style_sample_${opt.number}_${opt.id}`,
-      label: `Haag Optie ${opt.number} · ${opt.title}`,
-      style: opt.id,
-      matId: 'plot_hedge_beech',
-      soilMatId: 'plot_soil_border',
-      x0: sx0,
-      z0: sampleZ,
-      x1: sx1,
-      z1: sampleZ,
-      width: 0.36,
-      height: 0.90,
-      seed: 1100 + opt.number * 73,
-      provenance: 'user_supplied',
-      source: `Comparison sample (${opt.title}): ${opt.description}`,
-    });
-    buildHedgeSamplePlaque(
-      plotGroup,
-      getMat,
-      (sx0 + sx1) * 0.5,
-      sampleZ + 0.38,
-      opt.number,
-      opt.shortTitle
-    );
   });
 
   // 5. SOFT ARCHITECTURAL DIORAMA TREES (Matching positions in user's plot screenshot & front photo)
@@ -2131,123 +2093,6 @@ function buildBackGardenFlowerBorders(
     grassMesh.receiveShadow = true;
     group.add(grassMesh);
   }
-}
-
-interface MaquetteHedgeSegmentOptions {
-  id: string;
-  label: string;
-  matId: MaterialId;
-  soilMatId?: MaterialId;
-  x0: number;
-  z0: number;
-  x1: number;
-  z1: number;
-  width: number;
-  height: number;
-  seed: number;
-  provenance: ProvenanceType;
-  source: string;
-}
-
-/**
- * Build an architectural diorama hedge composed of tightly overlapping foliage balls
- * over a planted soil/mulch strip so the surface is richly organic without harsh gaps.
- */
-function buildMaquetteHedgeSegment(
-  group: THREE.Group,
-  getMat: (id: MaterialId) => THREE.MeshStandardMaterial,
-  registerMesh: RegisterMeshFn,
-  opts: MaquetteHedgeSegmentOptions
-) {
-  const { id, label, matId, soilMatId, x0, z0, x1, z1, width, height, seed, provenance, source } = opts;
-  const dx = x1 - x0;
-  const dz = z1 - z0;
-  const length = Math.hypot(dx, dz);
-  const angle = Math.atan2(dx, dz);
-  const centerX = (x0 + x1) / 2;
-  const centerZ = (z0 + z1) / 2;
-
-  // Deterministic LCG PRNG so foliage clusters are reproducible across rebuilds
-  let s = (seed * 1664525 + 1013904223) >>> 0;
-  const rand = () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 4294967296;
-  };
-
-  // Optional planted soil/mulch bed at the base
-  if (soilMatId) {
-    const soilGeo = new THREE.BoxGeometry(width + 0.06, 0.045, length + 0.04);
-    const soilMesh = new THREE.Mesh(soilGeo, getMat(soilMatId));
-    soilMesh.position.set(centerX, 0.0225, centerZ);
-    soilMesh.rotation.y = angle;
-    soilMesh.receiveShadow = true;
-    group.add(soilMesh);
-  }
-
-  // Tightly overlapping foliage balls (~55% overlap along Z and Y, heavy center overlap in X)
-  const baseR = Math.min(0.145, Math.max(0.11, width * 0.36));
-  const yStart = (soilMatId ? 0.025 : 0.0) + baseR * 0.65;
-  const yEnd = Math.max(yStart + 0.05, height - baseR * 0.78);
-  const numY = Math.max(4, Math.round((yEnd - yStart) / (baseR * 0.86)) + 1);
-  const zStart = -length / 2 + baseR * 0.65;
-  const zEnd = length / 2 - baseR * 0.65;
-  const numZ = Math.max(4, Math.round(length / (baseR * 0.88)) + 1);
-
-  const geometries: THREE.BufferGeometry[] = [];
-  const baseHalfSpan = Math.max(0.03, width * 0.19);
-
-  for (let iy = 0; iy < numY; iy++) {
-    const ty = numY > 1 ? iy / (numY - 1) : 0.5;
-    const baseY = yStart + ty * (yEnd - yStart);
-    // Subtle inward taper toward the top of the hedge
-    const rowHalfSpan = baseHalfSpan * (1.0 - ty * 0.28);
-
-    for (let ix = 0; ix < 2; ix++) {
-      const baseX = ix === 0 ? -rowHalfSpan : rowHalfSpan;
-      const staggerZ = ((iy + ix) % 2) * (baseR * 0.42);
-
-      for (let iz = 0; iz < numZ; iz++) {
-        const tz = numZ > 1 ? iz / (numZ - 1) : 0.5;
-        let pz = zStart + tz * (zEnd - zStart) + (iz > 0 && iz < numZ - 1 ? staggerZ * 0.5 : 0);
-        pz = Math.max(zStart, Math.min(zEnd, pz));
-
-        const r = baseR * (0.88 + rand() * 0.26);
-        const ballGeo = new THREE.IcosahedronGeometry(r, 1);
-        ballGeo.scale(0.95 + rand() * 0.12, 0.86 + rand() * 0.16, 0.95 + rand() * 0.12);
-
-        const jx = (rand() - 0.5) * baseR * 0.24;
-        const jy = (rand() - 0.5) * baseR * 0.22;
-        const jz = (rand() - 0.5) * baseR * 0.24;
-        const finalY = Math.max(r * 0.60, Math.min(height - r * 0.55, baseY + jy));
-
-        ballGeo.translate(baseX + jx, finalY, pz + jz);
-        geometries.push(ballGeo);
-      }
-    }
-  }
-
-  const mergedGeo = mergeGeometries(geometries, false);
-  for (const g of geometries) g.dispose();
-  mergedGeo.computeBoundingBox();
-
-  const mesh = new THREE.Mesh(mergedGeo, getMat(matId));
-  mesh.position.set(centerX, 0, centerZ);
-  mesh.rotation.y = angle;
-  registerMesh(
-    mesh,
-    matId,
-    {
-      id,
-      label,
-      dimensionsLabel: `${width.toFixed(2)} × ${length.toFixed(2)} × ${height.toFixed(2)} m`,
-      provenance,
-      source,
-      floor: 'plot',
-    },
-    true,
-    true
-  );
-  group.add(mesh);
 }
 
 interface SchuttingSegmentOptions {
