@@ -750,13 +750,13 @@ function buildPlotAndEnvironment(
       bevelEnabled: false,
     });
     stoneGeo.rotateX(-Math.PI / 2);
-    const stone = new THREE.Mesh(stoneGeo, getMat('plot_patio_limestone'));
+    const stone = new THREE.Mesh(stoneGeo, getMat('plot_stepping_stone'));
     stone.position.set(cx, -0.0125, -cy);
 
     const id = `garden_path_stone_${stoneIdx}`;
     registerMesh(
       stone,
-      'plot_patio_limestone',
+      'plot_stepping_stone',
       {
         id,
         label: 'Stapsteen Tuinpad naar Loungehoek',

@@ -275,8 +275,8 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     metalness: 0.0,
   },
   plot_stepping_stone: {
-    colorDay: '#e6dac4',
-    colorNight: '#70695d',
+    colorDay: '#dfd0b6',
+    colorNight: '#6d6456',
     roughness: 0.9,
     metalness: 0.0,
   },
