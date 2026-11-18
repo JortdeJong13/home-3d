@@ -103,7 +103,7 @@ const ROOF_SPEC = {
   verticalThickness: 0.66,
   ridgeX: 2.985,
   leftWallOuterX: 0.00,
-  leftTileEdgeX: -0.06,
+  leftTileEdgeX: -0.04,
   rightPartyX: 5.87,
   neighbourMaxX: 10.05,
   /** Main roof tile shell aligns flush to brick gable faces (gevelpannen add the 6.5 cm verge overhang) */
@@ -2897,6 +2897,7 @@ function buildRoofSlopeGeometries(
 function buildMiteredVergeHalf(
   eavesX: number,
   eavesY: number,
+  eavesBotY: number,
   ridgeX: number,
   ridgeY: number,
   zCenter: number,
@@ -2908,12 +2909,13 @@ function buildMiteredVergeHalf(
   const yAtMinX = eavesX < ridgeX ? eavesY : ridgeY;
   const yAtMaxX = eavesX < ridgeX ? ridgeY : eavesY;
   const dropTop = 0.025;
-  const dropBotAtEaves = 0.10; // Covers 1-2 cm gable-to-tile clearance cleanly above bakgoot
   const dropBotAtRidge = 0.135;
+  const botAtMinX = eavesX < ridgeX ? eavesBotY : ridgeY - dropBotAtRidge;
+  const botAtMaxX = eavesX < ridgeX ? ridgeY - dropBotAtRidge : eavesBotY;
 
   const shape = new THREE.Shape();
-  shape.moveTo(minX, yAtMinX - (eavesX < ridgeX ? dropBotAtEaves : dropBotAtRidge));
-  shape.lineTo(maxX, yAtMaxX - (eavesX < ridgeX ? dropBotAtRidge : dropBotAtEaves));
+  shape.moveTo(minX, botAtMinX);
+  shape.lineTo(maxX, botAtMaxX);
   shape.lineTo(maxX, yAtMaxX + dropTop);
   shape.lineTo(minX, yAtMinX + dropTop);
   shape.closePath();
@@ -3099,11 +3101,12 @@ function buildPitchedRoofSystem(
   const winX1 = 1.76;
   const winZ0 = -8.72;
   const winZ1 = -7.78;
-  const yTileEdge = getZolderRoofTopY(leftTileEdgeX); // ~6.136 m
+  const yWallOuter = getZolderRoofTopY(leftWallOuterX); // 6.23 m
+  const yTileEdge = getZolderRoofTopY(leftTileEdgeX);   // 6.167 m (strictly above bakgoot yTop=6.12 m)
   const yWin0 = getZolderRoofTopY(winX0);
   const yWin1 = getZolderRoofTopY(winX1);
 
-  // 1. Slim Outer Tile Layer — Left Slope of Bouwnummer 55 (split cleanly around Velux dakraam + 6 cm eaves drip)
+  // 1. Slim Outer Tile Layer — Left Slope of Bouwnummer 55 (split cleanly around Velux dakraam, X = 0.00..2.985)
   addTileSlope(
     'roof_bnr55_left_slope',
     'Schuine Kap Links bnr. 55 (Goothoogte +6.13 m, Nok +10.90 m)',
@@ -3111,22 +3114,22 @@ function buildPitchedRoofSystem(
     'Verkooptekening VK-06 Gevels, Zolder & Doorsnede AA',
     [
       [
-        [leftTileEdgeX, yTileEdge, roofFrontZ],
+        [leftWallOuterX, yWallOuter, roofFrontZ],
         [ridgeX, yRidge, roofFrontZ],
         [ridgeX, yRidge, winZ1],
-        [leftTileEdgeX, yTileEdge, winZ1],
+        [leftWallOuterX, yWallOuter, winZ1],
       ],
       [
-        [leftTileEdgeX, yTileEdge, winZ0],
+        [leftWallOuterX, yWallOuter, winZ0],
         [ridgeX, yRidge, winZ0],
         [ridgeX, yRidge, roofRearZ],
-        [leftTileEdgeX, yTileEdge, roofRearZ],
+        [leftWallOuterX, yWallOuter, roofRearZ],
       ],
       [
-        [leftTileEdgeX, yTileEdge, winZ1],
+        [leftWallOuterX, yWallOuter, winZ1],
         [winX0, yWin0, winZ1],
         [winX0, yWin0, winZ0],
-        [leftTileEdgeX, yTileEdge, winZ0],
+        [leftWallOuterX, yWallOuter, winZ0],
       ],
       [
         [winX1, yWin1, winZ1],
@@ -3136,6 +3139,22 @@ function buildPitchedRoofSystem(
       ],
     ]
   );
+
+  // Tapered 4 cm eaves drip lip overhanging over the bakgoot (Y >= 6.125 m, strictly above bakgoot top 6.120 m)
+  {
+    const dripShape = new THREE.Shape();
+    dripShape.moveTo(leftTileEdgeX, 6.125);
+    dripShape.lineTo(leftWallOuterX, yWallOuter - tileThickness);
+    dripShape.lineTo(leftWallOuterX, yWallOuter);
+    dripShape.lineTo(leftTileEdgeX, yTileEdge);
+    dripShape.closePath();
+    const dripGeo = new THREE.ExtrudeGeometry(dripShape, { depth: roofLengthZ, bevelEnabled: false });
+    dripGeo.translate(0, 0, roofRearZ);
+    const dripMesh = new THREE.Mesh(dripGeo, getMat('roof_tile_anthracite'));
+    dripMesh.castShadow = true;
+    dripMesh.receiveShadow = true;
+    roofGroup.add(dripMesh);
+  }
 
   // 1a. Velux Dakraam (Recessed Skylight bridging slim outer tile shell to interior ceiling lining)
   {
@@ -3379,11 +3398,12 @@ function buildPitchedRoofSystem(
   roofGroup.add(nbSk);
 
   // 6. Mitered Anthracite Verge Tiles (Gevelpannen) strictly outside brick gable faces
-  //    Front: Z = +0.005..+0.071, Rear: Z = -10.531..-10.465 (zero overlap with brick or main tile shell!)
+  //    Front: Z = +0.005..+0.071, Rear: Z = -10.531..-10.465 (zero overlap with brick, bakgoot, or main tile shell!)
+  const gutterTopY = yEavesTop - tileThickness - 0.01; // 6.120 m
   const vergeMat = getMat('roof_tile_anthracite');
   for (const zCenter of [0.038, -10.498]) {
-    roofGroup.add(buildMiteredVergeHalf(leftTileEdgeX, yTileEdge, ridgeX, yRidge, zCenter, 0.066, vergeMat));
-    roofGroup.add(buildMiteredVergeHalf(rightPartyX, yEavesTop, ridgeX, yRidge, zCenter, 0.066, vergeMat));
+    roofGroup.add(buildMiteredVergeHalf(leftTileEdgeX, yTileEdge, gutterTopY + 0.005, ridgeX, yRidge, zCenter, 0.066, vergeMat));
+    roofGroup.add(buildMiteredVergeHalf(rightPartyX, yEavesTop, gutterTopY + 0.005, ridgeX, yRidge, zCenter, 0.066, vergeMat));
   }
 
   // 7. Half-Round Ridge Caps (Nokvorsten) at the Top Apex (Y = +10.90 m)
@@ -3394,6 +3414,7 @@ function buildPitchedRoofSystem(
   roofGroup.add(buildHalfRoundRidgeCap('x', rightPartyX, neighbourMaxX, nbRidgeZ, ridgeCapY, ridgeRadius, getMat('neighbour_roof_grey')));
 
   // 8. Horizontal Box Gutters (Bakgoten) & Rafter Tails (Klossen) along Eaves
+  //    yTop = 6.120 m keeps all gutters strictly below the roof tile underside (6.125–6.130 m) with zero clipping!
   buildBoxGutterAndKlossen(
     roofGroup,
     'z',
@@ -3401,7 +3422,7 @@ function buildPitchedRoofSystem(
     -0.005,
     -0.005,
     -1,
-    yEavesTop - tileThickness + 0.005, // 6.135 m
+    gutterTopY,
     getMat('roof_fascia_white'),
     getMat('roof_daktrim_zinc'),
     [-0.22, -10.24]
@@ -3413,7 +3434,7 @@ function buildPitchedRoofSystem(
     neighbourMaxX,
     nbFrontEavesZ + 0.005,
     1,
-    yEavesTop - tileThickness + 0.005,
+    gutterTopY,
     getMat('neighbour_trim_grey'),
     getMat('neighbour_trim_grey')
   );
@@ -3424,7 +3445,7 @@ function buildPitchedRoofSystem(
     neighbourMaxX,
     nbRearEavesZ - 0.005,
     -1,
-    yEavesTop - tileThickness + 0.005,
+    gutterTopY,
     getMat('neighbour_trim_grey'),
     getMat('neighbour_trim_grey')
   );
