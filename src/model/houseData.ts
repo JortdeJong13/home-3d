@@ -321,13 +321,28 @@ export function getHouseWalls(): WallSpec[] {
       ],
     },
 
-    // 4. Shared Party Wall with Neighbour bnr. 56 (thickness = 0.30 m, X: 5.57..5.87 m, centerline X = 5.72 m, Z: -12.46 -> -0.40 m)
-    // Spans strictly between the inner faces of the 40 cm front and rear walls so the ends never clip through the facades!
+    // 4. Shared Party Wall with Neighbour bnr. 56 (thickness = 0.30 m, X: 5.57..5.87 m, centerline X = 5.72 m)
+    // Exposed extension right wall (Z: -12.46 -> -10.24 m, past nb_gf_rear) uses exterior brick; shared section uses plaster.
+    {
+      id: 'gf_wall_extension_right',
+      label: 'Rechterzijgevel Uitbouw B11a (Begane Grond — 30 cm dik)',
+      floor: 'ground',
+      start: [5.72, -10.24],
+      end: [5.72, -12.46],
+      thickness: 0.30,
+      baseY: 0.00,
+      height: H0,
+      exteriorMaterial: 'exterior_brick_main',
+      interiorMaterial: 'interior_wall_plaster',
+      isExterior: true,
+      provenance: 'user_supplied',
+      source: 'User specification (30 cm party/extension wall) + Tekening 55.1 (B11a)',
+    },
     {
       id: 'gf_wall_party',
       label: 'Woningscheidende Wand met Buren (Begane Grond — 30 cm dik)',
       floor: 'ground',
-      start: [5.72, -12.46],
+      start: [5.72, -10.24],
       end: [5.72, -0.40],
       thickness: 0.30,
       baseY: 0.00,
