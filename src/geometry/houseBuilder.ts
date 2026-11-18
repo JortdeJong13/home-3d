@@ -637,17 +637,18 @@ function buildPlotAndEnvironment(
     }
   }
 
-  // 4. STYLISED BALL HEDGES ALONG LEFT & FRONT BOUNDARIES
+  // 4. STYLISED ARCHITECTURAL MAQUETTE HEDGES ALONG LEFT & FRONT BOUNDARIES
   // Left boundary splits at the Garden Gate ("Tuinpoort", Z = -13.72 m):
   // - Front/side section (Z: +4.92 -> -13.72 m): 90 cm (0.90 m) tall
   // - Rear/garden section (Z: -13.72 -> -20.55 m): 210 cm (2.10 m) tall
   const gateZ = -13.72;
   const gateBoundaryX = leftBoundaryXAtZ(gateZ) + 0.18;
 
-  buildBallHedgeSegment(plotGroup, getMat, registerMesh, {
+  buildMaquetteHedgeSegment(plotGroup, getMat, registerMesh, {
     id: 'hedge_left_front_beech',
     label: 'Beukenhaag Links Voorzijde (tot Tuinpoort · 90 cm hoog)',
     matId: 'plot_hedge_beech',
+    soilMatId: 'plot_soil_border',
     x0: frontLeftX + 0.18,
     z0: frontZ - 0.08,
     x1: gateBoundaryX,
@@ -659,10 +660,11 @@ function buildPlotAndEnvironment(
     source: 'User specification: 90 cm side hedge up to garden door next to garage',
   });
 
-  buildBallHedgeSegment(plotGroup, getMat, registerMesh, {
+  buildMaquetteHedgeSegment(plotGroup, getMat, registerMesh, {
     id: 'hedge_left_rear_beech',
     label: 'Beukenhaag Links Achtertuin (vanaf Tuinpoort · 2.10 m hoog)',
     matId: 'plot_hedge_beech',
+    soilMatId: 'plot_soil_border',
     x0: gateBoundaryX,
     z0: gateZ,
     x1: rearLeftX + 0.18,
@@ -675,10 +677,11 @@ function buildPlotAndEnvironment(
   });
 
   // Front street low hedge on right half of front boundary (X: 0.40 -> +5.85 m at Z = +4.82 m, 75 cm tall)
-  buildBallHedgeSegment(plotGroup, getMat, registerMesh, {
+  buildMaquetteHedgeSegment(plotGroup, getMat, registerMesh, {
     id: 'hedge_front_beech',
     label: 'Beukenhaag Voorzijde (75 cm hoog)',
     matId: 'plot_hedge_beech',
+    soilMatId: 'plot_soil_border',
     x0: 0.40,
     z0: frontZ - 0.18,
     x1: 5.85,
@@ -691,7 +694,7 @@ function buildPlotAndEnvironment(
   });
 
   // Neighbour front street low hedge (neutral grey, 75 cm tall)
-  buildBallHedgeSegment(plotGroup, getMat, registerMesh, {
+  buildMaquetteHedgeSegment(plotGroup, getMat, registerMesh, {
     id: 'hedge_front_neighbour',
     label: 'Haag Voorzijde Buurkavel (75 cm hoog)',
     matId: 'neighbour_hedge_grey',
@@ -836,10 +839,11 @@ function addStylisedDioramaTree(
   return treeGroup;
 }
 
-interface BallHedgeSegmentOptions {
+interface MaquetteHedgeSegmentOptions {
   id: string;
   label: string;
   matId: MaterialId;
+  soilMatId?: MaterialId;
   x0: number;
   z0: number;
   x1: number;
@@ -852,71 +856,95 @@ interface BallHedgeSegmentOptions {
 }
 
 /**
- * Build a stylised architectural diorama hedge composed of clustered low-poly foliage balls
- * (matching the icosahedron aesthetic of `addStylisedDioramaTree`) merged into a single mesh.
+ * Build an architectural maquette hedge: a gently tapered, beveled core with
+ * broad, smooth icosahedron foliage puffs (`detail = 2`, matching `addStylisedDioramaTree`)
+ * and an optional planted soil/mulch strip at the base.
  */
-function buildBallHedgeSegment(
+function buildMaquetteHedgeSegment(
   group: THREE.Group,
   getMat: (id: MaterialId) => THREE.MeshStandardMaterial,
   registerMesh: RegisterMeshFn,
-  opts: BallHedgeSegmentOptions
+  opts: MaquetteHedgeSegmentOptions
 ) {
-  const { id, label, matId, x0, z0, x1, z1, width, height, seed, provenance, source } = opts;
+  const { id, label, matId, soilMatId, x0, z0, x1, z1, width, height, seed, provenance, source } = opts;
   const dx = x1 - x0;
   const dz = z1 - z0;
   const length = Math.hypot(dx, dz);
   const angle = Math.atan2(dx, dz);
+  const centerX = (x0 + x1) / 2;
+  const centerZ = (z0 + z1) / 2;
 
-  // Deterministic LCG PRNG so foliage clusters are reproducible across rebuilds
+  // Deterministic LCG PRNG so foliage puffs are reproducible across rebuilds
   let s = (seed * 1664525 + 1013904223) >>> 0;
   const rand = () => {
     s = (s * 1664525 + 1013904223) >>> 0;
     return s / 4294967296;
   };
 
-  const baseR = Math.min(0.105, Math.max(0.075, width * 0.26));
-  const yMin = baseR * 0.72;
-  const yMax = Math.max(yMin, height - baseR * 0.76);
-  const numY = Math.max(3, Math.round((yMax - yMin) / (baseR * 1.18)) + 1);
-  const numX = width >= 0.30 ? 3 : 2;
-  const zMin = -length / 2 + baseR * 0.65;
-  const zMax = length / 2 - baseR * 0.65;
-  const numZ = Math.max(3, Math.round(length / (baseR * 1.28)) + 1);
+  // Optional planted soil/mulch bed at the base
+  if (soilMatId) {
+    const soilGeo = new THREE.BoxGeometry(width + 0.06, 0.045, length + 0.04);
+    const soilMesh = new THREE.Mesh(soilGeo, getMat(soilMatId));
+    soilMesh.position.set(centerX, 0.0225, centerZ);
+    soilMesh.rotation.y = angle;
+    soilMesh.receiveShadow = true;
+    group.add(soilMesh);
+  }
 
-  const geometries: THREE.BufferGeometry[] = [];
-  const xHalfSpan = Math.max(0, width / 2 - baseR * 0.72);
+  // 1. Tapered, softly beveled sheared hedge core (wider at base, slightly narrower at top)
+  const bevel = 0.04;
+  const coreBottomY = (soilMatId ? 0.035 : 0.0) + bevel;
+  const coreTopY = Math.max(coreBottomY + 0.08, height - 0.03 - bevel);
+  const bw = Math.max(0.06, width * 0.50 - bevel);
+  const tw = Math.max(0.05, width * 0.40 - bevel);
 
-  for (let iy = 0; iy < numY; iy++) {
-    const ty = numY > 1 ? iy / (numY - 1) : 0.5;
-    const baseY = yMin + ty * (yMax - yMin);
+  const coreShape = new THREE.Shape();
+  coreShape.moveTo(-bw, coreBottomY);
+  coreShape.lineTo(bw, coreBottomY);
+  coreShape.lineTo(tw, coreTopY);
+  coreShape.lineTo(-tw, coreTopY);
+  coreShape.closePath();
 
-    for (let ix = 0; ix < numX; ix++) {
-      const tx = numX > 1 ? (ix / (numX - 1)) * 2 - 1 : 0;
-      const baseX = tx * xHalfSpan;
-      const staggerZ = ((iy + ix) % 2) * (baseR * 0.45);
+  const extrudeDepth = Math.max(0.10, length - bevel * 2);
+  const coreGeo = new THREE.ExtrudeGeometry(coreShape, {
+    depth: extrudeDepth,
+    bevelEnabled: true,
+    bevelThickness: bevel,
+    bevelSize: bevel,
+    bevelSegments: 2,
+  });
+  coreGeo.translate(0, 0, -extrudeDepth / 2);
 
-      for (let iz = 0; iz < numZ; iz++) {
-        // Skip interior core balls on tall hedges to keep triangle count lean while keeping outer surface dense
-        const isInterior = iy > 0 && iy < numY - 1 && ix > 0 && ix < numX - 1 && iz > 0 && iz < numZ - 1;
-        if (isInterior) continue;
+  const geometries: THREE.BufferGeometry[] = [coreGeo];
 
-        const tz = numZ > 1 ? iz / (numZ - 1) : 0.5;
-        let pz = zMin + tz * (zMax - zMin) + (iz > 0 && iz < numZ - 1 ? staggerZ * 0.5 : 0);
-        pz = Math.max(zMin, Math.min(zMax, pz));
+  // 2. Broad, smooth foliage puffs along the top & upper shoulders (matching tree style)
+  const topR = width * 0.44;
+  const stepZ = 0.54;
+  const numPuffs = Math.max(2, Math.round((length - 0.36) / stepZ) + 1);
+  const zStart = -length / 2 + 0.24;
+  const zEnd = length / 2 - 0.24;
 
-        const rScale = 0.85 + rand() * 0.30;
-        const r = baseR * rScale;
-        const ballGeo = new THREE.IcosahedronGeometry(r, 1);
-        ballGeo.scale(0.95 + rand() * 0.12, 0.88 + rand() * 0.16, 0.95 + rand() * 0.12);
+  for (let i = 0; i < numPuffs; i++) {
+    const t = numPuffs > 1 ? i / (numPuffs - 1) : 0.5;
+    const pz = zStart + t * (zEnd - zStart) + (rand() - 0.5) * 0.12;
+    const r = topR * (0.90 + rand() * 0.22);
+    const puff = new THREE.IcosahedronGeometry(r, 2).toNonIndexed();
+    puff.scale(0.95 + rand() * 0.12, 0.76 + rand() * 0.12, 1.05 + rand() * 0.18);
+    const px = (rand() - 0.5) * 0.05;
+    const py = height - r * 0.68 + (rand() - 0.5) * 0.035;
+    puff.translate(px, py, pz);
+    geometries.push(puff);
 
-        const jx = (rand() - 0.5) * baseR * 0.34;
-        const jy = (rand() - 0.5) * baseR * 0.26;
-        const jz = (rand() - 0.5) * baseR * 0.34;
-        const finalY = Math.max(r * 0.65, Math.min(height - r * 0.55, baseY + jy));
-
-        ballGeo.translate(baseX + jx, finalY, pz + jz);
-        geometries.push(ballGeo);
-      }
+    // Subtle alternating shoulder puffs on taller hedges to soften the long sides
+    if (height >= 0.85 && i % 2 === 0) {
+      const sr = width * 0.36 * (0.90 + rand() * 0.20);
+      const sidePuff = new THREE.IcosahedronGeometry(sr, 2).toNonIndexed();
+      sidePuff.scale(0.85, 0.82, 1.15);
+      const sideSign = (i / 2) % 2 === 0 ? 1 : -1;
+      const sx = sideSign * (width * 0.25 + (rand() - 0.5) * 0.02);
+      const sy = height * (0.58 + rand() * 0.22);
+      sidePuff.translate(sx, sy, pz + (rand() - 0.5) * 0.14);
+      geometries.push(sidePuff);
     }
   }
 
@@ -925,7 +953,7 @@ function buildBallHedgeSegment(
   mergedGeo.computeBoundingBox();
 
   const mesh = new THREE.Mesh(mergedGeo, getMat(matId));
-  mesh.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2);
+  mesh.position.set(centerX, 0, centerZ);
   mesh.rotation.y = angle;
   registerMesh(
     mesh,
