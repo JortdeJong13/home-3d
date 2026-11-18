@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ASSET_PREFABS, PLACED_ASSETS } from '../assets/assetRegistry';
 import { MATERIAL_PALETTE, MaterialId } from '../model/materials';
+import { InteractiveDoorManager } from '../viewer/interactiveDoors';
 
 declare const __DEFAULT_ASSET__: string;
 
@@ -74,6 +75,9 @@ state.id = params.get('asset') || __DEFAULT_ASSET__ || ids[0] || '';
 let current: THREE.Group | null = null;
 let helpers: THREE.Object3D[] = [];
 let info = '';
+let doorManager = new InteractiveDoorManager();
+const raycaster = new THREE.Raycaster();
+const pointerNDC = new THREE.Vector2();
 
 const fmt = (v: number) => (v * 100).toFixed(1);
 
@@ -82,6 +86,7 @@ function load(id: string) {
   helpers.forEach((h) => scene.remove(h));
   helpers = [];
   current = null;
+  doorManager = new InteractiveDoorManager();
   const prefab = ASSET_PREFABS[id];
   if (!prefab) { info = ids.length ? '' : '<p>No assets registered in <code>ASSET_PREFABS</code> yet.</p>'; renderPanel(null); return; }
 
@@ -92,11 +97,40 @@ function load(id: string) {
   const dp = o?.depth?.metres ?? d.depth.metres;
   const h = o?.height?.metres ?? d.height.metres;
 
-  current = prefab.build3D({ width: w, depth: dp, height: h, getMat });
-  current.traverse((n) => { if ((n as THREE.Mesh).isMesh) { n.castShadow = true; n.receiveShadow = true; } });
+  current = prefab.build3D({
+    width: w,
+    depth: dp,
+    height: h,
+    getMat,
+    registerInteractiveDoor: (reg) => {
+      doorManager.register({
+        id: reg.subId ? `${id}_${reg.subId}` : id,
+        label: prefab.defaultLabel,
+        floor: 'ground',
+        pivots: reg.pivots,
+        triggerMeshes: reg.triggerMeshes,
+        isHovered: false,
+        isPinned: false,
+      });
+    },
+  });
+  current.traverse((n) => {
+    const m = n as THREE.Mesh;
+    if (m.isMesh && !m.userData.isInteractiveTrigger) {
+      m.castShadow = true;
+      m.receiveShadow = true;
+    }
+  });
   scene.add(current);
 
-  const box = new THREE.Box3().setFromObject(current);
+  const box = new THREE.Box3();
+  current.updateMatrixWorld(true);
+  current.traverse((n) => {
+    const m = n as THREE.Mesh;
+    if (m.isMesh && !m.userData.isInteractiveTrigger) {
+      box.expandByObject(m);
+    }
+  });
   const size = box.getSize(new THREE.Vector3());
   const tgt = new THREE.Box3(new THREE.Vector3(-w / 2, 0, -dp / 2), new THREE.Vector3(w / 2, h, dp / 2));
 
@@ -123,17 +157,19 @@ function load(id: string) {
   const mats = new Set<string>();
   current.traverse((n) => {
     const m = n as THREE.Mesh;
-    if (!m.isMesh) return;
+    if (!m.isMesh || m.userData.isInteractiveTrigger) return;
     meshes++;
     const idx = m.geometry.index;
     tris += (idx ? idx.count : m.geometry.attributes.position.count) / 3;
     (Array.isArray(m.material) ? m.material : [m.material]).forEach((x) => mats.add(x.name || `#${(x as any).color?.getHexString?.() ?? '?'}`));
   });
+  const doorCount = doorManager.getDoors().length;
   info = `
     <table><tr><th>cm</th><th>target</th><th>actual</th><th>Δ</th></tr>${rows}</table>
     <div class="${Math.abs(minY) <= tol ? 'ok' : 'bad'}">Base Y = ${fmt(minY)} cm (should be 0)</div>
     <div class="${centred ? 'ok' : 'bad'}">XZ centre ${centred ? 'centred ✓' : 'NOT centred on origin'}</div>
     <div>${meshes} meshes · ${Math.round(tris)} tris · ${mats.size} materials</div>
+    ${doorCount > 0 ? `<div style="margin-top:4px"><button id="toggle-doors">Toggle door animation (hover/click in 3D)</button></div>` : ''}
     <div style="color:#666;font-size:11px">green = target box, orange = actual bbox, blue arrow = front (+Z)</div>
     ${placed ? `<div style="font-size:11px">Placed: <code>${placed.id}</code> on ${placed.floor} @ ${placed.positionXZ.join(', ')} rot ${placed.rotationDeg ?? 0}°</div>` : '<div style="font-size:11px">Not placed in house yet.</div>'}`;
 
@@ -173,7 +209,7 @@ function applyToggles() {
   floor.visible = state.shadows;
   current?.traverse((n) => {
     const m = n as THREE.Mesh;
-    if (!m.isMesh) return;
+    if (!m.isMesh || m.userData.isInteractiveTrigger) return;
     (Array.isArray(m.material) ? m.material : [m.material]).forEach((x: any) => { x.wireframe = state.wireframe; });
   });
 }
@@ -197,7 +233,36 @@ function renderPanel(label: string | null) {
     applyToggles();
   }));
   panel.querySelectorAll('button[data-v]').forEach((el) => el.addEventListener('click', () => setView((el as HTMLElement).dataset.v!)));
+  panel.querySelector('#toggle-doors')?.addEventListener('click', () => {
+    const doors = doorManager.getDoors();
+    const anyPinned = doors.some((d) => d.isPinned);
+    for (const d of doors) {
+      d.isPinned = !anyPinned;
+    }
+  });
 }
+
+let pointerDownPos: { x: number; y: number } | null = null;
+canvas.addEventListener('pointerdown', (e) => {
+  pointerDownPos = { x: e.clientX, y: e.clientY };
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (e.buttons !== 0) return;
+  pointerNDC.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  raycaster.setFromCamera(pointerNDC, camera);
+  const hovered = doorManager.handlePointerMove(raycaster);
+  canvas.style.cursor = hovered ? 'pointer' : '';
+});
+canvas.addEventListener('click', (e) => {
+  if (pointerDownPos) {
+    const dx = e.clientX - pointerDownPos.x;
+    const dy = e.clientY - pointerDownPos.y;
+    if (Math.hypot(dx, dy) > 6) return;
+  }
+  pointerNDC.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  raycaster.setFromCamera(pointerNDC, camera);
+  doorManager.handleClick(raycaster);
+});
 
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
@@ -207,4 +272,12 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 load(state.id);
-renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+
+let lastTime = performance.now();
+renderer.setAnimationLoop((now) => {
+  const dt = Math.min(0.05, (now - lastTime) / 1000);
+  lastTime = now;
+  doorManager.update(dt);
+  controls.update();
+  renderer.render(scene, camera);
+});

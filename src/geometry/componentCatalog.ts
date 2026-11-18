@@ -379,7 +379,7 @@ export function instantiateOpeningPrefab3D(
   if (op.hasArchTrim) {
     // Door opening (1.05 m) sits asymmetrically on the left of the 1.50 m portal:
     // Portal center is +9.5 cm to the right of the door center.
-    const archResult = buildDecorativeBrickArchMeshes(getMat, 0.038, 0.022);
+    const archResult = buildDecorativeBrickArchMeshes(getMat, 0.076, 0.044);
     archResult.group.position.set(0.095, -op.height / 2, wallThickness / 2 - 0.002);
 
     registerMesh(archResult.outerBorderMesh, 'exterior_arch_brick', {

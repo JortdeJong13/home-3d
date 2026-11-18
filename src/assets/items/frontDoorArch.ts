@@ -25,8 +25,8 @@ export interface BrickArchBuildResult {
  */
 export function buildDecorativeBrickArchMeshes(
   getMat: (id: MaterialId) => THREE.MeshStandardMaterial,
-  outerReliefDepth = 0.038,
-  infillReliefDepth = 0.022
+  outerReliefDepth = 0.076,
+  infillReliefDepth = 0.044
 ): BrickArchBuildResult {
   const group = new THREE.Group();
 
@@ -172,22 +172,67 @@ export function buildDoorLeafWithVisionCutout(params: {
   glassPane.position.set(visionCenterX, visionCenterY, 0);
   container.add(glassPane);
 
-  // Brushed metal door handle on the right stile (exterior + interior)
+  // Rounded pill-shaped door shield (langschild) + cylindrical lever handle
   const handleX = innerW - 0.075;
   const handleY = -0.02;
-  const rosette = new THREE.Mesh(
-    new THREE.BoxGeometry(0.032, 0.16, leafThickness + 0.012),
-    handleMat
-  );
-  rosette.position.set(handleX, handleY, 0);
-  container.add(rosette);
+  const shieldW = 0.036;
+  const shieldR = shieldW / 2;
+  const shieldStraightH = 0.145;
 
-  const lever = new THREE.Mesh(
-    new THREE.BoxGeometry(0.115, 0.018, leafThickness + 0.06),
-    handleMat
-  );
-  lever.position.set(handleX - 0.04, handleY + 0.03, 0);
-  container.add(lever);
+  const shieldShape = new THREE.Shape();
+  shieldShape.absarc(0, shieldStraightH / 2, shieldR, 0, Math.PI, false);
+  shieldShape.absarc(0, -shieldStraightH / 2, shieldR, Math.PI, Math.PI * 2, false);
+  shieldShape.closePath();
+
+  const shieldDepth = leafThickness + 0.014;
+  const shieldGeo = new THREE.ExtrudeGeometry(shieldShape, {
+    depth: shieldDepth,
+    bevelEnabled: false,
+    curveSegments: 16,
+  });
+  shieldGeo.translate(0, 0, -shieldDepth / 2);
+  const shieldMesh = new THREE.Mesh(shieldGeo, handleMat);
+  shieldMesh.position.set(handleX, handleY, 0);
+  container.add(shieldMesh);
+
+  // Subtle Euro cylinder keyhole on the lower half of the rounded shield
+  const cylinderGeo = new THREE.CylinderGeometry(0.0085, 0.0085, shieldDepth + 0.004, 14);
+  cylinderGeo.rotateX(Math.PI / 2);
+  const cylinderMesh = new THREE.Mesh(cylinderGeo, handleMat);
+  cylinderMesh.position.set(handleX, handleY - 0.048, 0);
+  container.add(cylinderMesh);
+
+  // Round cylindrical handle neck (through both sides of the door)
+  const leverY = handleY + 0.032;
+  const neckOffsetZ = leafThickness / 2 + 0.034;
+  const neckLen = neckOffsetZ * 2;
+  const neckRadius = 0.009;
+  const neckGeo = new THREE.CylinderGeometry(neckRadius, neckRadius, neckLen, 16);
+  neckGeo.rotateX(Math.PI / 2);
+  const neckMesh = new THREE.Mesh(neckGeo, handleMat);
+  neckMesh.position.set(handleX, leverY, 0);
+  container.add(neckMesh);
+
+  // Round cylindrical lever grip + rounded elbow & tip on both sides
+  const gripLen = 0.112;
+  const gripGeo = new THREE.CylinderGeometry(neckRadius, neckRadius, gripLen, 16);
+  gripGeo.rotateZ(Math.PI / 2);
+  const jointGeo = new THREE.SphereGeometry(neckRadius, 14, 10);
+
+  for (const side of [1, -1]) {
+    const zPos = side * neckOffsetZ;
+    const elbow = new THREE.Mesh(jointGeo, handleMat);
+    elbow.position.set(handleX, leverY, zPos);
+    container.add(elbow);
+
+    const grip = new THREE.Mesh(gripGeo, handleMat);
+    grip.position.set(handleX - gripLen / 2, leverY, zPos);
+    container.add(grip);
+
+    const tip = new THREE.Mesh(jointGeo, handleMat);
+    tip.position.set(handleX - gripLen, leverY, zPos);
+    container.add(tip);
+  }
 
   return { leafPivotContent: container, leafMesh };
 }
@@ -201,7 +246,7 @@ export const frontDoorArchPrefab: AssetPrefabDefinition = {
   defaultLabel: 'Voordeur & Asymmetrische Gemetselde Boog',
   defaultDimensions: {
     width: m(1.50, 'verified_drawing', 'Totale breedte gemetseld entreeportaal 150 cm (VK-06 & HomeByMe)'),
-    depth: cm(16, 'user_supplied', 'Totale diepte entreedeur-kozijn inclusief gemetseld reliëf (16 cm)'),
+    depth: cm(20, 'user_supplied', 'Totale diepte entreedeur-kozijn inclusief gemetseld reliëf (20 cm)'),
     height: m(2.83, 'verified_drawing', 'Hoogte tot bovenzijde rollaagboog 283 cm (208 cm deur + 75 cm boogradius)'),
   },
   build3D: (ctx: AssetBuilderContext) => {
@@ -218,11 +263,12 @@ export const frontDoorArchPrefab: AssetPrefabDefinition = {
       name: 'door_handle_steel',
     });
 
-    // Depth layout (Z spans [-0.08, +0.08]):
-    // - Brick portal wall plane at Z = +0.042, outer relief reaches +0.080 (+3.8 cm)
-    // - Recessed door casing (11 cm deep): Z = -0.080 .. +0.030
-    const archResult = buildDecorativeBrickArchMeshes(getMat, 0.038, 0.022);
-    archResult.group.position.set(0, 0, 0.042);
+    // Depth layout (Z spans [-0.100, +0.100]):
+    // - Brick portal wall plane at Z = +0.024, outer relief (+7.6 cm) reaches +0.100
+    // - Recessed door casing (11 cm deep) centered at Z = -0.030 (Z: -0.085 .. +0.025)
+    // - Interior door handle back tip reaches -0.030 - 0.070 = -0.100
+    const archResult = buildDecorativeBrickArchMeshes(getMat, 0.076, 0.044);
+    archResult.group.position.set(0, 0, 0.024);
     group.add(archResult.group);
 
     // Door opening spans X in [-0.62, +0.43] (width = 1.05 m, centered at X = -0.095 m)
@@ -231,7 +277,7 @@ export const frontDoorArchPrefab: AssetPrefabDefinition = {
     const doorCenterX = -0.095;
     const frameThick = 0.065;
     const frameDepth = 0.11;
-    const frameCenterZ = -0.020; // Z: -0.075 .. +0.035
+    const frameCenterZ = -0.030;
 
     // Cream Door Frame (left, right, top)
     const topBar = new THREE.Mesh(
@@ -258,20 +304,26 @@ export const frontDoorArchPrefab: AssetPrefabDefinition = {
     rightBar.castShadow = true;
     group.add(rightBar);
 
-    // Light Stone Threshold (Onderdorpel)
+    // Dark Belgian Bluestone Threshold (Hardsteen Onderdorpel)
+    const bluestoneMat = new THREE.MeshStandardMaterial({
+      color: '#4f5359',
+      roughness: 0.85,
+      metalness: 0.04,
+      name: 'threshold_bluestone',
+    });
     const thresholdH = 0.045;
     const threshold = new THREE.Mesh(
       new THREE.BoxGeometry(doorW, thresholdH, 0.14),
-      getMat('exterior_brick_plinth')
+      bluestoneMat
     );
     threshold.position.set(doorCenterX, thresholdH / 2, -0.01);
     threshold.receiveShadow = true;
     group.add(threshold);
 
-    // Door Leaf with real cutout vision glass
+    // Hinged Door Leaf with real cutout vision glass (swings inward -Z)
     const innerW = doorW - frameThick * 2;
     const innerH = doorH - frameThick - thresholdH;
-    const { leafPivotContent } = buildDoorLeafWithVisionCutout({
+    const { leafPivotContent, leafMesh } = buildDoorLeafWithVisionCutout({
       innerW,
       innerH,
       leafThickness: 0.054,
@@ -280,12 +332,30 @@ export const frontDoorArchPrefab: AssetPrefabDefinition = {
       glassMat,
       handleMat,
     });
-    leafPivotContent.position.set(
+
+    const pivot = new THREE.Group();
+    pivot.position.set(
       doorCenterX - innerW / 2,
       thresholdH + innerH / 2,
       frameCenterZ
     );
-    group.add(leafPivotContent);
+    pivot.add(leafPivotContent);
+    group.add(pivot);
+
+    if (ctx.registerInteractiveDoor) {
+      const trigger = new THREE.Mesh(
+        new THREE.BoxGeometry(doorW, doorH, 0.16),
+        new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
+      );
+      trigger.position.set(doorCenterX, doorH / 2, 0);
+      trigger.userData.isInteractiveTrigger = true;
+      group.add(trigger);
+
+      ctx.registerInteractiveDoor({
+        pivots: [{ group: pivot, openAngle: Math.PI * 0.45, closedAngle: 0, currentAngle: 0 }],
+        triggerMeshes: [trigger, leafMesh],
+      });
+    }
 
     return group;
   },
