@@ -84,7 +84,7 @@ export const heatPumpOutdoorPrefab: AssetPrefabDefinition = {
     // Top cap
     const topCap = new THREE.Mesh(
       new THREE.BoxGeometry(width, frameThick, bodyD),
-      frameMat
+      casingMat
     );
     topCap.position.set(0, height - frameThick / 2, bodyZ);
     group.add(topCap);
@@ -92,7 +92,7 @@ export const heatPumpOutdoorPrefab: AssetPrefabDefinition = {
     // Bottom trim bar
     const bottomCap = new THREE.Mesh(
       new THREE.BoxGeometry(width, frameThick, bodyD),
-      frameMat
+      casingMat
     );
     bottomCap.position.set(0, footH + frameThick / 2, bodyZ);
     group.add(bottomCap);
@@ -101,7 +101,7 @@ export const heatPumpOutdoorPrefab: AssetPrefabDefinition = {
     for (const side of [-1, 1]) {
       const sideTrim = new THREE.Mesh(
         new THREE.BoxGeometry(frameThick, bodyH, bodyD),
-        frameMat
+        casingMat
       );
       sideTrim.position.set(side * (width / 2 - frameThick / 2), bodyCenterY, bodyZ);
       group.add(sideTrim);
