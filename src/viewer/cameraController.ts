@@ -12,29 +12,29 @@ export interface CameraPreset {
 /**
  * Center of the house & plot in world metres:
  * X: ~1.10 m (centered across Berging [-3.44] to neighbour context [+5.65])
- * Y: ~4.80 m (vertical center framing full house + roof with generous headroom above)
+ * Y: ~4.30 m (vertical center framing full house + roof with headroom above)
  * Z: ~-7.20 m (centered along house & garden)
  */
 export const CAMERA_PRESETS: Record<CameraPreset['id'], CameraPreset> = {
   default_iso: {
     id: 'default_iso',
     label: 'Isometrisch (Voorzijde)',
-    position: [-24.0, 24.5, 22.0],
-    target: [1.1, 4.8, -7.2],
+    position: [-24.0, 24.0, 22.0],
+    target: [1.1, 4.3, -7.2],
     zoom: 1.08,
   },
   garden_iso: {
     id: 'garden_iso',
     label: 'Tuinzijde (Achtergevel)',
-    position: [-23.0, 24.7, -34.0],
-    target: [1.0, 4.8, -9.2],
+    position: [-23.0, 24.2, -34.0],
+    target: [1.0, 4.3, -9.2],
     zoom: 1.08,
   },
   front_street: {
     id: 'front_street',
     label: 'Straatzijde (Rechtsvoor)',
-    position: [25.0, 22.3, 22.0],
-    target: [1.5, 4.8, -6.5],
+    position: [25.0, 21.8, 22.0],
+    target: [1.5, 4.3, -6.5],
     zoom: 1.12,
   },
   top_plan: {
