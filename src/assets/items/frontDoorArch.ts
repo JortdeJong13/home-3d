@@ -96,8 +96,9 @@ export function createBrushedSteelLeverHandle(params: {
   leafThickness: number;
   handleMat: THREE.Material;
   leverDirection?: 1 | -1;
+  exteriorOnly?: boolean;
 }): THREE.Group {
-  const { leafThickness, handleMat, leverDirection = -1 } = params;
+  const { leafThickness, handleMat, leverDirection = -1, exteriorOnly = false } = params;
   const group = new THREE.Group();
 
   const shieldW = 0.036;
@@ -109,40 +110,42 @@ export function createBrushedSteelLeverHandle(params: {
   shieldShape.absarc(0, -shieldStraightH / 2, shieldR, Math.PI, Math.PI * 2, false);
   shieldShape.closePath();
 
-  const shieldDepth = leafThickness + 0.014;
+  const shieldDepth = exteriorOnly ? 0.01 : leafThickness + 0.014;
   const shieldGeo = new THREE.ExtrudeGeometry(shieldShape, {
     depth: shieldDepth,
     bevelEnabled: false,
     curveSegments: 16,
   });
-  shieldGeo.translate(0, 0, -shieldDepth / 2);
+  shieldGeo.translate(0, 0, exteriorOnly ? leafThickness / 2 - 0.002 : -shieldDepth / 2);
   group.add(new THREE.Mesh(shieldGeo, handleMat));
 
   // Subtle Euro cylinder keyhole on the lower half of the rounded shield
-  const cylinderGeo = new THREE.CylinderGeometry(0.0085, 0.0085, shieldDepth + 0.004, 14);
+  const cylDepth = exteriorOnly ? 0.014 : shieldDepth + 0.004;
+  const cylinderGeo = new THREE.CylinderGeometry(0.0085, 0.0085, cylDepth, 14);
   cylinderGeo.rotateX(Math.PI / 2);
   const cylinderMesh = new THREE.Mesh(cylinderGeo, handleMat);
-  cylinderMesh.position.set(0, -0.048, 0);
+  cylinderMesh.position.set(0, -0.048, exteriorOnly ? leafThickness / 2 + 0.003 : 0);
   group.add(cylinderMesh);
 
-  // Round cylindrical handle neck (through both sides of the door)
+  // Round cylindrical handle neck (through both sides, or exterior-only for garage door)
   const leverY = 0.032;
   const neckOffsetZ = leafThickness / 2 + 0.034;
-  const neckLen = neckOffsetZ * 2;
+  const neckLen = exteriorOnly ? 0.036 : neckOffsetZ * 2;
   const neckRadius = 0.009;
   const neckGeo = new THREE.CylinderGeometry(neckRadius, neckRadius, neckLen, 16);
   neckGeo.rotateX(Math.PI / 2);
   const neckMesh = new THREE.Mesh(neckGeo, handleMat);
-  neckMesh.position.set(0, leverY, 0);
+  neckMesh.position.set(0, leverY, exteriorOnly ? leafThickness / 2 + 0.016 : 0);
   group.add(neckMesh);
 
-  // Round cylindrical lever grip + rounded elbow & tip on both sides
+  // Round cylindrical lever grip + rounded elbow & tip
   const gripLen = 0.112;
   const gripGeo = new THREE.CylinderGeometry(neckRadius, neckRadius, gripLen, 16);
   gripGeo.rotateZ(Math.PI / 2);
   const jointGeo = new THREE.SphereGeometry(neckRadius, 14, 10);
 
-  for (const side of [1, -1]) {
+  const sides = exteriorOnly ? [1] : [1, -1];
+  for (const side of sides) {
     const zPos = side * neckOffsetZ;
     const elbow = new THREE.Mesh(jointGeo, handleMat);
     elbow.position.set(0, leverY, zPos);
