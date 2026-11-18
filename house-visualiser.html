@@ -91,22 +91,14 @@
         cursor: grabbing;
       }
 
-      /* Bottom-Left Atmosphere Controls: Day/Night Switch + Season Switcher */
-      #bottom-left-stack {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-        pointer-events: none;
-      }
-
+      /* Bottom-Right Atmosphere Controls: Season Switcher + Day/Night Switch */
       #atmosphere-controls {
         pointer-events: auto;
         display: flex;
         align-items: center;
         gap: 8px;
         flex-wrap: wrap;
-        justify-content: flex-start;
+        justify-content: flex-end;
       }
 
       .season-pill-group {
@@ -402,8 +394,11 @@
       }
 
       @media (max-width: 1140px) {
+        #bottom-bar {
+          flex-wrap: wrap;
+        }
         #scroll-hint {
-          bottom: 132px;
+          bottom: 120px;
         }
       }
 
@@ -412,6 +407,7 @@
           left: 14px;
           right: 14px;
           bottom: 16px;
+          gap: 8px;
         }
         .season-btn {
           padding: 5px 8px;
@@ -4703,43 +4699,41 @@ bool isOccludedByScene() {
       <!-- Subtle Scroll Hint -->
       <div id="scroll-hint">Scroll om de woning op te bouwen ↓</div>
 
-      <!-- Bottom-Left Controls: Atmosphere (Day/Night + Season) & Camera Bar -->
+      <!-- Bottom Bar: Camera Bar (Left) + Atmosphere Controls (Right) -->
       <div id="bottom-bar">
-        <div id="bottom-left-stack">
-          <div id="atmosphere-controls">
-            <button id="btn-day-night" class="pill-btn" title="Wissel tussen Dag en Avond (Sneltoets: N)">
-              <span class="day-night-wheel-icon" id="day-night-icon">☀️</span>
-              <span id="day-night-label">Dag</span>
-            </button>
-            <div id="season-switcher" class="season-pill-group" role="group" aria-label="Seizoen">
-              <button class="season-btn" data-season="spring" title="Lente · Bloesem (Sneltoets: S)">
-                <span class="season-icon">🌸</span>
-                <span class="season-text">Lente</span>
-              </button>
-              <button class="season-btn active" data-season="summer" title="Zomer · Zonnig (Sneltoets: S)">
-                <span class="season-icon">🌿</span>
-                <span class="season-text">Zomer</span>
-              </button>
-              <button class="season-btn" data-season="autumn" title="Herfst · Zachte regen (Sneltoets: S)">
-                <span class="season-icon">🍂</span>
-                <span class="season-text">Herfst</span>
-              </button>
-              <button class="season-btn" data-season="winter" title="Winter · Sneeuw (Sneltoets: S)">
-                <span class="season-icon">❄️</span>
-                <span class="season-text">Winter</span>
-              </button>
-            </div>
-          </div>
+        <div class="interactive-panel" id="camera-toolbar">
+          <button class="cam-btn active" data-cam-preset="default_iso">Voorzijde</button>
+          <button class="cam-btn" data-cam-preset="garden_iso">Tuinzijde</button>
+          <button class="cam-btn" data-cam-preset="top_plan">Bovenaanzicht</button>
+          <div class="divider-v"></div>
+          <button class="cam-btn" id="btn-zoom-in" title="Zoom in">+</button>
+          <button class="cam-btn" id="btn-zoom-out" title="Zoom uit">−</button>
+          <button class="cam-btn" id="btn-cam-reset" title="Herstel standaard camerapositie">Reset</button>
+        </div>
 
-          <div class="interactive-panel" id="camera-toolbar">
-            <button class="cam-btn active" data-cam-preset="default_iso">Voorzijde</button>
-            <button class="cam-btn" data-cam-preset="garden_iso">Tuinzijde</button>
-            <button class="cam-btn" data-cam-preset="top_plan">Bovenaanzicht</button>
-            <div class="divider-v"></div>
-            <button class="cam-btn" id="btn-zoom-in" title="Zoom in">+</button>
-            <button class="cam-btn" id="btn-zoom-out" title="Zoom uit">−</button>
-            <button class="cam-btn" id="btn-cam-reset" title="Herstel standaard camerapositie">Reset</button>
+        <div id="atmosphere-controls">
+          <div id="season-switcher" class="season-pill-group" role="group" aria-label="Seizoen">
+            <button class="season-btn" data-season="spring" title="Lente · Bloesem (Sneltoets: S)">
+              <span class="season-icon">🌸</span>
+              <span class="season-text">Lente</span>
+            </button>
+            <button class="season-btn active" data-season="summer" title="Zomer · Zonnig (Sneltoets: S)">
+              <span class="season-icon">🌿</span>
+              <span class="season-text">Zomer</span>
+            </button>
+            <button class="season-btn" data-season="autumn" title="Herfst · Zachte regen (Sneltoets: S)">
+              <span class="season-icon">🍂</span>
+              <span class="season-text">Herfst</span>
+            </button>
+            <button class="season-btn" data-season="winter" title="Winter · Sneeuw (Sneltoets: S)">
+              <span class="season-icon">❄️</span>
+              <span class="season-text">Winter</span>
+            </button>
           </div>
+          <button id="btn-day-night" class="pill-btn" title="Wissel tussen Dag en Avond (Sneltoets: N)">
+            <span class="day-night-wheel-icon" id="day-night-icon">☀️</span>
+            <span id="day-night-label">Dag</span>
+          </button>
         </div>
       </div>
     </div>
