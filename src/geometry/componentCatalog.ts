@@ -183,7 +183,7 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
     sillHeight: 0.00,
     frameMaterial: 'window_frame_cream',
     panelMaterial: 'window_glass_day',
-    hasTerracottaSurround: true,
+    hasTerracottaSurround: false,
     provenance: 'user_supplied',
     source: 'User specification: 180 cm dubbele tuindeuren + 80 cm zijlichten weerszijden (340 × 235 cm)',
   },
