@@ -733,6 +733,40 @@ export function instantiateOpeningPrefab3D(
     return trigger;
   };
 
+  /**
+   * Fill the doorway threshold across the full exterior wall thickness so the wall's
+   * cut brick bottom is never visible under floor-level exterior doors.
+   */
+  const addExteriorDoorThreshold = (interiorFloorMat: MaterialId) => {
+    const floorHeight = 0.03;
+    const centerY = -op.height / 2 - 0.01; // Top surface at Y = +0.005 m, flush with interior room slabs
+    const zInnerStart = -wallThickness / 2;
+    const zFrameInner = frameCenterZ - frameDepth / 2;
+    const zOuterEnd = wallThickness / 2 + 0.002;
+
+    const interiorDepth = zFrameInner - zInnerStart;
+    if (interiorDepth > 0.005) {
+      const interiorStrip = new THREE.Mesh(
+        new THREE.BoxGeometry(op.width, floorHeight, interiorDepth),
+        getMat(interiorFloorMat)
+      );
+      interiorStrip.position.set(0, centerY, (zInnerStart + zFrameInner) / 2);
+      interiorStrip.receiveShadow = true;
+      group.add(interiorStrip);
+    }
+
+    const sillDepth = zOuterEnd - zFrameInner;
+    if (sillDepth > 0.005) {
+      const outerSill = new THREE.Mesh(
+        new THREE.BoxGeometry(op.width, floorHeight, sillDepth),
+        getMat('roof_tile_anthracite')
+      );
+      outerSill.position.set(0, centerY, (zFrameInner + zOuterEnd) / 2);
+      outerSill.receiveShadow = true;
+      group.add(outerSill);
+    }
+  };
+
   const buildSingleSwingingDoor = (leafThickness: number, openAngle: number, hasVisionGlass = false) => {
     const pivot = new THREE.Group();
     pivot.position.set(-innerW / 2, -frameThick / 2, frameCenterZ);
@@ -1045,6 +1079,7 @@ export function instantiateOpeningPrefab3D(
     }
 
     case 'door_garden_double_b13': {
+      addExteriorDoorThreshold('floor_living_oak');
       // 1.80 m center double doors (2 x 0.90 m leaves) flanked by 0.80 m sidelights on each side (3.40 m total)
       const doorOpeningHalfW = 0.90; // 1.80 m clear double-door opening
       const mullionW = 0.055;
@@ -1181,6 +1216,7 @@ export function instantiateOpeningPrefab3D(
     }
 
     case 'door_berging_garage_double': {
+      addExteriorDoorThreshold('floor_berging_concrete');
       // 1. Red-brown facade brick soldier course (rollaag) ONLY across the top, matching front door arch relief (0.044 m)
       buildTopBrickRollaag(group, getMat, registerMesh, {
         id: `${op.id}_top_rollaag`,
@@ -1299,6 +1335,7 @@ export function instantiateOpeningPrefab3D(
     }
 
     case 'door_entrance_front': {
+      addExteriorDoorThreshold('floor_hall_warm');
       // Sage-green front entrance door with vertical glass vision panel, swings inward (-Z) into Hal
       buildSingleSwingingDoor(0.055, Math.PI * 0.45, true);
       break;

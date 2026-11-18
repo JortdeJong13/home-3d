@@ -1924,7 +1924,8 @@ function buildWallWithOpenings(
 
       const u0 = Math.max(0.04, resolved.offsetAlongWall - resolved.width / 2);
       const u1 = Math.min(length - 0.04, resolved.offsetAlongWall + resolved.width / 2);
-      const v0 = Math.max(0.015, resolved.sillHeight);
+      const holeBottomMin = extendsDownBesideSlab ? -0.02 : 0.004;
+      const v0 = Math.max(holeBottomMin, resolved.sillHeight);
       const v1 = resolved.sillHeight + resolved.height;
       openingRects.push({ u0, u1, v0, v1 });
 
@@ -1972,9 +1973,10 @@ function buildWallWithOpenings(
   if (wall.isExterior && !wall.isNeighbour && wall.interiorMaterial === 'interior_wall_plaster') {
     const startTrim = wall.interiorStartTrim ?? 0;
     const endTrim = wall.interiorEndTrim ?? 0;
+    const innerBottomY = -0.04;
     const innerShape = new THREE.Shape();
-    innerShape.moveTo(startTrim, 0);
-    innerShape.lineTo(length - endTrim, 0);
+    innerShape.moveTo(startTrim, innerBottomY);
+    innerShape.lineTo(length - endTrim, innerBottomY);
     if (wall.gablePeak) {
       innerShape.lineTo(length - endTrim, wall.height);
       innerShape.lineTo(wall.gablePeak.offsetAlongWall, wall.gablePeak.peakHeight - 0.05);
