@@ -40,6 +40,8 @@ export type MaterialId =
   | 'plot_driveway_paver'
   | 'plot_soil_border'
   | 'plot_hedge_beech'
+  | 'plot_hedge_beech_deep'
+  | 'plot_hedge_beech_fresh'
   | 'plot_tree_foliage_sage'
   | 'plot_tree_foliage_warm'
   | 'plot_tree_foliage_bolboom'
@@ -317,6 +319,18 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     colorDay: '#8bb87a',
     colorNight: '#34472d',
     roughness: 0.94,
+    metalness: 0.0,
+  },
+  plot_hedge_beech_deep: {
+    colorDay: '#6d9b5c',
+    colorNight: '#273820',
+    roughness: 0.94,
+    metalness: 0.0,
+  },
+  plot_hedge_beech_fresh: {
+    colorDay: '#a4cd8c',
+    colorNight: '#3f5635',
+    roughness: 0.92,
     metalness: 0.0,
   },
   plot_tree_foliage_sage: {

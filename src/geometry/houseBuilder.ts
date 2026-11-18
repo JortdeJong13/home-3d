@@ -2608,18 +2608,19 @@ function buildWallWithOpenings(
     innerShape.moveTo(startTrim, innerBottomY);
     innerShape.lineTo(length - endTrim, innerBottomY);
     if (wall.gablePeak) {
-      // Sample the exact interior roof underside along the inner wall face (-Z local normal)
-      // so the plaster triangle matches the true kapelement ceiling slope with zero wedge/gap.
-      const innerNormalOffsetX = (dz / length) * (wall.thickness / 2);
-      const innerNormalOffsetZ = -(dx / length) * (wall.thickness / 2);
+      // Match the full gable triangle slope all the way to the top edge so zero exterior brick
+      // is ever visible on the inside of the attic gable walls.
+      const peakU = wall.gablePeak.offsetAlongWall;
+      const peakH = wall.gablePeak.peakHeight;
       const innerGableH = (u: number) => {
-        const t = u / length;
-        const wx = wall.start[0] + t * dx + innerNormalOffsetX;
-        const wz = wall.start[1] + t * dz + innerNormalOffsetZ;
-        return Math.max(0.05, getZolderRoofUndersideY(wx, wz) - wall.baseY - 0.004);
+        const slopeH =
+          u <= peakU
+            ? wall.height + (u / Math.max(0.001, peakU)) * (peakH - wall.height)
+            : wall.height + ((length - u) / Math.max(0.001, length - peakU)) * (peakH - wall.height);
+        return Math.max(0.05, slopeH - 0.004);
       };
       innerShape.lineTo(length - endTrim, innerGableH(length - endTrim));
-      innerShape.lineTo(wall.gablePeak.offsetAlongWall, innerGableH(wall.gablePeak.offsetAlongWall));
+      innerShape.lineTo(peakU, innerGableH(peakU));
       innerShape.lineTo(startTrim, innerGableH(startTrim));
     } else {
       innerShape.lineTo(length - endTrim, wall.height);
