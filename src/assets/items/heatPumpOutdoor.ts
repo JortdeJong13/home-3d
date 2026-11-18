@@ -12,7 +12,7 @@ export const heatPumpOutdoorPrefab: AssetPrefabDefinition = {
   defaultLabel: 'Warmtepomp Buitenunit',
   defaultDimensions: {
     width: cm(75, 'user_supplied', 'User specification: warmtepomp buitenunit 75 cm breed'),
-    depth: cm(30, 'user_supplied', 'User specification: warmtepomp buitenunit 30 cm diep'),
+    depth: cm(25, 'user_supplied', 'User specification: warmtepomp buitenunit 25 cm diep'),
     height: cm(55, 'user_supplied', 'User specification: warmtepomp buitenunit 55 cm hoog'),
   },
   build3D: ({ width, depth, height, getMat }) => {
@@ -65,40 +65,40 @@ export const heatPumpOutdoorPrefab: AssetPrefabDefinition = {
     conduit.position.set(width * 0.32, footH + bodyH * 0.22, -depth / 2 - conduitLen / 2);
     group.add(conduit);
 
-    // 2. Main casing core & subtle grey perimeter frame
-    const frameThick = 0.022;
-    const bodyBox = new THREE.Mesh(
-      new THREE.BoxGeometry(width - frameThick * 0.6, bodyH - frameThick * 0.6, bodyD - 0.01),
-      casingMat
-    );
-    bodyBox.position.set(0, bodyCenterY, bodyZ - 0.004);
-    group.add(bodyBox);
+    // 2. Main white casing with smoothly rounded corners & beveled edges
+    const bevel = 0.01;
+    const innerW = width - bevel * 2;
+    const innerH = bodyH - bevel * 2;
+    const innerD = bodyD - bevel * 2;
+    const r = Math.min(0.026, innerW * 0.08, innerH * 0.08);
+    const hw = innerW / 2;
+    const hh = innerH / 2;
 
-    // Top cap
-    const topCap = new THREE.Mesh(
-      new THREE.BoxGeometry(width, frameThick, bodyD),
-      casingMat
-    );
-    topCap.position.set(0, height - frameThick / 2, bodyZ);
-    group.add(topCap);
+    const casingShape = new THREE.Shape();
+    casingShape.moveTo(-hw + r, -hh);
+    casingShape.lineTo(hw - r, -hh);
+    casingShape.quadraticCurveTo(hw, -hh, hw, -hh + r);
+    casingShape.lineTo(hw, hh - r);
+    casingShape.quadraticCurveTo(hw, hh, hw - r, hh);
+    casingShape.lineTo(-hw + r, hh);
+    casingShape.quadraticCurveTo(-hw, hh, -hw, hh - r);
+    casingShape.lineTo(-hw, -hh + r);
+    casingShape.quadraticCurveTo(-hw, -hh, -hw + r, -hh);
 
-    // Bottom trim bar
-    const bottomCap = new THREE.Mesh(
-      new THREE.BoxGeometry(width, frameThick, bodyD),
-      casingMat
-    );
-    bottomCap.position.set(0, footH + frameThick / 2, bodyZ);
-    group.add(bottomCap);
+    const casingGeo = new THREE.ExtrudeGeometry(casingShape, {
+      depth: innerD,
+      bevelEnabled: true,
+      bevelThickness: bevel,
+      bevelSize: bevel,
+      bevelSegments: 4,
+      curveSegments: 8,
+    });
+    // Center along Z so front/back faces sit at ±depth/2
+    casingGeo.translate(0, 0, -innerD / 2);
 
-    // Left & right vertical frame trims
-    for (const side of [-1, 1]) {
-      const sideTrim = new THREE.Mesh(
-        new THREE.BoxGeometry(frameThick, bodyH, bodyD),
-        casingMat
-      );
-      sideTrim.position.set(side * (width / 2 - frameThick / 2), bodyCenterY, bodyZ);
-      group.add(sideTrim);
-    }
+    const casingMesh = new THREE.Mesh(casingGeo, casingMat);
+    casingMesh.position.set(0, bodyCenterY, bodyZ);
+    group.add(casingMesh);
 
     // 3. Circular fan housing & grille on the front face (+Z)
     const fanCenterX = -width * 0.11;
@@ -163,7 +163,7 @@ export const heatPumpOutdoorPrefab: AssetPrefabDefinition = {
 
     // 4. Right-hand service panel seam & subtle badge
     const seamLine = new THREE.Mesh(
-      new THREE.BoxGeometry(0.005, bodyH - frameThick * 2.2, 0.004),
+      new THREE.BoxGeometry(0.005, bodyH - 0.05, 0.004),
       frameMat
     );
     seamLine.position.set(width * 0.23, bodyCenterY, frontZ - 0.001);
