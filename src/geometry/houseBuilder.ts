@@ -2028,15 +2028,10 @@ function buildExtensionAndBergingFlatRoofs(
   });
   firstGroup.add(extRoof);
 
-  const extTrimGeo = new THREE.BoxGeometry(5.93, 0.12, 2.46);
-  const extTrim = new THREE.Mesh(extTrimGeo, getMat('roof_fascia_white'));
-  extTrim.position.set(5.87 / 2, Y_FLAT - 0.03, (-12.86 + -10.46) / 2);
-  firstGroup.add(extTrim);
-
-  // 2. Flat Roof over Attached Berging: X: -3.27 -> 0.08 m, Z: -13.72 -> -7.73 m (3.35 × 5.99 m)
-  const bergingRoofGeo = new THREE.BoxGeometry(3.35, 0.25, 5.99);
+  // 2. Flat Roof over Attached Berging: X: -3.27 -> 0.00 m, Z: -13.72 -> -7.73 m (3.27 × 5.99 m)
+  const bergingRoofGeo = new THREE.BoxGeometry(3.27, 0.25, 5.99);
   const bergingRoof = new THREE.Mesh(bergingRoofGeo, getMat('roof_flat_bitumen'));
-  bergingRoof.position.set((-3.27 + 0.08) / 2, Y_FLAT - 0.125, (-13.72 + -7.73) / 2);
+  bergingRoof.position.set(-3.27 / 2, Y_FLAT - 0.125, (-13.72 + -7.73) / 2);
   registerMesh(bergingRoof, 'roof_flat_bitumen', {
     id: 'ff_flat_roof_berging',
     label: 'Plat Dak Berging (3.44 × 5.99 m op +2.85 m)',
@@ -2047,15 +2042,10 @@ function buildExtensionAndBergingFlatRoofs(
   });
   firstGroup.add(bergingRoof);
 
-  // 2b. Rear widening of the berging (25 cm): X: 0.08 -> 0.33 m, Z: -13.72 -> -12.86 m
-  const widenRoof = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 0.86), getMat('roof_flat_bitumen'));
-  widenRoof.position.set((0.08 + 0.33) / 2, Y_FLAT - 0.125, (-13.72 + -12.86) / 2);
+  // 2b. Rear widening of the berging (33 cm): X: 0.00 -> 0.33 m, Z: -13.72 -> -12.86 m
+  const widenRoof = new THREE.Mesh(new THREE.BoxGeometry(0.33, 0.25, 0.86), getMat('roof_flat_bitumen'));
+  widenRoof.position.set(0.33 / 2, Y_FLAT - 0.125, (-13.72 + -12.86) / 2);
   firstGroup.add(widenRoof);
-
-  const bergTrimGeo = new THREE.BoxGeometry(3.41, 0.11, 6.05);
-  const bergTrim = new THREE.Mesh(bergTrimGeo, getMat('roof_fascia_white'));
-  bergTrim.position.set((-3.27 + 0.08) / 2, Y_FLAT - 0.03, (-13.72 + -7.73) / 2);
-  firstGroup.add(bergTrim);
 }
 
 /**
