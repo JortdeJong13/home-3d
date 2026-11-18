@@ -128,8 +128,8 @@ function getOakWoodTextures(): OakTextureSet {
     const staveIdx = Math.floor(staveFloat) % NUM_STAVES;
     const staveFrac = staveFloat - Math.floor(staveFloat);
 
-    // Very soft plank-to-plank warmth variation (±2.5%)
-    const staveTone = 0.975 + hash2(staveIdx, 3, 19) * 0.05;
+    // Very soft plank-to-plank warmth variation (±1%)
+    const staveTone = 0.99 + hash2(staveIdx, 3, 19) * 0.02;
     const staveOffsetU = hash2(staveIdx, 11, 29) * 12.0;
     const staveOffsetV = hash2(staveIdx, 17, 41) * 8.0;
 
@@ -153,12 +153,11 @@ function getOakWoodTextures(): OakTextureSet {
       const ringBand = Math.sin(ringPhase * Math.PI);
       const latewood = 1.0 - smoothstep(0.15, 0.72, ringBand);
 
-      // Soft warm diorama oak palette harmonious with floor_living_oak (#dfc7a4) & photo
-      // Earlywood (#dfc3a4) -> Soft grain (#cca67e)
-      const shade = staveTone * (0.985 + 0.015 * seamMask);
-      const r = Math.min(255, Math.round(lerp(223, 204, latewood) * shade));
-      const g = Math.min(255, Math.round(lerp(195, 166, latewood) * shade));
-      const b = Math.min(255, Math.round(lerp(164, 126, latewood) * shade));
+      // Soft warm diorama oak palette with very close light/dark shades (#ddc0a0 -> #d5b592)
+      const shade = staveTone * (0.994 + 0.006 * seamMask);
+      const r = Math.min(255, Math.round(lerp(221, 213, latewood) * shade));
+      const g = Math.min(255, Math.round(lerp(192, 181, latewood) * shade));
+      const b = Math.min(255, Math.round(lerp(160, 146, latewood) * shade));
 
       const idx = (py * TEX_SIZE + px) * 4;
       topAlbedo[idx] = r;
@@ -189,10 +188,10 @@ function getOakWoodTextures(): OakTextureSet {
       const ringBand = Math.sin(ringPhase * Math.PI);
       const latewood = 1.0 - smoothstep(0.16, 0.72, ringBand);
 
-      // Soft warm honey-oak leg palette (#cfa479 -> #bd8d5f) matching the photo's warmer legs
-      const r = Math.round(lerp(207, 189, latewood));
-      const g = Math.round(lerp(164, 141, latewood));
-      const b = Math.round(lerp(121, 95, latewood));
+      // Soft warm oak leg palette close in tone to tabletop (#d2ae87 -> #caa47c)
+      const r = Math.round(lerp(210, 202, latewood));
+      const g = Math.round(lerp(174, 164, latewood));
+      const b = Math.round(lerp(135, 124, latewood));
 
       const idx = (py * TEX_SIZE + px) * 4;
       legAlbedo[idx] = r;
