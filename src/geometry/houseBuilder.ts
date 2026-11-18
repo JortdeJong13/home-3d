@@ -1771,6 +1771,7 @@ function buildWallWithOpenings(
   }
   shape.closePath();
 
+  const openingRects: Array<{ u0: number; u1: number; v0: number; v1: number }> = [];
   if (wall.openings && wall.openings.length > 0) {
     for (const placement of wall.openings) {
       const prefab = OPENING_PREFABS[placement.prefabId];
@@ -1794,6 +1795,7 @@ function buildWallWithOpenings(
       const u1 = Math.min(length - 0.04, resolved.offsetAlongWall + resolved.width / 2);
       const v0 = Math.max(0.015, resolved.sillHeight);
       const v1 = resolved.sillHeight + resolved.height;
+      openingRects.push({ u0, u1, v0, v1 });
 
       const hole = new THREE.Path();
       hole.moveTo(u0, v0);
@@ -1861,6 +1863,46 @@ function buildWallWithOpenings(
     innerMesh.castShadow = false;
     innerMesh.receiveShadow = true;
     wallContainer.add(innerMesh);
+
+    if (openingRects.length > 0) {
+      const frameDepth = Math.min(wall.thickness, 0.11);
+      const frameCenterZ = wall.thickness / 2 - 0.11;
+      const zInner = -wall.thickness / 2 - 0.008;
+      const zOuter = frameCenterZ - frameDepth / 2 + 0.005;
+      const revealDepth = zOuter - zInner;
+      const revealCenterZ = (zInner + zOuter) / 2;
+      const revealThick = 0.008;
+
+      if (revealDepth > 0.01) {
+        const revealGeos: THREE.BufferGeometry[] = [];
+        const addRevealBox = (w: number, h: number, d: number, x: number, y: number, z: number) => {
+          const g = new THREE.BoxGeometry(w, h, d);
+          g.translate(x, y, z);
+          revealGeos.push(g);
+        };
+
+        for (const { u0, u1, v0, v1 } of openingRects) {
+          const openW = u1 - u0;
+          const openH = v1 - v0;
+          const centerU = (u0 + u1) / 2;
+          const centerV = (v0 + v1) / 2;
+
+          addRevealBox(revealThick, openH, revealDepth, u0 + revealThick / 2 - 0.002, centerV, revealCenterZ);
+          addRevealBox(revealThick, openH, revealDepth, u1 - revealThick / 2 + 0.002, centerV, revealCenterZ);
+          addRevealBox(openW, revealThick, revealDepth, centerU, v1 - revealThick / 2 + 0.002, revealCenterZ);
+          if (v0 > 0.02) {
+            addRevealBox(openW, revealThick, revealDepth, centerU, v0 + revealThick / 2 - 0.002, revealCenterZ);
+          }
+        }
+
+        const mergedReveals = mergeGeometries(revealGeos, false);
+        for (const g of revealGeos) g.dispose();
+        const revealMesh = new THREE.Mesh(mergedReveals, getMat('interior_wall_plaster'));
+        revealMesh.castShadow = false;
+        revealMesh.receiveShadow = true;
+        wallContainer.add(revealMesh);
+      }
+    }
   }
 
   targetGroup.add(wallContainer);
