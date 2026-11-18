@@ -553,6 +553,11 @@ function buildPlotAndEnvironment(
   gravelShape.lineTo(-3.27, 13.72);
   gravelShape.lineTo(-3.27, 7.73);
   gravelShape.lineTo(0.00, 7.73);
+  // Branch across the front garden between the flower border (Z: 0..1.05 m) and lawn (Z: 1.95..4.82 m)
+  gravelShape.lineTo(0.00, -1.05);
+  gravelShape.lineTo(5.85, -1.05);
+  gravelShape.lineTo(5.85, -1.95);
+  gravelShape.lineTo(0.00, -1.95);
   gravelShape.closePath();
 
   const gravelGeo = new THREE.ExtrudeGeometry(gravelShape, {
@@ -833,7 +838,7 @@ function buildPlotAndEnvironment(
     id: 'front_bolboom_left',
     label: 'Bolboom Voortuin Links (met boompalen)',
     x: 1.55,
-    z: 2.38,
+    z: 3.55,
     totalHeight: 2.22,
     crownRadius: 0.44,
     rotationDeg: 18,
@@ -843,12 +848,15 @@ function buildPlotAndEnvironment(
     id: 'front_bolboom_right',
     label: 'Bolboom Voortuin Rechts (met boompalen)',
     x: 4.35,
-    z: 2.44,
+    z: 3.60,
     totalHeight: 2.26,
     crownRadius: 0.42,
     rotationDeg: -14,
     seed: 502,
   });
+
+  // Front garden planted flower & ornamental grass border against the house front wall (Z: 0.00 -> 1.05 m)
+  buildFrontGardenFlowerBorder(plotGroup, getMat, registerMesh);
 
   // 6. SURROUNDINGS (outside the owned plot, neutral grey): pavement strip & garden fences (schuttingen)
   const ctxRightX = rightX + CONTEXT_MARGIN;
@@ -1181,6 +1189,139 @@ function addFrontBolboomTree(
 
   group.add(treeGroup);
   return treeGroup;
+}
+
+/**
+ * Build the front-facade planted border (Z: 0.00..1.05 m, X: 0.05..5.85 m) behind the gravel path:
+ * soil bed, low green shrub mounds, warm yellow flower clusters on the left/center, and
+ * pale ornamental grass plumes to the right of the living room window.
+ */
+function buildFrontGardenFlowerBorder(
+  group: THREE.Group,
+  getMat: (id: MaterialId) => THREE.MeshStandardMaterial,
+  registerMesh: RegisterMeshFn
+) {
+  let s = (707 * 1664525 + 1013904223) >>> 0;
+  const rand = () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+
+  // Soil / mulch bed against the front wall
+  const bedW = 5.80;
+  const bedD = 1.05;
+  const soilMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(bedW, 0.045, bedD),
+    getMat('plot_soil_border')
+  );
+  soilMesh.position.set(0.05 + bedW / 2, 0.0225, bedD / 2);
+  soilMesh.receiveShadow = true;
+  group.add(soilMesh);
+
+  const shrubGeos: THREE.BufferGeometry[] = [];
+  const flowerGeos: THREE.BufferGeometry[] = [];
+  const grassPlumeGeos: THREE.BufferGeometry[] = [];
+
+  const addShrubMound = (cx: number, cz: number, rx: number, ry: number, rz: number, blossoms: number) => {
+    const numPuffs = 5;
+    for (let i = 0; i < numPuffs; i++) {
+      const a = (i / numPuffs) * Math.PI * 2 + rand() * 0.6;
+      const dist = i === 0 ? 0 : (0.35 + rand() * 0.35);
+      const px = cx + Math.cos(a) * rx * dist;
+      const pz = cz + Math.sin(a) * rz * dist;
+      const r = (i === 0 ? 0.68 : 0.48 + rand() * 0.18) * Math.min(rx, rz);
+      const py = 0.04 + ry * (i === 0 ? 0.48 : 0.32 + rand() * 0.18);
+
+      const puff = new THREE.IcosahedronGeometry(r, 1);
+      puff.scale(1.0 + rand() * 0.2, (ry / Math.max(0.15, r)) * 0.72, 1.0 + rand() * 0.2);
+      puff.rotateY(rand() * Math.PI * 2);
+      puff.translate(px, py, pz);
+      shrubGeos.push(puff);
+    }
+
+    for (let b = 0; b < blossoms; b++) {
+      const theta = rand() * Math.PI * 2;
+      const phi = rand() * Math.PI * 0.42;
+      const bx = cx + Math.sin(phi) * Math.cos(theta) * rx * 0.85;
+      const bz = cz + Math.sin(phi) * Math.sin(theta) * rz * 0.85;
+      const by = 0.06 + Math.cos(phi) * ry * 0.92;
+      const br = 0.042 + rand() * 0.032;
+      const blossom = new THREE.IcosahedronGeometry(br, 0);
+      blossom.rotateY(rand() * Math.PI);
+      blossom.translate(bx, by, bz);
+      flowerGeos.push(blossom);
+    }
+  };
+
+  // Left bushes (X: 0.22 -> 1.80 m) with warm yellow flowers (matching photo left side)
+  addShrubMound(0.45, 0.55, 0.42, 0.52, 0.38, 12);
+  addShrubMound(1.02, 0.48, 0.44, 0.56, 0.40, 14);
+  addShrubMound(1.55, 0.56, 0.36, 0.44, 0.34, 9);
+
+  // Low groundcover under the living room window (X: 1.95 -> 4.00 m, stays below 0.45 m window sill)
+  addShrubMound(2.25, 0.42, 0.34, 0.32, 0.28, 4);
+  addShrubMound(2.95, 0.38, 0.38, 0.28, 0.26, 3);
+  addShrubMound(3.65, 0.44, 0.34, 0.34, 0.28, 5);
+
+  // Right bushes + fluffy pale ornamental grass plumes (X: 4.10 -> 5.68 m, matching photo right side)
+  addShrubMound(4.30, 0.58, 0.36, 0.42, 0.34, 4);
+  addShrubMound(5.35, 0.56, 0.38, 0.48, 0.36, 5);
+
+  const grassCenters: Array<[number, number, number]> = [
+    [4.68, 0.52, 0.96],
+    [4.98, 0.44, 1.04],
+    [5.18, 0.66, 0.86],
+  ];
+  for (const [gx, gz, gh] of grassCenters) {
+    // Low green base tuft
+    addShrubMound(gx, gz, 0.26, 0.34, 0.26, 0);
+    // Wispy pale cream-beige plumes arching upward
+    const numPlumes = 11;
+    for (let p = 0; p < numPlumes; p++) {
+      const ang = (p / numPlumes) * Math.PI * 2 + rand() * 0.4;
+      const spread = 0.08 + rand() * 0.22;
+      const px = gx + Math.cos(ang) * spread;
+      const pz = gz + Math.sin(ang) * spread;
+      const py = gh * (0.52 + rand() * 0.42);
+      const pr = 0.065 + rand() * 0.045;
+      const plume = new THREE.IcosahedronGeometry(pr, 1);
+      plume.scale(0.85, 1.55 + rand() * 0.4, 0.85);
+      plume.rotateZ((rand() - 0.5) * 0.35);
+      plume.rotateX((rand() - 0.5) * 0.35);
+      plume.translate(px, py, pz);
+      grassPlumeGeos.push(plume);
+    }
+  }
+
+  const shrubMesh = new THREE.Mesh(mergeGeometries(shrubGeos, false), getMat('plot_tree_foliage_bolboom'));
+  registerMesh(
+    shrubMesh,
+    'plot_tree_foliage_bolboom',
+    {
+      id: 'front_garden_flower_border',
+      label: 'Beplanting Voorgevel (Bloemstruiken & Siergras)',
+      dimensionsLabel: '5.80 × 1.05 m',
+      provenance: 'user_supplied',
+      source: 'Referentiefoto voortuin: groene struiken met gele bloemen en siergras langs voorgevel',
+      floor: 'plot',
+    },
+    true,
+    true
+  );
+  group.add(shrubMesh);
+
+  if (flowerGeos.length > 0) {
+    const flowerMesh = new THREE.Mesh(mergeGeometries(flowerGeos, false), getMat('plot_tree_foliage_warm'));
+    flowerMesh.castShadow = true;
+    group.add(flowerMesh);
+  }
+
+  if (grassPlumeGeos.length > 0) {
+    const grassMesh = new THREE.Mesh(mergeGeometries(grassPlumeGeos, false), getMat('plot_tree_stake_wood'));
+    grassMesh.castShadow = true;
+    grassMesh.receiveShadow = true;
+    group.add(grassMesh);
+  }
 }
 
 interface MaquetteHedgeSegmentOptions {
