@@ -856,9 +856,8 @@ interface MaquetteHedgeSegmentOptions {
 }
 
 /**
- * Build an architectural maquette hedge: a gently tapered, beveled core with
- * broad, smooth icosahedron foliage puffs (`detail = 2`, matching `addStylisedDioramaTree`)
- * and an optional planted soil/mulch strip at the base.
+ * Build an architectural diorama hedge composed of tightly overlapping foliage balls
+ * over a planted soil/mulch strip so the surface is richly organic without harsh gaps.
  */
 function buildMaquetteHedgeSegment(
   group: THREE.Group,
@@ -874,7 +873,7 @@ function buildMaquetteHedgeSegment(
   const centerX = (x0 + x1) / 2;
   const centerZ = (z0 + z1) / 2;
 
-  // Deterministic LCG PRNG so foliage puffs are reproducible across rebuilds
+  // Deterministic LCG PRNG so foliage clusters are reproducible across rebuilds
   let s = (seed * 1664525 + 1013904223) >>> 0;
   const rand = () => {
     s = (s * 1664525 + 1013904223) >>> 0;
@@ -891,60 +890,45 @@ function buildMaquetteHedgeSegment(
     group.add(soilMesh);
   }
 
-  // 1. Tapered, softly beveled sheared hedge core (wider at base, slightly narrower at top)
-  const bevel = 0.04;
-  const coreBottomY = (soilMatId ? 0.035 : 0.0) + bevel;
-  const coreTopY = Math.max(coreBottomY + 0.08, height - 0.03 - bevel);
-  const bw = Math.max(0.06, width * 0.50 - bevel);
-  const tw = Math.max(0.05, width * 0.40 - bevel);
+  // Tightly overlapping foliage balls (~55% overlap along Z and Y, heavy center overlap in X)
+  const baseR = Math.min(0.145, Math.max(0.11, width * 0.36));
+  const yStart = (soilMatId ? 0.025 : 0.0) + baseR * 0.65;
+  const yEnd = Math.max(yStart + 0.05, height - baseR * 0.78);
+  const numY = Math.max(4, Math.round((yEnd - yStart) / (baseR * 0.86)) + 1);
+  const zStart = -length / 2 + baseR * 0.65;
+  const zEnd = length / 2 - baseR * 0.65;
+  const numZ = Math.max(4, Math.round(length / (baseR * 0.88)) + 1);
 
-  const coreShape = new THREE.Shape();
-  coreShape.moveTo(-bw, coreBottomY);
-  coreShape.lineTo(bw, coreBottomY);
-  coreShape.lineTo(tw, coreTopY);
-  coreShape.lineTo(-tw, coreTopY);
-  coreShape.closePath();
+  const geometries: THREE.BufferGeometry[] = [];
+  const baseHalfSpan = Math.max(0.03, width * 0.19);
 
-  const extrudeDepth = Math.max(0.10, length - bevel * 2);
-  const coreGeo = new THREE.ExtrudeGeometry(coreShape, {
-    depth: extrudeDepth,
-    bevelEnabled: true,
-    bevelThickness: bevel,
-    bevelSize: bevel,
-    bevelSegments: 2,
-  });
-  coreGeo.translate(0, 0, -extrudeDepth / 2);
+  for (let iy = 0; iy < numY; iy++) {
+    const ty = numY > 1 ? iy / (numY - 1) : 0.5;
+    const baseY = yStart + ty * (yEnd - yStart);
+    // Subtle inward taper toward the top of the hedge
+    const rowHalfSpan = baseHalfSpan * (1.0 - ty * 0.28);
 
-  const geometries: THREE.BufferGeometry[] = [coreGeo];
+    for (let ix = 0; ix < 2; ix++) {
+      const baseX = ix === 0 ? -rowHalfSpan : rowHalfSpan;
+      const staggerZ = ((iy + ix) % 2) * (baseR * 0.42);
 
-  // 2. Broad, smooth foliage puffs along the top & upper shoulders (matching tree style)
-  const topR = width * 0.44;
-  const stepZ = 0.54;
-  const numPuffs = Math.max(2, Math.round((length - 0.36) / stepZ) + 1);
-  const zStart = -length / 2 + 0.24;
-  const zEnd = length / 2 - 0.24;
+      for (let iz = 0; iz < numZ; iz++) {
+        const tz = numZ > 1 ? iz / (numZ - 1) : 0.5;
+        let pz = zStart + tz * (zEnd - zStart) + (iz > 0 && iz < numZ - 1 ? staggerZ * 0.5 : 0);
+        pz = Math.max(zStart, Math.min(zEnd, pz));
 
-  for (let i = 0; i < numPuffs; i++) {
-    const t = numPuffs > 1 ? i / (numPuffs - 1) : 0.5;
-    const pz = zStart + t * (zEnd - zStart) + (rand() - 0.5) * 0.12;
-    const r = topR * (0.90 + rand() * 0.22);
-    const puff = new THREE.IcosahedronGeometry(r, 2).toNonIndexed();
-    puff.scale(0.95 + rand() * 0.12, 0.76 + rand() * 0.12, 1.05 + rand() * 0.18);
-    const px = (rand() - 0.5) * 0.05;
-    const py = height - r * 0.68 + (rand() - 0.5) * 0.035;
-    puff.translate(px, py, pz);
-    geometries.push(puff);
+        const r = baseR * (0.88 + rand() * 0.26);
+        const ballGeo = new THREE.IcosahedronGeometry(r, 1);
+        ballGeo.scale(0.95 + rand() * 0.12, 0.86 + rand() * 0.16, 0.95 + rand() * 0.12);
 
-    // Subtle alternating shoulder puffs on taller hedges to soften the long sides
-    if (height >= 0.85 && i % 2 === 0) {
-      const sr = width * 0.36 * (0.90 + rand() * 0.20);
-      const sidePuff = new THREE.IcosahedronGeometry(sr, 2).toNonIndexed();
-      sidePuff.scale(0.85, 0.82, 1.15);
-      const sideSign = (i / 2) % 2 === 0 ? 1 : -1;
-      const sx = sideSign * (width * 0.25 + (rand() - 0.5) * 0.02);
-      const sy = height * (0.58 + rand() * 0.22);
-      sidePuff.translate(sx, sy, pz + (rand() - 0.5) * 0.14);
-      geometries.push(sidePuff);
+        const jx = (rand() - 0.5) * baseR * 0.24;
+        const jy = (rand() - 0.5) * baseR * 0.22;
+        const jz = (rand() - 0.5) * baseR * 0.24;
+        const finalY = Math.max(r * 0.60, Math.min(height - r * 0.55, baseY + jy));
+
+        ballGeo.translate(baseX + jx, finalY, pz + jz);
+        geometries.push(ballGeo);
+      }
     }
   }
 
