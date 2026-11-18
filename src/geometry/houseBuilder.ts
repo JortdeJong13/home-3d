@@ -1208,14 +1208,14 @@ function buildFrontGardenFlowerBorder(
     return s / 4294967296;
   };
 
-  // Soil / mulch bed against the front wall
-  const bedW = 5.80;
+  // Soil / mulch bed against the front wall (flush with driveway gravel at X = 0.00 m)
+  const bedW = 5.85;
   const bedD = 1.05;
   const soilMesh = new THREE.Mesh(
     new THREE.BoxGeometry(bedW, 0.045, bedD),
     getMat('plot_soil_border')
   );
-  soilMesh.position.set(0.05 + bedW / 2, 0.0225, bedD / 2);
+  soilMesh.position.set(bedW / 2, 0.0225, bedD / 2);
   soilMesh.receiveShadow = true;
   group.add(soilMesh);
 
