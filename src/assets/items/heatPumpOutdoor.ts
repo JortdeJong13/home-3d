@@ -106,34 +106,34 @@ export const heatPumpOutdoorPrefab: AssetPrefabDefinition = {
     const fanRadius = Math.min(width * 0.28, bodyH * 0.37);
     const frontZ = depth / 2;
 
-    // Dark recessed fan cavity
+    // Dark recessed fan disc mounted cleanly in front of casing front face
     const fanCavity = new THREE.Mesh(
-      new THREE.CylinderGeometry(fanRadius, fanRadius, 0.014, 28),
+      new THREE.CylinderGeometry(fanRadius, fanRadius, 0.006, 28),
       darkRecessMat
     );
     fanCavity.rotation.x = Math.PI / 2;
-    fanCavity.position.set(fanCenterX, fanCenterY, frontZ - 0.007);
+    fanCavity.position.set(fanCenterX, fanCenterY, frontZ + 0.003);
     group.add(fanCavity);
 
-    // Fan hub + 3 blades inside cavity
+    // Fan hub + 3 blades in front of fan cavity
     const hub = new THREE.Mesh(
-      new THREE.CylinderGeometry(fanRadius * 0.2, fanRadius * 0.2, 0.016, 16),
+      new THREE.CylinderGeometry(fanRadius * 0.2, fanRadius * 0.2, 0.008, 16),
       frameMat
     );
     hub.rotation.x = Math.PI / 2;
-    hub.position.set(fanCenterX, fanCenterY, frontZ - 0.004);
+    hub.position.set(fanCenterX, fanCenterY, frontZ + 0.008);
     group.add(hub);
 
     for (let i = 0; i < 3; i++) {
       const blade = new THREE.Mesh(
-        new THREE.BoxGeometry(fanRadius * 0.72, fanRadius * 0.2, 0.006),
+        new THREE.BoxGeometry(fanRadius * 0.72, fanRadius * 0.2, 0.004),
         feetMat
       );
       const angle = (i * Math.PI * 2) / 3 + 0.35;
       blade.position.set(
         fanCenterX + Math.cos(angle) * fanRadius * 0.44,
         fanCenterY + Math.sin(angle) * fanRadius * 0.44,
-        frontZ - 0.005
+        frontZ + 0.008
       );
       blade.rotation.z = angle;
       group.add(blade);
@@ -141,10 +141,10 @@ export const heatPumpOutdoorPrefab: AssetPrefabDefinition = {
 
     // Outer circular bezel ring
     const bezel = new THREE.Mesh(
-      new THREE.TorusGeometry(fanRadius, 0.01, 10, 32),
+      new THREE.TorusGeometry(fanRadius, 0.008, 10, 32),
       frameMat
     );
-    bezel.position.set(fanCenterX, fanCenterY, frontZ);
+    bezel.position.set(fanCenterX, fanCenterY, frontZ + 0.008);
     group.add(bezel);
 
     // Horizontal protective grille bars across fan opening
@@ -154,26 +154,26 @@ export const heatPumpOutdoorPrefab: AssetPrefabDefinition = {
       const chordHalf = Math.sqrt(Math.max(0, fanRadius * fanRadius - dy * dy));
       if (chordHalf < 0.03) continue;
       const bar = new THREE.Mesh(
-        new THREE.BoxGeometry(chordHalf * 1.96, 0.007, 0.006),
+        new THREE.BoxGeometry(chordHalf * 1.96, 0.007, 0.005),
         frameMat
       );
-      bar.position.set(fanCenterX, fanCenterY + dy, frontZ + 0.003);
+      bar.position.set(fanCenterX, fanCenterY + dy, frontZ + 0.013);
       group.add(bar);
     }
 
     // 4. Right-hand service panel seam & subtle badge
     const seamLine = new THREE.Mesh(
-      new THREE.BoxGeometry(0.005, bodyH - 0.05, 0.004),
+      new THREE.BoxGeometry(0.005, bodyH - 0.05, 0.003),
       frameMat
     );
-    seamLine.position.set(width * 0.23, bodyCenterY, frontZ - 0.001);
+    seamLine.position.set(width * 0.23, bodyCenterY, frontZ + 0.002);
     group.add(seamLine);
 
     const badge = new THREE.Mesh(
       new THREE.BoxGeometry(0.065, 0.018, 0.004),
       darkRecessMat
     );
-    badge.position.set(width * 0.35, footH + bodyH * 0.78, frontZ);
+    badge.position.set(width * 0.35, footH + bodyH * 0.78, frontZ + 0.0025);
     group.add(badge);
 
     return group;
