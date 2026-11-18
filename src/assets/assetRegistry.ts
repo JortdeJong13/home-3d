@@ -6,6 +6,8 @@ import { rainPipeHwaPrefab, rainPipeHwaSectionPrefab } from './items/rainPipeHwa
 import { loungeCornerSofaPrefab } from './items/loungeCornerSofa';
 import { loungeCoffeeTablePrefab } from './items/loungeCoffeeTable';
 import { gardenPlanterClusterPrefab } from './items/gardenPlanterCluster';
+import { gardenBollardLightPrefab } from './items/gardenBollardLight';
+import { loungeLanternPrefab } from './items/loungeLantern';
 
 /**
  * CENTRAL ASSET PREFAB CATALOG
@@ -23,6 +25,8 @@ export const ASSET_PREFABS: Record<string, AssetPrefabDefinition> = {
   lounge_corner_sofa: loungeCornerSofaPrefab,
   lounge_coffee_table: loungeCoffeeTablePrefab,
   garden_planter_cluster: gardenPlanterClusterPrefab,
+  garden_bollard_light: gardenBollardLightPrefab,
+  lounge_lantern: loungeLanternPrefab,
 };
 
 /**
@@ -152,5 +156,70 @@ export const PLACED_ASSETS: PlacedAssetSpec[] = [
     rotationDeg: 25,
     provenance: 'user_supplied',
     source: 'Garden layout: potted plants on left side of rear lounge terrace',
+  },
+  {
+    id: 'back_garden_lounge_lantern',
+    prefabId: 'lounge_lantern',
+    label: 'Tuinlantaarn (Loungehoek)',
+    floor: 'ground',
+    positionXZ: [5.42, -18.02],
+    elevationOffsetY: 0.0325,
+    rotationDeg: -15,
+    provenance: 'user_supplied',
+    source: 'Garden layout: outdoor floor lantern beside lounge corner sofa',
+  },
+  {
+    id: 'back_garden_light_path_1',
+    prefabId: 'garden_bollard_light',
+    label: 'Tuinverlichting Pad (Start bij Berging)',
+    floor: 'ground',
+    positionXZ: [-0.62, -14.88],
+    provenance: 'user_supplied',
+    source: 'Back garden path bollard light near berging gravel junction',
+  },
+  {
+    id: 'back_garden_light_path_2',
+    prefabId: 'garden_bollard_light',
+    label: 'Tuinverlichting Pad (Midden)',
+    floor: 'ground',
+    positionXZ: [1.56, -15.98],
+    provenance: 'user_supplied',
+    source: 'Back garden path bollard light along S-curve',
+  },
+  {
+    id: 'back_garden_light_path_3',
+    prefabId: 'garden_bollard_light',
+    label: 'Tuinverlichting Pad (Bij Lounge Terras)',
+    floor: 'ground',
+    positionXZ: [1.84, -17.48],
+    provenance: 'user_supplied',
+    source: 'Back garden path bollard light at lounge terrace entry',
+  },
+  {
+    id: 'back_garden_light_border_left',
+    prefabId: 'garden_bollard_light',
+    label: 'Tuinverlichting Border Links',
+    floor: 'ground',
+    positionXZ: [-3.68, -17.90],
+    provenance: 'user_supplied',
+    source: 'Back garden bollard light along left beech-hedge flower border',
+  },
+  {
+    id: 'back_garden_light_border_rear',
+    prefabId: 'garden_bollard_light',
+    label: 'Tuinverlichting Border Achter',
+    floor: 'ground',
+    positionXZ: [-0.35, -19.55],
+    provenance: 'user_supplied',
+    source: 'Back garden bollard light at rear-center flower border',
+  },
+  {
+    id: 'back_garden_light_border_right',
+    prefabId: 'garden_bollard_light',
+    label: 'Tuinverlichting Border Rechts',
+    floor: 'ground',
+    positionXZ: [5.15, -14.18],
+    provenance: 'user_supplied',
+    source: 'Back garden bollard light near patio & right flower border',
   },
 ];

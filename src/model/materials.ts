@@ -47,6 +47,7 @@ export type MaterialId =
   | 'plot_tree_stake_wood'
   | 'plot_gate_timber'
   | 'plot_fence_post'
+  | 'garden_lamp_glow'
   | 'plinth_base_white'
   | 'neighbour_wall_grey'
   | 'neighbour_roof_grey'
@@ -351,6 +352,14 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     colorNight: '#463626',
     roughness: 0.90,
     metalness: 0.0,
+  },
+  garden_lamp_glow: {
+    colorDay: '#f4efe6',
+    colorNight: '#ffe3a8',
+    roughness: 0.35,
+    metalness: 0.0,
+    emissiveNight: '#ffbe6b',
+    emissiveIntensityNight: 1.35,
   },
   plinth_base_white: {
     colorDay: '#f4f2ed',
