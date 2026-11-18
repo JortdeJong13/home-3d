@@ -400,6 +400,25 @@ assertClose(
   0.002,
   `Door ${sampleDoor.id} closes smoothly back to 0.000 rad when unhovered`
 );
-console.log(`  ✓ All ${doors.length} interactive doors & gate verified (pivots, triggers, open/close animation)`);
+console.log(
+  `  ✓ All ${doors.length} interactive doors & gate verified (pivots, triggers, open/close animation)`
+);
+
+// Verify Staircase Fit & Zero Wall Clipping
+house.root.updateMatrixWorld(true);
+const getBoundsById = (id: string) => {
+  const entry = house.meshRegistry.find((e) => e.mesh.userData.id === id);
+  if (!entry) throw new Error(`Missing mesh "${id}" in meshRegistry`);
+  const target = id.startsWith('stair_') ? entry.mesh.parent! : entry.mesh;
+  return new THREE.Box3().setFromObject(target);
+};
+const stairGfBox = getBoundsById('stair_gf_to_ff');
+const stairFfBox = getBoundsById('stair_ff_to_sf');
+assertClose(stairGfBox.min.x, 0.408, 0.002, 'Ground->1st stair left edge aligns to Hal plaster face (0.408 m)');
+assertClose(stairGfBox.max.x, 2.940, 0.002, 'Ground->1st stair right edge aligns to Hal right wall (2.940 m)');
+assertClose(stairGfBox.max.z, -3.960, 0.002, 'Ground->1st stair front edge aligns to 12 cm stair wall (-3.960 m)');
+assertClose(stairFfBox.min.x, 0.720, 0.002, '1st->Zolder stair left edge aligns to Zolder knieschot (0.720 m)');
+assertClose(stairFfBox.max.x, 2.920, 0.002, '1st->Zolder stair right edge aligns to Zolder Overloop wall (2.920 m)');
+assertClose(stairFfBox.max.z, -3.985, 0.002, '1st->Zolder stair front edge aligns to Zolder Overloop front wall (-3.985 m)');
 
 console.log('\nALL DIMENSIONAL, PREFAB & 3D SCENE CHECKS PASSED SUCCESSFULLY.');

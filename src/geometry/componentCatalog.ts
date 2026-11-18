@@ -1634,18 +1634,16 @@ export function instantiateOpeningPrefab3D(
 /**
  * Reusable Prefab: White Dutch Double-Quarter-Turn Staircase (Dubbele Kwartslagtrap, B61.1)
  *
- * Matches Verkooptekening VK-06 (1e verdieping / zolder) and HomeByMe 3D views:
- * - Total footprint: X from `minX` (0.40 m) to `minX + totalWidth` (2.87 m -> 2.47 m wide),
- *   Z from `frontZ` (-3.96 m, against the 12 cm stair-front wall) back to `frontZ - totalDepth` (-5.18 m -> 1.22 m deep).
- * - Run width = 0.88 m.
+ * Fits strictly inside `[minX, maxX]` and `Z <= frontZ` without clipping into adjacent walls:
+ * - Run width = `runWidth` (e.g. 0.85 m ground->1st, 0.825 m 1st->Zolder).
  * - Geometry sequence (15 risers total from `baseY` to `topY`):
- *   1. Step 1 (Entry tread at bottom-left, X: 0.40..1.28 m, Z: -5.18..-4.84 m, walking +Z toward front wall)
- *   2. Steps 2..5 (First 90° winder turn in front-left corner, X: 0.40..1.28 m, Z: -4.84..-3.96 m, pivoting around left newel post at [1.28, -4.84])
- *   3. Steps 6..9 (Middle straight treads along the 12 cm front wall, X: 1.28..1.99 m, Z: -4.84..-3.96 m, walking +X)
- *   4. Steps 10..13 (Second 90° winder turn in front-right corner, X: 1.99..2.87 m, Z: -4.84..-3.96 m, pivoting around right newel post at [1.99, -4.84])
- *   5. Step 14 (Top exit tread at rear-right, X: 1.99..2.87 m, Z: -5.12..-4.84 m, arriving onto upper landing)
+ *   1. Step 1 (Entry tread at bottom-left, X: minX..leftCornerPivotX, Z: entryZ..pivotZ, walking +Z toward front wall)
+ *   2. Steps 2..5 (First 90° winder turn in front-left corner around [leftCornerPivotX, pivotZ])
+ *   3. Steps 6..8 (Middle straight treads along the front wall, X: leftCornerPivotX..rightCornerPivotX, walking +X)
+ *   4. Steps 9..12 (Second 90° winder turn in front-right corner around [rightCornerPivotX, pivotZ])
+ *   5. Steps 13..14 (Top exit straight treads on right, X: rightCornerPivotX..maxX, Z: pivotZ..exitEndZ)
  * - Rendered in clean white (`window_frame_cream` / `interior_wall_plaster`) with closed risers,
- *   central newel posts (`spillen`), stringers (`trapbomen`), and vertical baluster railings (`spijlenhekwerk`).
+ *   central newel posts (`spillen`), vertical-cut front stringer (`trapboom`), and baluster railings (`spijlenhekwerk`).
  */
 export function instantiateWhiteDoubleTurnStaircase3D(
   targetGroup: THREE.Group,
@@ -1657,7 +1655,10 @@ export function instantiateWhiteDoubleTurnStaircase3D(
   minX: number,
   frontZ: number,
   baseY: number,
-  topY: number
+  topY: number,
+  maxX = minX + 2.47,
+  runWidth = 0.88,
+  exitStepDepth = 0.205
 ): THREE.Group {
   const stairGroup = new THREE.Group();
   const totalRise = topY - baseY; // 2.85 m
@@ -1665,13 +1666,14 @@ export function instantiateWhiteDoubleTurnStaircase3D(
   const stepRise = totalRise / (totalSteps + 1); // 15 risers (~19 cm each)
   const treadThickness = 0.04;
 
-  const runWidth = 0.88; // 88 cm clear stair width
-  const leftCornerPivotX = minX + runWidth; // 0.40 + 0.88 = 1.28 m
-  const middleSpanX = 0.71; // 71 cm middle straight section (4 steps)
-  const rightCornerPivotX = leftCornerPivotX + middleSpanX; // 1.28 + 0.71 = 1.99 m
-  const maxX = rightCornerPivotX + runWidth; // 1.99 + 0.88 = 2.87 m (total width = 2.47 m, matching VK-06!)
-  const pivotZ = frontZ - runWidth; // -3.96 - 0.88 = -4.84 m
-  const entryZ = pivotZ - 0.34; // -5.18 m
+  const totalWidth = maxX - minX;
+  const leftCornerPivotX = minX + runWidth;
+  const rightCornerPivotX = maxX - runWidth;
+  const middleSpanX = rightCornerPivotX - leftCornerPivotX;
+  const pivotZ = frontZ - runWidth;
+  const entryZ = pivotZ - 0.34;
+  const exitEndZ = pivotZ - 2 * exitStepDepth;
+  const totalDepth = frontZ - Math.min(entryZ, exitEndZ);
 
   const whiteTreadMat = getMat('window_frame_cream');
   const whiteRiserMat = getMat('interior_wall_plaster');
@@ -1688,13 +1690,10 @@ export function instantiateWhiteDoubleTurnStaircase3D(
   ]);
 
   // 2. Steps 2..5: First 90° Winder Turn in front-left corner around (leftCornerPivotX, pivotZ)
-  // Ray angles from (leftCornerPivotX, pivotZ):
-  // Angle 0 = (-runWidth, 0) [points left to minX along pivotZ]
-  // Angle PI/2 = (0, +runWidth) [points forward to frontZ along leftCornerPivotX]
   const corner1Rays: Array<[number, number]> = [
     [minX, pivotZ],
     [minX, pivotZ + runWidth * 0.42],
-    [minX, frontZ], // Outer corner (chamfered/beveled slightly like VK-06)
+    [minX, frontZ],
     [minX + runWidth * 0.58, frontZ],
     [leftCornerPivotX, frontZ],
   ];
@@ -1702,7 +1701,6 @@ export function instantiateWhiteDoubleTurnStaircase3D(
     const pA = corner1Rays[i];
     const pB = corner1Rays[i + 1];
     if (i === 1) {
-      // Include outer corner vertex (minX, frontZ)
       polygonsXZ.push([
         [leftCornerPivotX, pivotZ],
         pA,
@@ -1715,7 +1713,7 @@ export function instantiateWhiteDoubleTurnStaircase3D(
     }
   }
 
-  // 3. Steps 6..8: Middle straight treads along the 12 cm front wall (X: leftCornerPivotX..rightCornerPivotX, Z: pivotZ..frontZ)
+  // 3. Steps 6..8: Middle straight treads along the front wall (X: leftCornerPivotX..rightCornerPivotX, Z: pivotZ..frontZ)
   const midSteps = 3;
   const midStepW = middleSpanX / midSteps;
   for (let i = 0; i < midSteps; i++) {
@@ -1753,11 +1751,10 @@ export function instantiateWhiteDoubleTurnStaircase3D(
     }
   }
 
-  // 5. Steps 13..14: Top exit straight treads on right (X: rightCornerPivotX..maxX, Z: pivotZ..entryZ)
-  const exitStepD = 0.24;
+  // 5. Steps 13..14: Top exit straight treads on right (X: rightCornerPivotX..maxX, Z: pivotZ..exitEndZ)
   for (let i = 0; i < 2; i++) {
-    const z0 = pivotZ - i * exitStepD;
-    const z1 = z0 - exitStepD;
+    const z0 = pivotZ - i * exitStepDepth;
+    const z1 = z0 - exitStepDepth;
     polygonsXZ.push([
       [rightCornerPivotX, z0],
       [maxX, z0],
@@ -1767,7 +1764,8 @@ export function instantiateWhiteDoubleTurnStaircase3D(
   }
 
   // Build each step: overhanging white tread plate + vertical front riser board (stootbord)
-  // so the space underneath the upper run of the stairs remains open and architectural!
+  // kept strictly within [minX, maxX], Z <= frontZ, and Y >= baseY so nothing clips walls or floor.
+  const riserThick = 0.025;
   for (let i = 0; i < polygonsXZ.length; i++) {
     const poly = polygonsXZ[i];
     const stepTopY = baseY + (i + 1) * stepRise;
@@ -1780,23 +1778,59 @@ export function instantiateWhiteDoubleTurnStaircase3D(
     }
     shape.closePath();
 
-    // 1. Vertical Front Riser Board (Stootbord, 2.5 cm thick) along the front edge (poly[0] -> poly[1])
+    // 1. Vertical Front Riser Board (Stootbord, 2.5 cm thick) recessed inward along poly[0] -> poly[1]
     const p0 = poly[0];
     const p1 = poly[1];
     const edgeDx = p1[0] - p0[0];
     const edgeDz = p1[1] - p0[1];
     const edgeLen = Math.hypot(edgeDx, edgeDz);
-    const edgeAngle = Math.atan2(-edgeDz, edgeDx);
-    const riserH = stepRise;
 
-    const riserGeo = new THREE.BoxGeometry(edgeLen, riserH, 0.025);
+    // Compute polygon centroid to orient the riser thickness strictly inward toward the tread
+    let cx = 0;
+    let cz = 0;
+    for (const pt of poly) {
+      cx += pt[0];
+      cz += pt[1];
+    }
+    cx /= poly.length;
+    cz /= poly.length;
+
+    let inX = -edgeDz / edgeLen;
+    let inZ = edgeDx / edgeLen;
+    const midEdgeX = (p0[0] + p1[0]) / 2;
+    const midEdgeZ = (p0[1] + p1[1]) / 2;
+    if ((cx - midEdgeX) * inX + (cz - midEdgeZ) * inZ < 0) {
+      inX = -inX;
+      inZ = -inZ;
+    }
+
+    const clampXZ = (x: number, z: number): [number, number] => [
+      Math.max(minX, Math.min(maxX, x)),
+      Math.min(frontZ, z),
+    ];
+    const r0 = clampXZ(p0[0], p0[1]);
+    const r1 = clampXZ(p1[0], p1[1]);
+    const r2 = clampXZ(p1[0] + inX * riserThick, p1[1] + inZ * riserThick);
+    const r3 = clampXZ(p0[0] + inX * riserThick, p0[1] + inZ * riserThick);
+
+    const riserBot = Math.max(baseY, stepBotY - treadThickness / 2);
+    const riserTop = stepTopY - treadThickness / 2;
+    const riserH = Math.max(0.01, riserTop - riserBot);
+
+    const riserShape = new THREE.Shape();
+    riserShape.moveTo(r0[0], -r0[1]);
+    riserShape.lineTo(r1[0], -r1[1]);
+    riserShape.lineTo(r2[0], -r2[1]);
+    riserShape.lineTo(r3[0], -r3[1]);
+    riserShape.closePath();
+
+    const riserGeo = new THREE.ExtrudeGeometry(riserShape, {
+      depth: riserH,
+      bevelEnabled: false,
+    });
+    riserGeo.rotateX(-Math.PI / 2);
     const riserMesh = new THREE.Mesh(riserGeo, whiteRiserMat);
-    riserMesh.position.set(
-      (p0[0] + p1[0]) / 2,
-      stepBotY + riserH / 2 - treadThickness / 2,
-      (p0[1] + p1[1]) / 2
-    );
-    riserMesh.rotation.y = edgeAngle;
+    riserMesh.position.y = riserBot;
     riserMesh.castShadow = true;
     riserMesh.receiveShadow = true;
     stairGroup.add(riserMesh);
@@ -1814,7 +1848,7 @@ export function instantiateWhiteDoubleTurnStaircase3D(
       registerMesh(treadMesh, 'window_frame_cream', {
         id,
         label,
-        dimensionsLabel: `2.47 × 1.22 m (H=${totalRise.toFixed(2)} m · Dubbele kwartslag)`,
+        dimensionsLabel: `${totalWidth.toFixed(2)} × ${totalDepth.toFixed(2)} m (H=${totalRise.toFixed(2)} m · Dubbele kwartslag)`,
         provenance: 'verified_drawing',
         source: 'Verkooptekening VK-06 & HomeByMe (Witte dubbele kwartslagtrap B61.1)',
         floor,
@@ -1826,22 +1860,26 @@ export function instantiateWhiteDoubleTurnStaircase3D(
     stairGroup.add(treadMesh);
   }
 
-  // Outer Wall Stringers (Trapbomen against left wall, front 12cm wall, and right side)
+  // Outer Wall Stringer along Z = frontZ (vertical-ended parallelogram strictly within [minX, maxX])
   const stringerMat = whiteTreadMat;
-  // Front wall stringer (rising from step 3 at X=minX to step 11 at X=maxX along Z=frontZ)
-  const frontStrRise = stepRise * 8;
-  const frontStrSpan = maxX - minX;
-  const frontStrLen = Math.hypot(frontStrSpan, frontStrRise);
-  const frontStr = new THREE.Mesh(
-    new THREE.BoxGeometry(frontStrLen, 0.22, 0.04),
-    stringerMat
-  );
-  frontStr.position.set(
-    (minX + maxX) / 2,
-    baseY + stepRise * 7.0 - 0.06,
-    frontZ - 0.02
-  );
-  frontStr.rotation.z = Math.atan2(frontStrRise, frontStrSpan);
+  const yLeftStr = baseY + stepRise * 3.0 - 0.06;
+  const yRightStr = baseY + stepRise * 11.0 - 0.06;
+  const halfStrH = 0.11;
+  const frontStrShape = new THREE.Shape();
+  frontStrShape.moveTo(minX, Math.max(baseY, yLeftStr - halfStrH));
+  frontStrShape.lineTo(maxX, Math.max(baseY, yRightStr - halfStrH));
+  frontStrShape.lineTo(maxX, yRightStr + halfStrH);
+  frontStrShape.lineTo(minX, yLeftStr + halfStrH);
+  frontStrShape.closePath();
+
+  const frontStrGeo = new THREE.ExtrudeGeometry(frontStrShape, {
+    depth: 0.04,
+    bevelEnabled: false,
+  });
+  const frontStr = new THREE.Mesh(frontStrGeo, stringerMat);
+  frontStr.position.z = frontZ - 0.04;
+  frontStr.castShadow = true;
+  frontStr.receiveShadow = true;
   stairGroup.add(frontStr);
 
   // White Central Newel Posts (Spillen) & Balustrade Railings (matching HomeByMe 3D views!)
