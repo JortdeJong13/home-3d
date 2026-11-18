@@ -2323,11 +2323,11 @@ function buildStructuralSlabCollars(
   }
 
   // Second floor structural slab at Y2 = +5.70 m (strictly inside outer walls X: 0.40..5.57, Z: -10.06..-0.40,
-  // with stairwell opening inside the Zolder Overloop at X: 1.14..2.87, Z: -4.84..-3.96)
+  // with stairwell opening inside the Zolder Overloop at X: 0.72..2.87, Z: -4.84..-3.96)
   const sfParts: Array<[number, number, number, number]> = [
     [0.40, -3.96, 5.57, -0.40],
     [0.40, -10.06, 5.57, -4.84],
-    [0.40, -4.84, 1.14, -3.96],
+    [0.40, -4.84, 0.72, -3.96],
     [2.87, -4.84, 5.57, -3.96],
   ];
   for (let i = 0; i < sfParts.length; i++) {
