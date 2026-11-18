@@ -1150,7 +1150,7 @@ function buildPlotAndEnvironment(
 
   // 5. SOFT ARCHITECTURAL DIORAMA TREES (Matching positions in user's plot screenshot & front photo)
   // Two trees in back garden + two young standard trees ("Bolbomen" with twin wooden stakes) flanking the front living room window
-  addStylisedDioramaTree(plotGroup, getMat, -1.65, -16.85, 3.6, 1.65, 'plot_tree_foliage_sage', 'plot_tree_trunk', 20);
+  addStylisedDioramaTree(plotGroup, getMat, -1.65, -17.65, 3.6, 1.65, 'plot_tree_foliage_sage', 'plot_tree_trunk', 20);
   addStylisedDioramaTree(plotGroup, getMat, 3.15, -16.10, 3.1, 1.40, 'plot_tree_foliage_sage', 'plot_tree_trunk', 145);
   addFrontBolboomTree(plotGroup, getMat, registerMesh, {
     id: 'front_bolboom_left',
