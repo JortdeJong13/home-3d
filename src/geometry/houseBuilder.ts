@@ -556,8 +556,8 @@ function buildPlotAndEnvironment(
   gravelShape.lineTo(leftBoundaryXAtZ(gravelRearZ) + 0.32, -gravelRearZ);
 
   // Curvy garden path branching from the gravel behind the berging (Z = -14.70) to the rear lounge terrace (Z = -17.73)
-  const pathP0 = { x: -0.12, y: -gravelRearZ };
-  const pathP1 = { x: -0.55, y: 15.65 };
+  const pathP0 = { x: -0.03, y: -gravelRearZ };
+  const pathP1 = { x: -0.48, y: 15.65 };
   const pathP2 = { x: 1.55, y: 16.85 };
   const pathP3 = { x: 2.46, y: 17.73 };
   const evalPath = (t: number) => {
@@ -570,7 +570,7 @@ function buildPlotAndEnvironment(
     // Normal pointing to the right (+X when moving toward +Y / rear)
     return { x, y, nx: dy / len, ny: -dx / len, angle: Math.atan2(dx, dy) };
   };
-  const pathHalfW = 0.45;
+  const pathHalfW = 0.36;
   const pathSteps = 20;
   gravelShape.lineTo(pathP0.x - pathHalfW, pathP0.y);
   for (let i = 1; i <= pathSteps; i++) {
@@ -698,47 +698,46 @@ function buildPlotAndEnvironment(
     }
   }
 
-  // Limestone stepping stones along the curvy garden path (matching patio limestone material & top elevation)
-  const steppingStoneCount = 10;
+  // Limestone stepping stones along the curvy garden path (tidy uniform 38 × 26 cm stones centered on the curve)
+  const steppingStoneCount = 9;
+  const stoneW = 0.38;
+  const stoneD = 0.26;
+  const rCorner = 0.05;
+  const hw = stoneW / 2;
+  const hd = stoneD / 2;
+  const sShape = new THREE.Shape();
+  sShape.moveTo(-hw + rCorner, -hd);
+  sShape.lineTo(hw - rCorner, -hd);
+  sShape.quadraticCurveTo(hw, -hd, hw, -hd + rCorner);
+  sShape.lineTo(hw, hd - rCorner);
+  sShape.quadraticCurveTo(hw, hd, hw - rCorner, hd);
+  sShape.lineTo(-hw + rCorner, hd);
+  sShape.quadraticCurveTo(-hw, hd, -hw, hd - rCorner);
+  sShape.lineTo(-hw, -hd + rCorner);
+  sShape.quadraticCurveTo(-hw, -hd, -hw + rCorner, -hd);
+  sShape.closePath();
+
   for (let i = 0; i < steppingStoneCount; i++) {
-    const t = (i + 0.48) / steppingStoneCount;
+    const t = (i + 0.5) / steppingStoneCount;
     const pt = evalPath(t);
     const id = `garden_path_stone_${i}`;
-    const stoneW = 0.48 + (i % 3) * 0.05;
-    const stoneD = 0.30 + ((i + 1) % 2) * 0.04;
-    const rCorner = 0.08;
-    const hw = stoneW / 2;
-    const hd = stoneD / 2;
-    const sShape = new THREE.Shape();
-    sShape.moveTo(-hw + rCorner, -hd);
-    sShape.lineTo(hw - rCorner, -hd);
-    sShape.quadraticCurveTo(hw, -hd, hw, -hd + rCorner);
-    sShape.lineTo(hw, hd - rCorner);
-    sShape.quadraticCurveTo(hw, hd, hw - rCorner, hd);
-    sShape.lineTo(-hw + rCorner, hd);
-    sShape.quadraticCurveTo(-hw, hd, -hw, hd - rCorner);
-    sShape.lineTo(-hw, -hd + rCorner);
-    sShape.quadraticCurveTo(-hw, -hd, -hw + rCorner, -hd);
-    sShape.closePath();
-
     const stoneGeo = new THREE.ExtrudeGeometry(sShape, {
       depth: 0.045,
       bevelEnabled: false,
     });
     stoneGeo.rotateX(-Math.PI / 2);
     const stone = new THREE.Mesh(stoneGeo, getMat('plot_patio_limestone'));
-    const lateralOffset = ((i % 2 === 0 ? 1 : -1) * 0.04);
-    stone.position.set(pt.x + pt.nx * lateralOffset, -0.0125, -(pt.y + pt.ny * lateralOffset));
-    stone.rotation.y = -pt.angle + (i % 2 === 0 ? 0.08 : -0.08);
+    stone.position.set(pt.x, -0.0125, -pt.y);
+    stone.rotation.y = -pt.angle;
     registerMesh(
       stone,
       'plot_patio_limestone',
       {
         id,
-        label: 'Stapsteen Tuinpad naar Loungehoek',
+        label: 'Stapsteen Tuinpad naar Loungehoek (38 × 26 cm)',
         dimensionsLabel: `${stoneW.toFixed(2)} × ${stoneD.toFixed(2)} m`,
         provenance: 'user_supplied',
-        source: 'Garden layout: curvy stepping-stone path connecting berging gravel path to lounge terrace',
+        source: 'Garden layout: tidy stepping-stone path connecting berging gravel path to lounge terrace',
         floor: 'ground',
         category: 'furniture',
       },
