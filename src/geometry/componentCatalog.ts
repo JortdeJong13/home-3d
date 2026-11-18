@@ -79,15 +79,15 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
   // 3. First Floor French Balcony Windows (Shared on Front Slaapkamer & Rear Kantoor)
   window_french_balcony_1st: {
     prefabId: 'window_french_balcony_1st',
-    defaultLabel: 'Frans Balkon Dubbel Draairaam (136 × 215 cm)',
-    width: 1.36,
+    defaultLabel: 'Frans Balkon Dubbel Draairaam (140 × 215 cm)',
+    width: 1.40,
     height: 2.15,
     sillHeight: 0.15,
     frameMaterial: 'window_frame_cream',
     panelMaterial: 'window_glass_day',
     hasTerracottaSurround: true,
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 voorgevel/achtergevel & Woning.jpg',
+    provenance: 'user_supplied',
+    source: 'User specification (140 × 215 cm: 2 × 70 cm doors, front 64 cm from shared wall)',
   },
 
   // 4. Narrow Vertical Slot Window (Shared on 1st Floor Overloop & 2nd Floor Front/Rear Gables)
@@ -864,13 +864,6 @@ export function instantiateOpeningPrefab3D(
 
     case 'window_french_balcony_1st':
     case 'neighbour_french_balcony': {
-      const centerMullion = new THREE.Mesh(
-        new THREE.BoxGeometry(0.055, innerH, frameDepth * 0.9),
-        getMat(op.frameMaterial)
-      );
-      centerMullion.position.z = frameCenterZ;
-      group.add(centerMullion);
-
       const railMat = op.prefabId === 'neighbour_french_balcony' ? 'neighbour_window_grey' : 'door_exterior_sage';
       const railZ = wallThickness / 2 - 0.015;
       const topRailY = -0.05;
@@ -902,26 +895,127 @@ export function instantiateOpeningPrefab3D(
         group.add(baluster);
       }
 
-      const glass = new THREE.Mesh(
-        new THREE.BoxGeometry(innerW, innerH, 0.025),
-        getMat(op.panelMaterial)
-      );
-      glass.position.z = frameCenterZ;
-      registerMesh(
-        glass,
-        op.panelMaterial,
-        {
+      if (op.prefabId === 'neighbour_french_balcony') {
+        const centerMullion = new THREE.Mesh(
+          new THREE.BoxGeometry(0.055, innerH, frameDepth * 0.9),
+          getMat(op.frameMaterial)
+        );
+        centerMullion.position.z = frameCenterZ;
+        group.add(centerMullion);
+
+        const glass = new THREE.Mesh(
+          new THREE.BoxGeometry(innerW, innerH, 0.025),
+          getMat(op.panelMaterial)
+        );
+        glass.position.z = frameCenterZ;
+        registerMesh(
+          glass,
+          op.panelMaterial,
+          {
+            id: op.id,
+            label: op.label,
+            dimensionsLabel: `${op.width.toFixed(2)} × ${op.height.toFixed(2)} m`,
+            provenance: op.provenance,
+            source: op.source,
+            floor,
+          },
+          false,
+          false
+        );
+        group.add(glass);
+        break;
+      }
+
+      // Bouwnummer 55 French balcony double patio doors: two equal inward-opening leaves
+      const leafW = innerW / 2 - 0.002;
+      const leafThick = 0.05;
+      const stileW = 0.056;
+      const topRailH = 0.056;
+      const bottomRailH = 0.08;
+      const glassW = Math.max(0.10, leafW - stileW * 2);
+      const glassH = Math.max(0.20, innerH - topRailH - bottomRailH);
+      const glassCenterY = (bottomRailH - topRailH) / 2;
+
+      const buildBalconyLeaf = (side: -1 | 1) => {
+        const pivot = new THREE.Group();
+        pivot.position.set(side * (innerW / 2), 0, frameCenterZ);
+
+        const dir = -side; // +1 for left leaf, -1 for right leaf
+        const leafCenterX = dir * (leafW / 2);
+
+        const frameGeos: THREE.BufferGeometry[] = [];
+        const addBar = (w: number, h: number, d: number, x: number, y: number) => {
+          const g = new THREE.BoxGeometry(w, h, d);
+          g.translate(x, y, 0);
+          frameGeos.push(g);
+        };
+
+        addBar(stileW, innerH, leafThick, dir * (stileW / 2), 0);
+        addBar(stileW, innerH, leafThick, dir * (leafW - stileW / 2), 0);
+        addBar(glassW, topRailH, leafThick, leafCenterX, innerH / 2 - topRailH / 2);
+        addBar(glassW, bottomRailH, leafThick, leafCenterX, -innerH / 2 + bottomRailH / 2);
+
+        const mergedFrame = mergeGeometries(frameGeos, false);
+        for (const g of frameGeos) g.dispose();
+        const frameMesh = new THREE.Mesh(mergedFrame, getMat(op.frameMaterial));
+        frameMesh.castShadow = true;
+        frameMesh.receiveShadow = true;
+        pivot.add(frameMesh);
+
+        const glassMesh = new THREE.Mesh(
+          new THREE.BoxGeometry(glassW + 0.008, glassH + 0.008, 0.014),
+          getMat(op.panelMaterial)
+        );
+        glassMesh.position.set(leafCenterX, glassCenterY, 0);
+        pivot.add(glassMesh);
+
+        const handleGroup = createVerticalWindowHandle(leafThick, getMat(op.frameMaterial), true);
+        handleGroup.position.set(dir * (leafW - stileW / 2), -0.02, 0);
+        pivot.add(handleGroup);
+
+        group.add(pivot);
+        return { pivot, frameMesh, glassMesh };
+      };
+
+      const leftLeaf = buildBalconyLeaf(-1);
+      const rightLeaf = buildBalconyLeaf(1);
+
+      const meta = {
+        id: op.id,
+        label: op.label,
+        dimensionsLabel: `${op.width.toFixed(2)} × ${op.height.toFixed(2)} m`,
+        provenance: op.provenance,
+        source: op.source,
+        floor,
+      };
+      registerMesh(leftLeaf.glassMesh, op.panelMaterial, meta, false, false);
+      registerMesh(rightLeaf.glassMesh, op.panelMaterial, meta, false, false);
+
+      const trigger = createTrigger();
+      if (onRegisterDoor) {
+        onRegisterDoor({
           id: op.id,
           label: op.label,
-          dimensionsLabel: `${op.width.toFixed(2)} × ${op.height.toFixed(2)} m`,
-          provenance: op.provenance,
-          source: op.source,
           floor,
-        },
-        false,
-        false
-      );
-      group.add(glass);
+          pivots: [
+            {
+              group: leftLeaf.pivot,
+              openAngle: Math.PI * 0.45, // swings inward (-Z)
+              closedAngle: 0,
+              currentAngle: 0,
+            },
+            {
+              group: rightLeaf.pivot,
+              openAngle: -Math.PI * 0.45, // swings inward (-Z)
+              closedAngle: 0,
+              currentAngle: 0,
+            },
+          ],
+          triggerMeshes: [trigger, leftLeaf.frameMesh, rightLeaf.frameMesh, leftLeaf.glassMesh, rightLeaf.glassMesh],
+          isHovered: false,
+          isPinned: false,
+        });
+      }
       break;
     }
 

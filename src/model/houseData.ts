@@ -549,8 +549,8 @@ export function getHouseWalls(): WallSpec[] {
         {
           id: 'ff_win_front_french',
           prefabId: 'window_french_balcony_1st',
-          label: 'Frans Balkon Slaapkamer Voorzijde (136 × 215 cm)',
-          offsetAlongWall: 3.76,
+          label: 'Frans Balkon Slaapkamer Voorzijde (140 × 215 cm)',
+          offsetAlongWall: 4.23, // Right edge at X = 5.57 - 0.64 = 4.93 m -> center = 4.93 - 0.70 = 4.23 m (64 cm from shared wall)
         },
       ],
     },
@@ -607,7 +607,7 @@ export function getHouseWalls(): WallSpec[] {
         {
           id: 'ff_win_rear_kantoor',
           prefabId: 'window_french_balcony_1st',
-          label: 'Frans Balkon Kantoor Achterzijde (136 × 215 cm)',
+          label: 'Frans Balkon Kantoor Achterzijde (140 × 215 cm)',
           offsetAlongWall: 2.05,
         },
         {
