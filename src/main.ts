@@ -5,6 +5,8 @@ import { EdgeBlurPass } from './viewer/edgeBlur';
 import { SkyRenderer } from './viewer/skyRenderer';
 import { createLightingRig, applyDayNightState } from './viewer/dayNightController';
 import { FLOOR_STOPS, applyScrollProgressToScene } from './viewer/scrollTimeline';
+import { WeatherSystem } from './viewer/weatherSystem';
+import { SEASON_ORDER, SeasonId, SeasonWeights, createSeasonWeights } from './model/seasons';
 
 // =============================================================================
 // 1. INITIALISE THREE.JS SCENE & SOFT ARCHITECTURAL DIORAMA RENDERER
@@ -33,12 +35,17 @@ let isNightTarget = false;
 let targetNightPhase = 0.0; // Increments by +1.0 per toggle (even = Day, odd = Night) for continuous 180° forward rotation
 let currentNightPhase = 0.0;
 
+let activeSeason: SeasonId = 'summer';
+let targetSeasonWeights: SeasonWeights = createSeasonWeights(activeSeason);
+const currentSeasonWeights: SeasonWeights = createSeasonWeights(activeSeason);
+
 // Scroll state: smooth damped interpolation of physical scroll progress
 let rawScrollProgress = 0.0;
 let smoothedScrollProgress = 0.0;
 
 const houseGroups: HouseSceneGroups = buildHouseScene();
 scene.add(houseGroups.root);
+const weatherSystem = new WeatherSystem(houseGroups);
 
 // =============================================================================
 // 2. DOM ELEMENTS & UI SYNCHRONISATION
@@ -48,6 +55,7 @@ const celestialRotorEl = document.getElementById('celestial-rotor');
 const selectorFillEl = document.getElementById('selector-line-fill');
 const scrollHintEl = document.getElementById('scroll-hint');
 const floorDotBtns = Array.from(document.querySelectorAll<HTMLButtonElement>('.floor-dot-btn'));
+const seasonBtns = Array.from(document.querySelectorAll<HTMLButtonElement>('#season-switcher .season-btn'));
 
 const btnDayNight = document.getElementById('btn-day-night');
 const dayNightIcon = document.getElementById('day-night-icon');
@@ -155,6 +163,24 @@ for (const btn of floorDotBtns) {
   });
 }
 
+// Season Switcher (Spring / Summer / Autumn / Winter)
+function setSeason(season: SeasonId) {
+  activeSeason = season;
+  targetSeasonWeights = createSeasonWeights(season);
+  for (const btn of seasonBtns) {
+    btn.classList.toggle('active', btn.dataset.season === season);
+  }
+}
+
+for (const btn of seasonBtns) {
+  btn.addEventListener('click', () => {
+    const s = btn.dataset.season as SeasonId | undefined;
+    if (s && SEASON_ORDER.includes(s)) {
+      setSeason(s);
+    }
+  });
+}
+
 // Day / Night Toggle with Rotating Celestial Backdrop (Section 5.2)
 btnDayNight?.addEventListener('click', () => {
   isNightTarget = !isNightTarget;
@@ -172,6 +198,9 @@ window.addEventListener('keydown', (e) => {
     edgeBlur.enabled = !edgeBlur.enabled; // compare with / without edge diffusion
   } else if (e.key === 'n' || e.key === 'N') {
     btnDayNight?.click();
+  } else if (e.key === 's' || e.key === 'S') {
+    const nextIdx = (SEASON_ORDER.indexOf(activeSeason) + 1) % SEASON_ORDER.length;
+    setSeason(SEASON_ORDER[nextIdx]);
   } else if (e.key === 'r' || e.key === 'R') {
     cameraController.resetToDefault();
   }
@@ -254,7 +283,7 @@ window.addEventListener('resize', () => {
 // =============================================================================
 let lastTime = performance.now();
 let lastTrackedStopIndex = -1;
-applyDayNightState(lightingRig, houseGroups, 0, celestialRotorEl);
+applyDayNightState(lightingRig, houseGroups, 0, celestialRotorEl, currentSeasonWeights);
 applyScrollProgressToScene(houseGroups, 0);
 
 function animate(now: number) {
@@ -297,16 +326,45 @@ function animate(now: number) {
     }
   }
 
-  // 2. Smoothly animate Day / Night transition & Rotating Celestial Backdrop
+  // 3. Smoothly animate Day / Night transition & Season weights
+  let lightingDirty = false;
   if (Math.abs(targetNightPhase - currentNightPhase) > 0.0005) {
     currentNightPhase += (targetNightPhase - currentNightPhase) * (1 - Math.exp(-dt * 3.2));
-    applyDayNightState(lightingRig, houseGroups, currentNightPhase, celestialRotorEl);
+    lightingDirty = true;
   }
 
-  // 3. Update Camera Controls & Render
+  const seasonDamp = 1 - Math.exp(-dt * 2.4);
+  for (const s of SEASON_ORDER) {
+    const diff = targetSeasonWeights[s] - currentSeasonWeights[s];
+    if (Math.abs(diff) > 0.0004) {
+      currentSeasonWeights[s] += diff * seasonDamp;
+      lightingDirty = true;
+    } else if (currentSeasonWeights[s] !== targetSeasonWeights[s]) {
+      currentSeasonWeights[s] = targetSeasonWeights[s];
+      lightingDirty = true;
+    }
+  }
+
+  if (lightingDirty) {
+    applyDayNightState(lightingRig, houseGroups, currentNightPhase, celestialRotorEl, currentSeasonWeights);
+  }
+
+  const cycle = ((currentNightPhase % 2) + 2) % 2;
+  const nightFactor = cycle <= 1 ? cycle : 2 - cycle;
+
+  // 4. Update Camera Controls, Sky, Diorama & Seasonal Weather
   cameraController.update(dt);
-  skyRenderer.update(currentNightPhase);
+  skyRenderer.update(currentNightPhase, currentSeasonWeights);
   edgeBlur.render(scene, cameraController.camera);
+  weatherSystem.updateAndRender(
+    renderer,
+    cameraController.camera,
+    edgeBlur,
+    now * 0.001,
+    currentSeasonWeights,
+    nightFactor,
+    smoothedScrollProgress
+  );
 }
 
 requestAnimationFrame(animate);

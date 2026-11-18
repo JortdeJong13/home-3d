@@ -1,6 +1,13 @@
 import * as THREE from 'three';
 import { HouseSceneGroups } from '../geometry/houseBuilder';
 import { MATERIAL_PALETTE, MaterialId } from '../model/materials';
+import {
+  DEFAULT_SEASON_WEIGHTS,
+  SEASON_LIGHTING_PRESETS,
+  SEASON_ORDER,
+  SeasonWeights,
+  evaluateSeasonalMaterial,
+} from '../model/seasons';
 
 export interface SceneLightingRig {
   hemiLight: THREE.HemisphereLight;
@@ -56,7 +63,8 @@ export function applyDayNightState(
   rig: SceneLightingRig,
   groups: HouseSceneGroups,
   nightPhase: number,
-  celestialRotorEl: HTMLElement | null
+  celestialRotorEl: HTMLElement | null,
+  seasonWeights: SeasonWeights = DEFAULT_SEASON_WEIGHTS
 ) {
   const cycle = ((nightPhase % 2) + 2) % 2;
   const t = cycle <= 1 ? cycle : 2 - cycle;
@@ -74,10 +82,69 @@ export function applyDayNightState(
   const sunY = THREE.MathUtils.lerp(24, 20, t) - dip * 7.5;
   rig.sunLight.position.set(sunX, Math.max(8, sunY), sunZ);
 
-  // 3. Interpolate light colours and intensities (including subtle golden-hour warmth at t ~ 0.5)
-  const daySunColor = new THREE.Color('#fff5e4');
-  const duskSunColor = new THREE.Color('#edd8c8');
-  const nightMoonColor = new THREE.Color('#a9b8e8');
+  // 3. Blend seasonal lighting parameters cleanly
+  const daySunColor = new THREE.Color(0, 0, 0);
+  const duskSunColor = new THREE.Color(0, 0, 0);
+  const nightMoonColor = new THREE.Color(0, 0, 0);
+  const dayHemiSky = new THREE.Color(0, 0, 0);
+  const nightHemiSky = new THREE.Color(0, 0, 0);
+  const dayHemiGround = new THREE.Color(0, 0, 0);
+  const nightHemiGround = new THREE.Color(0, 0, 0);
+  const dayAmb = new THREE.Color(0, 0, 0);
+  const nightAmb = new THREE.Color(0, 0, 0);
+  const scratchColor = new THREE.Color();
+  const addScaledColor = (dst: THREE.Color, src: THREE.Color, w: number) => {
+    dst.r += src.r * w;
+    dst.g += src.g * w;
+    dst.b += src.b * w;
+  };
+
+  let sunIntDay = 0;
+  let sunIntNight = 0;
+  let hemiIntDay = 0;
+  let hemiIntNight = 0;
+  let ambIntDay = 0;
+  let ambIntNight = 0;
+  let rimIntDay = 0;
+  let rimIntNight = 0;
+  let interiorGlowBoost = 0;
+
+  for (const s of SEASON_ORDER) {
+    const w = seasonWeights[s];
+    if (w <= 0.0001) continue;
+    const p = SEASON_LIGHTING_PRESETS[s];
+
+    scratchColor.set(p.daySunColor);
+    addScaledColor(daySunColor, scratchColor, w);
+    scratchColor.set(p.duskSunColor);
+    addScaledColor(duskSunColor, scratchColor, w);
+    scratchColor.set(p.nightMoonColor);
+    addScaledColor(nightMoonColor, scratchColor, w);
+
+    scratchColor.set(p.hemiSkyDay);
+    addScaledColor(dayHemiSky, scratchColor, w);
+    scratchColor.set(p.hemiSkyNight);
+    addScaledColor(nightHemiSky, scratchColor, w);
+    scratchColor.set(p.hemiGroundDay);
+    addScaledColor(dayHemiGround, scratchColor, w);
+    scratchColor.set(p.hemiGroundNight);
+    addScaledColor(nightHemiGround, scratchColor, w);
+
+    scratchColor.set(p.ambDay);
+    addScaledColor(dayAmb, scratchColor, w);
+    scratchColor.set(p.ambNight);
+    addScaledColor(nightAmb, scratchColor, w);
+
+    sunIntDay += p.sunIntensityDay * w;
+    sunIntNight += p.sunIntensityNight * w;
+    hemiIntDay += p.hemiIntensityDay * w;
+    hemiIntNight += p.hemiIntensityNight * w;
+    ambIntDay += p.ambIntensityDay * w;
+    ambIntNight += p.ambIntensityNight * w;
+    rimIntDay += p.rimIntensityDay * w;
+    rimIntNight += p.rimIntensityNight * w;
+    interiorGlowBoost += p.interiorGlowBoost * w;
+  }
 
   const currentSunColor = new THREE.Color();
   if (t < 0.5) {
@@ -86,59 +153,69 @@ export function applyDayNightState(
     currentSunColor.lerpColors(duskSunColor, nightMoonColor, (t - 0.5) * 2);
   }
   rig.sunLight.color.copy(currentSunColor);
-  rig.sunLight.intensity = THREE.MathUtils.lerp(1.85, 1.0, t) * (1 - dip * 0.35);
+  rig.sunLight.intensity = THREE.MathUtils.lerp(sunIntDay, sunIntNight, t) * (1 - dip * 0.35);
 
-  const dayHemiSky = new THREE.Color('#eef7fa');
-  const nightHemiSky = new THREE.Color('#7b8fc4');
-  const dayHemiGround = new THREE.Color('#f3e5d0');
-  const nightHemiGround = new THREE.Color('#3b3f5c');
   rig.hemiLight.color.lerpColors(dayHemiSky, nightHemiSky, t);
   rig.hemiLight.groundColor.lerpColors(dayHemiGround, nightHemiGround, t);
-  rig.hemiLight.intensity = THREE.MathUtils.lerp(1.20, 1.05, t);
+  rig.hemiLight.intensity = THREE.MathUtils.lerp(hemiIntDay, hemiIntNight, t);
 
-  const dayAmb = new THREE.Color('#fff8ee');
-  const nightAmb = new THREE.Color('#7d86b0');
   rig.ambientLight.color.lerpColors(dayAmb, nightAmb, t);
-  rig.ambientLight.intensity = THREE.MathUtils.lerp(0.42, 0.75, t);
+  rig.ambientLight.intensity = THREE.MathUtils.lerp(ambIntDay, ambIntNight, t);
 
-  rig.rimLight.intensity = THREE.MathUtils.lerp(0.52, 0.25, t);
+  rig.rimLight.intensity = THREE.MathUtils.lerp(rimIntDay, rimIntNight, t);
 
-  // 4. Interior Warm Point Lights (smoothly turn on as dusk/night arrives)
+  // 4. Interior Warm Point Lights (smoothly turn on as dusk/night arrives; subtly warmer in autumn/winter)
   const interiorFactor = THREE.MathUtils.smoothstep(t, 0.25, 0.85);
   for (const pt of groups.interiorLights) {
     const maxI = (pt.userData.maxNightIntensity as number) ?? 4.0;
-    pt.intensity = maxI * interiorFactor;
+    pt.intensity = maxI * interiorFactor * interiorGlowBoost;
   }
 
-  // 5. Outer Ground Diffusion Shader Colour
+  // 5. Outer Ground Diffusion Shader Colour & Surface Snow/Wet Uniforms
+  groups.seasonUniforms.uSeasonSnow.value = seasonWeights.winter;
+  groups.seasonUniforms.uSeasonWet.value = seasonWeights.autumn;
+  groups.seasonUniforms.uSnowColorOwned.value.lerpColors(
+    scratchColor.set('#eef4f8'),
+    new THREE.Color('#6b7a8f'),
+    t
+  );
+  groups.seasonUniforms.uSnowColorNeighbour.value.lerpColors(
+    scratchColor.set('#eaedf0'),
+    new THREE.Color('#535b68'),
+    t
+  );
+
   if (groups.backdropFadeMaterial) {
-    const cDay = new THREE.Color(MATERIAL_PALETTE.neighbour_ground_grey.colorDay);
-    const cNight = new THREE.Color(MATERIAL_PALETTE.neighbour_ground_grey.colorNight);
+    const cDay = new THREE.Color();
+    const cNight = new THREE.Color();
+    evaluateSeasonalMaterial('neighbour_ground_grey', seasonWeights, cDay, cNight);
     groups.backdropFadeMaterial.uniforms.uColor.value.lerpColors(cDay, cNight, t);
   }
 
-  // 6. Interpolate Material Palette Colours & Emissive Window Glow
+  // 6. Interpolate Material Palette Colours, Seasonal Foliage/Ground, & Emissive Window Glow
   const tempDay = new THREE.Color();
   const tempNight = new THREE.Color();
   const ZeroColor = new THREE.Color('#000000');
 
   for (const [id, mat] of groups.materialMap.entries()) {
-    const def = MATERIAL_PALETTE[id as MaterialId];
+    const matId = id as MaterialId;
+    const def = MATERIAL_PALETTE[matId];
     if (!def) continue;
-    tempDay.set(def.colorDay);
-    tempNight.set(def.colorNight);
-    mat.color.lerpColors(tempDay, tempNight, t);
 
-    if (def.opacity !== undefined) {
-      const opDay = def.opacity;
-      const opNight = def.opacityNight ?? opDay;
+    const seasonal = evaluateSeasonalMaterial(matId, seasonWeights, tempDay, tempNight);
+    mat.color.lerpColors(tempDay, tempNight, t);
+    mat.roughness = seasonal.roughness;
+
+    if (seasonal.opacity !== undefined) {
+      const opDay = seasonal.opacity;
+      const opNight = seasonal.opacityNight ?? opDay;
       mat.opacity = THREE.MathUtils.lerp(opDay, opNight, interiorFactor);
     }
 
     if (def.emissiveNight) {
       const emColor = new THREE.Color(def.emissiveNight);
       mat.emissive.lerpColors(ZeroColor, emColor, interiorFactor);
-      mat.emissiveIntensity = (def.emissiveIntensityNight ?? 0.3) * interiorFactor;
+      mat.emissiveIntensity = (def.emissiveIntensityNight ?? 0.3) * interiorFactor * interiorGlowBoost;
     }
   }
 }

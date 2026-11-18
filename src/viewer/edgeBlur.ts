@@ -182,6 +182,14 @@ export class EdgeBlurPass {
     this.quadScene.add(quad);
   }
 
+  getSceneDepthTexture(): THREE.Texture {
+    return this.depthTarget.depthTexture!;
+  }
+
+  getDrawingSize(): THREE.Vector2 {
+    return this.size;
+  }
+
   render(scene: THREE.Scene, camera: THREE.OrthographicCamera) {
     if (!this.enabled) {
       this.renderer.setRenderTarget(null);
@@ -208,6 +216,11 @@ export class EdgeBlurPass {
     const hiddenHitboxes: THREE.Object3D[] = [];
     scene.traverse((obj) => {
       if (!obj.visible) return;
+      if (obj.userData?.skipEdgeBlurDepth) {
+        obj.visible = false;
+        hiddenHitboxes.push(obj);
+        return;
+      }
       if ((obj as THREE.Mesh).isMesh) {
         const mat = (obj as THREE.Mesh).material;
         const isInvisible = Array.isArray(mat)

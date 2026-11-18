@@ -91,7 +91,7 @@
         cursor: grabbing;
       }
 
-      /* Top-Right Controls: Rotating Day/Night Switch + Audit & B33 Toggles */
+      /* Top-Right Controls: Season Switcher + Rotating Day/Night Switch */
       #top-right-controls {
         position: absolute;
         top: 24px;
@@ -100,6 +100,56 @@
         display: flex;
         align-items: center;
         gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .season-pill-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        background: var(--panel-bg);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid var(--panel-border);
+        padding: 4px;
+        border-radius: 999px;
+        box-shadow: var(--shadow-soft);
+      }
+
+      .season-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 550;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        user-select: none;
+      }
+
+      .season-btn:hover {
+        color: var(--text-primary);
+        background: var(--accent-soft);
+      }
+
+      .season-btn.active {
+        background: var(--accent);
+        color: #ffffff;
+      }
+
+      body.night-mode .season-btn.active {
+        color: #0f172a;
+      }
+
+      .season-icon {
+        font-size: 13px;
+        line-height: 1;
       }
 
       .pill-btn {
@@ -352,6 +402,13 @@
           bottom: 82px;
           left: 14px;
           right: auto;
+          justify-content: flex-start;
+        }
+        .season-btn {
+          padding: 5px 8px;
+        }
+        .season-text {
+          display: none;
         }
         #floor-selector {
           right: 14px;
@@ -376,8 +433,26 @@
       <!-- Top-Left Project Header & Synchronised Floor Readout -->
 
 
-      <!-- Top-Right Toggle: Day/Night -->
+      <!-- Top-Right Toggles: Season Switcher + Day/Night -->
       <div id="top-right-controls">
+        <div id="season-switcher" class="season-pill-group" role="group" aria-label="Seizoen">
+          <button class="season-btn" data-season="spring" title="Lente · Bloesem (Sneltoets: S)">
+            <span class="season-icon">🌸</span>
+            <span class="season-text">Lente</span>
+          </button>
+          <button class="season-btn active" data-season="summer" title="Zomer · Zonnig (Sneltoets: S)">
+            <span class="season-icon">🌿</span>
+            <span class="season-text">Zomer</span>
+          </button>
+          <button class="season-btn" data-season="autumn" title="Herfst · Regen &amp; vallend blad (Sneltoets: S)">
+            <span class="season-icon">🍂</span>
+            <span class="season-text">Herfst</span>
+          </button>
+          <button class="season-btn" data-season="winter" title="Winter · Sneeuw (Sneltoets: S)">
+            <span class="season-icon">❄️</span>
+            <span class="season-text">Winter</span>
+          </button>
+        </div>
         <button id="btn-day-night" class="pill-btn" title="Wissel tussen Dag en Avond (Sneltoets: N)">
           <span class="day-night-wheel-icon" id="day-night-icon">☀️</span>
           <span id="day-night-label">Dag</span>

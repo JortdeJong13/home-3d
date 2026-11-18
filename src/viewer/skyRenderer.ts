@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { DEFAULT_SEASON_WEIGHTS, SEASON_ORDER, SeasonId, SeasonWeights } from '../model/seasons';
 
 /**
  * Physically-placed sky: the sun, moon and stars live at fixed directions on a celestial sphere
@@ -15,26 +16,75 @@ const MOON_ELEV = THREE.MathUtils.degToRad(25.0);
 const MOON_AZ_OFFSET = THREE.MathUtils.degToRad(30); // moon starts right of the default view direction
 const DAY_BIAS = 0.7;
 
-const STOPS: Array<[number, THREE.Color]> = [
-  [0.45, new THREE.Color('#bcdbe8')],
-  [0.3, new THREE.Color('#e9f1ee')],
-  [0.15, new THREE.Color('#e7dfd7')],
-  [0.02, new THREE.Color('#b8a9aa')],
-  [-0.12, new THREE.Color('#5c607c')],
-  [-0.3, new THREE.Color('#2a3a6e')],
-  [-0.5, new THREE.Color('#26356a')],
-];
+type SkyStopList = Array<[number, THREE.Color]>;
+
+const SEASON_STOPS: Record<SeasonId, SkyStopList> = {
+  spring: [
+    [0.45, new THREE.Color('#bde0ec')],
+    [0.3, new THREE.Color('#ebf5f2')],
+    [0.15, new THREE.Color('#efe7de')],
+    [0.02, new THREE.Color('#bfaeba')],
+    [-0.12, new THREE.Color('#5d6380')],
+    [-0.3, new THREE.Color('#2b3c70')],
+    [-0.5, new THREE.Color('#27376c')],
+  ],
+  summer: [
+    [0.45, new THREE.Color('#bcdbe8')],
+    [0.3, new THREE.Color('#e9f1ee')],
+    [0.15, new THREE.Color('#e7dfd7')],
+    [0.02, new THREE.Color('#b8a9aa')],
+    [-0.12, new THREE.Color('#5c607c')],
+    [-0.3, new THREE.Color('#2a3a6e')],
+    [-0.5, new THREE.Color('#26356a')],
+  ],
+  autumn: [
+    [0.45, new THREE.Color('#a4b9c5')],
+    [0.3, new THREE.Color('#cfd7d6')],
+    [0.15, new THREE.Color('#dad0c4')],
+    [0.02, new THREE.Color('#ad9c98')],
+    [-0.12, new THREE.Color('#51546c')],
+    [-0.3, new THREE.Color('#253158')],
+    [-0.5, new THREE.Color('#212c50')],
+  ],
+  winter: [
+    [0.45, new THREE.Color('#c6dae6')],
+    [0.3, new THREE.Color('#e6eef4')],
+    [0.15, new THREE.Color('#e4e8ee')],
+    [0.02, new THREE.Color('#b3b5c4')],
+    [-0.12, new THREE.Color('#545f82')],
+    [-0.3, new THREE.Color('#233466')],
+    [-0.5, new THREE.Color('#1e2c59')],
+  ],
+};
+
+const ACTIVE_STOPS: SkyStopList = SEASON_STOPS.summer.map(([pos, c]) => [pos, c.clone()]);
+
+function updateActiveStops(weights: SeasonWeights) {
+  for (let idx = 0; idx < ACTIVE_STOPS.length; idx++) {
+    const out = ACTIVE_STOPS[idx][1];
+    out.setRGB(0, 0, 0);
+    for (const s of SEASON_ORDER) {
+      const w = weights[s];
+      if (w > 0.0001) {
+        const stopColor = SEASON_STOPS[s][idx][1];
+        out.r += stopColor.r * w;
+        out.g += stopColor.g * w;
+        out.b += stopColor.b * w;
+      }
+    }
+  }
+}
 
 function skyColor(D: number, out: THREE.Color) {
-  if (D >= STOPS[0][0]) return out.copy(STOPS[0][1]);
-  for (let i = 1; i < STOPS.length; i++) {
-    if (D >= STOPS[i][0]) {
-      const [d0, c0] = STOPS[i - 1];
-      const [d1, c1] = STOPS[i];
+  if (D >= ACTIVE_STOPS[0][0]) return out.copy(ACTIVE_STOPS[0][1]);
+  for (let i = 1; i < ACTIVE_STOPS.length; i++) {
+    if (D >= ACTIVE_STOPS[i][0]) {
+      const [d0, c0] = ACTIVE_STOPS[i - 1];
+      const [d1, c1] = ACTIVE_STOPS[i];
       return out.lerpColors(c1, c0, (D - d1) / (d0 - d1));
     }
   }
-  return out.copy(STOPS[STOPS.length - 1][1]);
+  return out.copy(ACTIVE_STOPS[ACTIVE_STOPS.length - 1][1]);
 }
 
 interface CloudPuff {
@@ -282,9 +332,10 @@ export class SkyRenderer {
     return { fh, r, elevDeg };
   }
 
-  update(phase: number) {
+  update(phase: number, seasonWeights: SeasonWeights = DEFAULT_SEASON_WEIGHTS) {
     const cycle = ((phase % 2) + 2) % 2;
     const t = cycle <= 1 ? cycle : 2 - cycle;
+    updateActiveStops(seasonWeights);
 
     const W = (this.canvas.width = window.innerWidth);
     const Hh = (this.canvas.height = window.innerHeight);
@@ -354,23 +405,26 @@ export class SkyRenderer {
     const dotAM = A.dot(M_night);
     const M0 = M_night.clone().negate().addScaledVector(A, 2 * dotAM);
     const cloudDayFactor = 1 - THREE.MathUtils.smoothstep(t, 0.48, 0.76);
+    const autumnW = seasonWeights.autumn;
+    const winterW = seasonWeights.winter;
+    const cloudScaleBoost = 1 + autumnW * 0.16 + winterW * 0.05;
     if (cloudDayFactor > 0.005) {
       const nowSec = performance.now() * 0.001;
       const sunsetFactor = Math.sin(t * Math.PI); // peaks at golden hour (t = 0.5)
       const sunAzimuth = Math.atan2(H.z, H.x);
 
-      // Interpolate puff color tones between crisp daylight white and muted sunset warmth
-      const hlR = Math.round(THREE.MathUtils.lerp(255, 255, sunsetFactor));
-      const hlG = Math.round(THREE.MathUtils.lerp(255, 251, sunsetFactor));
-      const hlB = Math.round(THREE.MathUtils.lerp(255, 245, sunsetFactor));
+      // Interpolate puff color tones between crisp daylight white, muted sunset warmth, and soft autumn mist
+      const hlR = Math.round(THREE.MathUtils.lerp(THREE.MathUtils.lerp(255, 255, sunsetFactor), 232, autumnW));
+      const hlG = Math.round(THREE.MathUtils.lerp(THREE.MathUtils.lerp(255, 251, sunsetFactor), 234, autumnW));
+      const hlB = Math.round(THREE.MathUtils.lerp(THREE.MathUtils.lerp(255, 245, sunsetFactor), 236, autumnW));
 
-      const bodyR = Math.round(THREE.MathUtils.lerp(242, 246, sunsetFactor));
-      const bodyG = Math.round(THREE.MathUtils.lerp(248, 238, sunsetFactor));
-      const bodyB = Math.round(THREE.MathUtils.lerp(254, 232, sunsetFactor));
+      const bodyR = Math.round(THREE.MathUtils.lerp(THREE.MathUtils.lerp(242, 246, sunsetFactor), 212, autumnW));
+      const bodyG = Math.round(THREE.MathUtils.lerp(THREE.MathUtils.lerp(248, 238, sunsetFactor), 217, autumnW));
+      const bodyB = Math.round(THREE.MathUtils.lerp(THREE.MathUtils.lerp(254, 232, sunsetFactor), 222, autumnW));
 
-      const baseR = Math.round(THREE.MathUtils.lerp(218, 214, sunsetFactor));
-      const baseG = Math.round(THREE.MathUtils.lerp(232, 206, sunsetFactor));
-      const baseB = Math.round(THREE.MathUtils.lerp(244, 212, sunsetFactor));
+      const baseR = Math.round(THREE.MathUtils.lerp(THREE.MathUtils.lerp(218, 214, sunsetFactor), 182, autumnW));
+      const baseG = Math.round(THREE.MathUtils.lerp(THREE.MathUtils.lerp(232, 206, sunsetFactor), 190, autumnW));
+      const baseB = Math.round(THREE.MathUtils.lerp(THREE.MathUtils.lerp(244, 212, sunsetFactor), 198, autumnW));
 
       const pxPerRadY = (0.5 * Hh) / TAN_V;
       const pxPerRadX = (0.5 * W) / tanH;
@@ -411,9 +465,9 @@ export class SkyRenderer {
 
         // Render each puff within this cloud formation
         for (const puff of cloud.puffs) {
-          const px = cx + puff.dx * cloud.scale * pxPerRadX;
-          const py = cy - puff.dy * cloud.scale * pxPerRadY;
-          const pr = puff.r * cloud.scale * pxPerRadY;
+          const px = cx + puff.dx * cloud.scale * cloudScaleBoost * pxPerRadX;
+          const py = cy - puff.dy * cloud.scale * cloudScaleBoost * pxPerRadY;
+          const pr = puff.r * cloud.scale * cloudScaleBoost * pxPerRadY;
           if (pr <= 2) continue;
 
           if (puff.isBase) {
@@ -463,7 +517,8 @@ export class SkyRenderer {
       const screenFade = 1 - THREE.MathUtils.smoothstep(normY, 0.35, 0.58);
       if (screenFade <= 0.01) continue;
 
-      this.ctx.globalAlpha = a * horizonFade * screenFade * (0.55 + 0.45 * ((i * 37) % 10) / 10);
+      const starDim = 1 - autumnW * 0.42;
+      this.ctx.globalAlpha = a * horizonFade * screenFade * starDim * (0.55 + 0.45 * ((i * 37) % 10) / 10);
       this.ctx.fillStyle = '#fff';
       this.ctx.beginPath();
       this.ctx.arc(pt[0], pt[1], this.starSize[i], 0, Math.PI * 2);
@@ -474,8 +529,8 @@ export class SkyRenderer {
     // 4. Sun and Moon (sun in upper-left, moon in upper-right; fading appropriately across the day/night cycle)
     const sun = rot(S0, new THREE.Vector3());
     const moon = rot(M0, new THREE.Vector3());
-    const sunOpacity = 1 - THREE.MathUtils.smoothstep(t, 0.55, 0.82);
-    const moonOpacity = THREE.MathUtils.smoothstep(t, 0.25, 0.65);
+    const sunOpacity = (1 - THREE.MathUtils.smoothstep(t, 0.55, 0.82)) * (1 - autumnW * 0.32);
+    const moonOpacity = THREE.MathUtils.smoothstep(t, 0.25, 0.65) * (1 - autumnW * 0.25);
     const body = (dir: THREE.Vector3, size: number, inner: string, mid: string, glow: string, opacity: number) => {
       if (opacity <= 0.01) return;
       if (dir.y < 0.02) return; // Below astronomical horizon
