@@ -1122,6 +1122,11 @@ function buildExtensionAndBergingFlatRoofs(
   });
   firstGroup.add(bergingRoof);
 
+  // 2b. Rear widening of the berging (25 cm): X: 0.08 -> 0.33 m, Z: -13.72 -> -12.86 m
+  const widenRoof = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 0.86), getMat('roof_flat_bitumen'));
+  widenRoof.position.set((0.08 + 0.33) / 2, Y_FLAT - 0.125, (-13.72 + -12.86) / 2);
+  firstGroup.add(widenRoof);
+
   const bergTrimGeo = new THREE.BoxGeometry(3.41, 0.11, 6.05);
   const bergTrim = new THREE.Mesh(bergTrimGeo, getMat('roof_fascia_white'));
   bergTrim.position.set((-3.27 + 0.08) / 2, Y_FLAT - 0.03, (-13.72 + -7.73) / 2);

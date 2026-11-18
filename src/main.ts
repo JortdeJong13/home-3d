@@ -3,6 +3,7 @@ import { buildHouseScene, HouseSceneGroups, InspectableMetadata } from './geomet
 import { PROVENANCE_COLORS } from './model/materials';
 import { PROVENANCE_LABELS } from './model/units';
 import { IsometricCameraController, CameraPreset } from './viewer/cameraController';
+import { SkyRenderer } from './viewer/skyRenderer';
 import { createLightingRig, applyDayNightState } from './viewer/dayNightController';
 import { FLOOR_STOPS, applyScrollProgressToScene } from './viewer/scrollTimeline';
 
@@ -41,6 +42,7 @@ scene.add(houseGroups.root);
 // =============================================================================
 // 2. DOM ELEMENTS & UI SYNCHRONISATION
 // =============================================================================
+const skyRenderer = new SkyRenderer(document.getElementById('sky-canvas') as HTMLCanvasElement, cameraController.camera);
 const celestialRotorEl = document.getElementById('celestial-rotor');
 const floorTitleEl = document.getElementById('floor-title');
 const floorElevationEl = document.getElementById('floor-elevation-badge');
@@ -83,6 +85,29 @@ canvas.addEventListener(
   { passive: false }
 );
 
+// Slow, eased programmatic scroll for floor-selector clicks (native smooth scroll is too fast).
+let scrollAnimId = 0;
+function animateScrollTo(targetY: number) {
+  const startY = window.scrollY;
+  const distance = targetY - startY;
+  if (Math.abs(distance) < 1) return;
+  const levels = Math.abs(distance) / (getMaxScrollPx() * 0.25);
+  const durationMs = Math.min(5200, 1700 + levels * 1100);
+  const startTime = performance.now();
+  const id = ++scrollAnimId;
+  const step = (nowMs: number) => {
+    if (id !== scrollAnimId) return;
+    const p = Math.min(1, (nowMs - startTime) / durationMs);
+    const e = 1 - (1 - p) * (1 - p); // ease-out: starts moving immediately, settles gently
+    window.scrollTo(0, startY + distance * e);
+    if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+// Manual wheel / touch input cancels a running click-scroll
+window.addEventListener('wheel', () => { scrollAnimId++; }, { passive: true });
+window.addEventListener('touchstart', () => { scrollAnimId++; }, { passive: true });
+
 // Manual Floor Selector Dots (Section 5.4)
 for (const btn of floorDotBtns) {
   btn.addEventListener('click', () => {
@@ -90,10 +115,7 @@ for (const btn of floorDotBtns) {
     const stop = FLOOR_STOPS[idx];
     if (!stop) return;
     const targetScrollY = stop.progress * getMaxScrollPx();
-    window.scrollTo({
-      top: targetScrollY,
-      behavior: 'smooth',
-    });
+    animateScrollTo(targetScrollY);
   });
 }
 
@@ -102,7 +124,7 @@ btnDayNight?.addEventListener('click', () => {
   isNightTarget = !isNightTarget;
   document.body.classList.toggle('night-mode', isNightTarget);
   if (dayNightIcon) dayNightIcon.textContent = isNightTarget ? '🌙' : '☀️';
-  if (dayNightLabel) dayNightLabel.textContent = isNightTarget ? 'Nachtmodus' : 'Dagmodus';
+  if (dayNightLabel) dayNightLabel.textContent = isNightTarget ? 'Avond' : 'Dag';
 });
 
 window.addEventListener('keydown', (e) => {
@@ -208,7 +230,7 @@ function animate(now: number) {
   // 1. Smoothly damp scroll progress toward actual scroll bar position
   const diffScroll = rawScrollProgress - smoothedScrollProgress;
   if (Math.abs(diffScroll) > 0.0001) {
-    smoothedScrollProgress += diffScroll * Math.min(1, dt * 12.0);
+    smoothedScrollProgress += diffScroll * (1 - Math.exp(-dt * 4.8));
   } else {
     smoothedScrollProgress = rawScrollProgress;
   }
@@ -239,12 +261,13 @@ function animate(now: number) {
   // 2. Smoothly animate Day / Night transition & Rotating Celestial Backdrop
   const targetT = isNightTarget ? 1.0 : 0.0;
   if (Math.abs(targetT - currentNightT) > 0.0005) {
-    currentNightT += (targetT - currentNightT) * Math.min(1, dt * 3.2);
+    currentNightT += (targetT - currentNightT) * (1 - Math.exp(-dt * 3.2));
     applyDayNightState(lightingRig, houseGroups, currentNightT, celestialRotorEl);
   }
 
   // 3. Update Camera Controls & Render
   cameraController.update(dt);
+  skyRenderer.update(currentNightT);
   renderer.render(scene, cameraController.camera);
 }
 

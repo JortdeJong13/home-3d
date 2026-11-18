@@ -50,7 +50,7 @@ export function createLightingRig(scene: THREE.Scene): SceneLightingRig {
 /**
  * Update the 3D lighting, material colours, window glow, outer ground diffusion,
  * and the rotating celestial backdrop disc for a continuous transition value `nightT` in [0, 1]
- * (0 = Day, 1 = Night).
+ * (0 = Day, 1 = Evening).
  */
 export function applyDayNightState(
   rig: SceneLightingRig,
@@ -60,11 +60,7 @@ export function applyDayNightState(
 ) {
   const t = Math.max(0, Math.min(1, nightT));
 
-  // 1. Rotate the background Celestial Wheel by 180 degrees (0 deg = Day on top, 180 deg = Night on top)
-  if (celestialRotorEl) {
-    const angleDeg = t * 180;
-    celestialRotorEl.style.transform = `translate(-50%, -50%) rotate(${angleDeg.toFixed(2)}deg)`;
-  }
+  // 1. The sky itself (rotation, stars, sun, moon) is drawn by SkyRenderer in the render loop.
 
   // 2. Orbit the 3D Directional Light along a celestial arc to match the rotating sky
   // At t=0 (Day): sun is at (-14, 24, 15). As t->0.5 (Dusk): sun sweeps low to the west. At t=1 (Night): moon is at (13, 21, -11).
@@ -79,7 +75,7 @@ export function applyDayNightState(
   // 3. Interpolate light colours and intensities (including golden-hour warmth at t ~ 0.45)
   const daySunColor = new THREE.Color('#fff5e4');
   const duskSunColor = new THREE.Color('#ff9e66');
-  const nightMoonColor = new THREE.Color('#7ca3dc');
+  const nightMoonColor = new THREE.Color('#a9b8e8');
 
   const currentSunColor = new THREE.Color();
   if (t < 0.5) {
@@ -88,20 +84,20 @@ export function applyDayNightState(
     currentSunColor.lerpColors(duskSunColor, nightMoonColor, (t - 0.5) * 2);
   }
   rig.sunLight.color.copy(currentSunColor);
-  rig.sunLight.intensity = THREE.MathUtils.lerp(2.15, 0.75, t) * (1 - dip * 0.35);
+  rig.sunLight.intensity = THREE.MathUtils.lerp(2.15, 1.0, t) * (1 - dip * 0.35);
 
   const dayHemiSky = new THREE.Color('#eef7fa');
-  const nightHemiSky = new THREE.Color('#2c3c59');
+  const nightHemiSky = new THREE.Color('#7b8fc4');
   const dayHemiGround = new THREE.Color('#f3e5d0');
-  const nightHemiGround = new THREE.Color('#19202e');
+  const nightHemiGround = new THREE.Color('#3b3f5c');
   rig.hemiLight.color.lerpColors(dayHemiSky, nightHemiSky, t);
   rig.hemiLight.groundColor.lerpColors(dayHemiGround, nightHemiGround, t);
-  rig.hemiLight.intensity = THREE.MathUtils.lerp(1.45, 0.72, t);
+  rig.hemiLight.intensity = THREE.MathUtils.lerp(1.45, 1.05, t);
 
   const dayAmb = new THREE.Color('#fff8ee');
-  const nightAmb = new THREE.Color('#222b3d');
+  const nightAmb = new THREE.Color('#7d86b0');
   rig.ambientLight.color.lerpColors(dayAmb, nightAmb, t);
-  rig.ambientLight.intensity = THREE.MathUtils.lerp(0.55, 0.38, t);
+  rig.ambientLight.intensity = THREE.MathUtils.lerp(0.55, 0.75, t);
 
   rig.rimLight.intensity = THREE.MathUtils.lerp(0.65, 0.25, t);
 

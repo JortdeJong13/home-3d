@@ -49,6 +49,9 @@ export const CAMERA_PRESETS: Record<CameraPreset['id'], CameraPreset> = {
 export class IsometricCameraController {
   public readonly camera: THREE.OrthographicCamera;
   public readonly controls: OrbitControls;
+  /** Slow automatic orbit around the house (radians per second). */
+  public autoRotate = true;
+  public autoRotateSpeed = 0.1;
   private frustumSize = 24.5;
 
   private animActive = false;
@@ -103,6 +106,9 @@ export class IsometricCameraController {
     // Cancel preset animation if user manually drags camera
     this.controls.addEventListener('start', () => {
       this.animActive = false;
+      if (this.autoRotate) {
+        this.autoRotate = false;
+      }
     });
   }
 
@@ -141,6 +147,7 @@ export class IsometricCameraController {
   }
 
   public resetToDefault() {
+    this.autoRotate = true;
     this.transitionToPreset('default_iso');
   }
 
@@ -157,6 +164,16 @@ export class IsometricCameraController {
         this.animActive = false;
       }
     }
+
+    // Auto-orbit around the house (time based => identical speed at 60 / 120 Hz)
+    if (this.autoRotate && !this.animActive) {
+      this.camera.position
+        .sub(this.controls.target)
+        .applyAxisAngle(new THREE.Vector3(0, 1, 0), -this.autoRotateSpeed * dt)
+        .add(this.controls.target);
+    }
+    // Frame-rate independent damping (dampingFactor is defined per 60 Hz frame)
+    this.controls.dampingFactor = 1 - Math.pow(1 - 0.075, Math.max(dt, 1e-4) * 60);
 
     // Clamp pan target softly within house bounds
     this.controls.target.clamp(this.minTarget, this.maxTarget);
