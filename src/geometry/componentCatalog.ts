@@ -739,7 +739,7 @@ export function instantiateOpeningPrefab3D(
    */
   const addExteriorDoorThreshold = (
     interiorFloorMat: MaterialId,
-    outerSillMat: MaterialId = 'roof_tile_anthracite'
+    outerSillMat: MaterialId = 'window_frame_cream'
   ) => {
     const floorHeight = 0.03;
     const centerY = -op.height / 2 - 0.01; // Top surface at Y = +0.005 m, flush with interior room slabs
