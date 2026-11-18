@@ -21,6 +21,7 @@ export type MaterialId =
   | 'slab_structural_edge'
   | 'roof_tile_anthracite'
   | 'roof_flat_bitumen'
+  | 'roof_daktrim_zinc'
   | 'roof_fascia_white'
   | 'roof_solar_panel'
   | 'window_frame_cream'
@@ -177,10 +178,16 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     metalness: 0.04,
   },
   roof_flat_bitumen: {
-    colorDay: '#5a5f63',
-    colorNight: '#2f3336',
+    colorDay: '#3a3e42',
+    colorNight: '#1e2124',
     roughness: 0.92,
     metalness: 0.02,
+  },
+  roof_daktrim_zinc: {
+    colorDay: '#b8bec4',
+    colorNight: '#5e6369',
+    roughness: 0.55,
+    metalness: 0.25,
   },
   roof_fascia_white: {
     colorDay: '#f7f5f0',

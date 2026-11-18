@@ -2013,11 +2013,34 @@ function buildExtensionAndBergingFlatRoofs(
   registerMesh: RegisterMeshFn
 ) {
   const Y_FLAT = HOUSE_DIMENSIONS.bergingRoofHeight.metres; // +2.85 m
+  const Y_WALL_TOP = Y_FLAT - 0.25; // +2.60 m (ground floor wall top)
+  const brickH = 0.20;              // +2.60 -> +2.80 m brick fascia under daktrim
+  const brickY = Y_WALL_TOP + brickH / 2;
+  const trimH = 0.07;               // +2.80 -> +2.87 m thin light-grey daktrim
+  const trimY = Y_WALL_TOP + brickH + trimH / 2;
+  const bitumenH = 0.24;            // +2.60 -> +2.84 m recessed dark bitumen inside daktrim
+  const bitumenY = Y_WALL_TOP + bitumenH / 2;
 
-  // 1. Flat Roof over 2.40 m Rear Extension (B11a): X: 0.00 -> 5.87 m, Z: -12.86 -> -10.46 m (2.40 m span)
-  const extRoofGeo = new THREE.BoxGeometry(5.87, 0.25, 2.40);
-  const extRoof = new THREE.Mesh(extRoofGeo, getMat('roof_flat_bitumen'));
-  extRoof.position.set(5.87 / 2, Y_FLAT - 0.125, (-12.86 + -10.46) / 2);
+  const addBox = (
+    x1: number,
+    x2: number,
+    z1: number,
+    z2: number,
+    yCenter: number,
+    height: number,
+    matId: MaterialId
+  ) => {
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(x2 - x1, height, z2 - z1),
+      getMat(matId)
+    );
+    mesh.position.set((x1 + x2) / 2, yCenter, (z1 + z2) / 2);
+    firstGroup.add(mesh);
+    return mesh;
+  };
+
+  // 1. Dark bitumen roof surface (inset inside the perimeter daktrim)
+  const extRoof = addBox(0.00, 5.81, -12.80, -10.46, bitumenY, bitumenH, 'roof_flat_bitumen');
   registerMesh(extRoof, 'roof_flat_bitumen', {
     id: 'ff_flat_roof_extension',
     label: 'Plat Dak Uitbouw B11a (5.87 × 2.40 m op +2.85 m)',
@@ -2026,12 +2049,8 @@ function buildExtensionAndBergingFlatRoofs(
     source: 'Tekening woonwensen 55.1 (B11a Uitbreiding 2,4m)',
     floor: 'first',
   });
-  firstGroup.add(extRoof);
 
-  // 2. Flat Roof over Attached Berging: X: -3.27 -> 0.00 m, Z: -13.72 -> -7.73 m (3.27 × 5.99 m)
-  const bergingRoofGeo = new THREE.BoxGeometry(3.27, 0.25, 5.99);
-  const bergingRoof = new THREE.Mesh(bergingRoofGeo, getMat('roof_flat_bitumen'));
-  bergingRoof.position.set(-3.27 / 2, Y_FLAT - 0.125, (-13.72 + -7.73) / 2);
+  const bergingRoof = addBox(-3.21, 0.00, -13.66, -7.79, bitumenY, bitumenH, 'roof_flat_bitumen');
   registerMesh(bergingRoof, 'roof_flat_bitumen', {
     id: 'ff_flat_roof_berging',
     label: 'Plat Dak Berging (3.44 × 5.99 m op +2.85 m)',
@@ -2040,12 +2059,25 @@ function buildExtensionAndBergingFlatRoofs(
     source: 'Verkooptekening VK-06 Doorsnede AA & HomeByMe',
     floor: 'first',
   });
-  firstGroup.add(bergingRoof);
 
-  // 2b. Rear widening of the berging (33 cm): X: 0.00 -> 0.33 m, Z: -13.72 -> -12.86 m
-  const widenRoof = new THREE.Mesh(new THREE.BoxGeometry(0.33, 0.25, 0.86), getMat('roof_flat_bitumen'));
-  widenRoof.position.set(0.33 / 2, Y_FLAT - 0.125, (-13.72 + -12.86) / 2);
-  firstGroup.add(widenRoof);
+  // Rear widening of the berging: X: 0.00 -> 0.27 m, Z: -13.66 -> -12.80 m
+  addBox(0.00, 0.27, -13.66, -12.80, bitumenY, bitumenH, 'roof_flat_bitumen');
+
+  // 2. Brick fascia (+2.60 -> +2.80 m) continuing outer walls up to the daktrim
+  addBox(-3.27, 0.00, -7.93, -7.73, brickY, brickH, 'exterior_brick_main');     // Berging front
+  addBox(-3.27, -3.19, -13.64, -7.93, brickY, brickH, 'exterior_brick_main');   // Berging left
+  addBox(-3.27, 0.33, -13.72, -13.64, brickY, brickH, 'exterior_brick_main');   // Berging rear
+  addBox(0.25, 0.33, -13.64, -12.86, brickY, brickH, 'exterior_brick_main');    // Berging rear widening right
+  addBox(0.33, 5.87, -12.86, -12.46, brickY, brickH, 'exterior_brick_main');    // Extension rear
+  addBox(5.57, 5.87, -12.46, -10.46, brickY, brickH, 'exterior_brick_main');    // Extension right
+
+  // 3. Thin light-grey perimeter daktrim (+2.80 -> +2.87 m, 2 cm drip overhang)
+  addBox(-3.29, 0.00, -7.79, -7.71, trimY, trimH, 'roof_daktrim_zinc');         // Berging front
+  addBox(-3.29, -3.21, -13.66, -7.79, trimY, trimH, 'roof_daktrim_zinc');       // Berging left
+  addBox(-3.29, 0.35, -13.74, -13.66, trimY, trimH, 'roof_daktrim_zinc');       // Berging rear
+  addBox(0.27, 0.35, -13.66, -12.88, trimY, trimH, 'roof_daktrim_zinc');        // Berging rear widening right
+  addBox(0.27, 5.89, -12.88, -12.80, trimY, trimH, 'roof_daktrim_zinc');        // Extension rear
+  addBox(5.81, 5.89, -12.80, -10.46, trimY, trimH, 'roof_daktrim_zinc');        // Extension right
 }
 
 /**
