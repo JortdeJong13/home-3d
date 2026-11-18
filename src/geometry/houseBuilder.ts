@@ -1253,24 +1253,13 @@ function buildFrontGardenFlowerBorder(
     }
   };
 
-  // Left bushes (X: 0.22 -> 1.80 m) with warm yellow flowers (matching photo left side)
-  addShrubMound(0.45, 0.55, 0.42, 0.52, 0.38, 12);
-  addShrubMound(1.02, 0.48, 0.44, 0.56, 0.40, 14);
-  addShrubMound(1.55, 0.56, 0.36, 0.44, 0.34, 9);
-
-  // Low groundcover under the living room window (X: 1.95 -> 4.00 m, stays below 0.45 m window sill)
-  addShrubMound(2.25, 0.42, 0.34, 0.32, 0.28, 4);
-  addShrubMound(2.95, 0.38, 0.38, 0.28, 0.26, 3);
-  addShrubMound(3.65, 0.44, 0.34, 0.34, 0.28, 5);
-
-  // Right bushes + fluffy pale ornamental grass plumes (X: 4.10 -> 5.68 m, matching photo right side)
-  addShrubMound(4.30, 0.58, 0.36, 0.42, 0.34, 4);
-  addShrubMound(5.35, 0.56, 0.38, 0.48, 0.36, 5);
+  // Left side near driveway (X: 0.25 -> 1.25 m): fluffy pale ornamental grass plumes + low bush
+  addShrubMound(0.38, 0.56, 0.32, 0.42, 0.34, 4);
 
   const grassCenters: Array<[number, number, number]> = [
-    [4.68, 0.52, 0.96],
-    [4.98, 0.44, 1.04],
-    [5.18, 0.66, 0.86],
+    [0.62, 0.46, 0.98],
+    [0.88, 0.54, 1.04],
+    [1.12, 0.44, 0.88],
   ];
   for (const [gx, gz, gh] of grassCenters) {
     // Low green base tuft
@@ -1292,6 +1281,16 @@ function buildFrontGardenFlowerBorder(
       grassPlumeGeos.push(plume);
     }
   }
+
+  // Low groundcover under the living room window (X: 1.31 -> 3.71 m, stays below 0.45 m window sill)
+  addShrubMound(1.65, 0.42, 0.34, 0.32, 0.28, 4);
+  addShrubMound(2.45, 0.38, 0.38, 0.28, 0.26, 3);
+  addShrubMound(3.25, 0.44, 0.34, 0.34, 0.28, 5);
+
+  // Right side (X: 3.95 -> 5.65 m): bushes with warm yellow flowers
+  addShrubMound(4.10, 0.56, 0.38, 0.46, 0.35, 10);
+  addShrubMound(4.78, 0.48, 0.44, 0.56, 0.40, 14);
+  addShrubMound(5.42, 0.55, 0.40, 0.50, 0.38, 12);
 
   const shrubMesh = new THREE.Mesh(mergeGeometries(shrubGeos, false), getMat('plot_tree_foliage_bolboom'));
   registerMesh(
