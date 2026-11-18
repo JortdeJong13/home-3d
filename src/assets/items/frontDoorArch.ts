@@ -34,7 +34,7 @@ export function buildDecorativeBrickArchMeshes(
   const rOuter = 0.75; // 1.50 m total portal width / 2
   const rInner = 0.62; // 13 cm outer arch border (rollaag)
   const springY = 2.08; // Top of door frame
-  const doorRightLocalX = 0.43; // Right edge of 1.05 m door opening in portal space
+  const doorRightLocalX = 0.36; // Right edge of 0.98 m door opening in portal space (-0.62 + 0.98 = +0.36)
 
   // Slightly deeper derivative of exterior_arch_brick for the recessed tympanum & right pier
   const archBrickMat = getMat('exterior_arch_brick');
@@ -369,10 +369,10 @@ export const frontDoorArchPrefab: AssetPrefabDefinition = {
     archResult.group.position.set(0, 0, 0.024);
     group.add(archResult.group);
 
-    // Door opening spans X in [-0.62, +0.43] (width = 1.05 m, centered at X = -0.095 m)
-    const doorW = 1.05;
+    // Door opening spans X in [-0.62, +0.36] (width = 0.98 m, centered at X = -0.13 m)
+    const doorW = 0.98;
     const doorH = 2.08;
-    const doorCenterX = -0.095;
+    const doorCenterX = -0.13;
     const frameThick = 0.065;
     const frameDepth = 0.11;
     const frameCenterZ = -0.030;

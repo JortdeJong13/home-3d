@@ -163,8 +163,8 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
   // 9. Front Entrance Door with Exterior-Only Decorative Brick Arch
   door_entrance_front: {
     prefabId: 'door_entrance_front',
-    defaultLabel: 'Voordeur / Entree Hal (105 × 205 cm + Decoratieve Boog)',
-    width: 1.05,
+    defaultLabel: 'Voordeur / Entree Hal (98 × 208 cm + Decoratieve Boog)',
+    width: 0.98,
     height: 2.08,
     sillHeight: 0.00,
     frameMaterial: 'window_frame_cream',
@@ -442,10 +442,10 @@ export function instantiateOpeningPrefab3D(
 
   // 3. Decorative Red-Brown Brick Portal & Arch around Front Entrance Door (ONLY on the exterior facade surface!)
   if (op.hasArchTrim) {
-    // Door opening (1.05 m) sits asymmetrically on the left of the 1.50 m portal:
-    // Portal center is +9.5 cm to the right of the door center.
+    // Door opening (0.98 m) sits asymmetrically on the left of the 1.50 m portal:
+    // Portal center is +13.0 cm to the right of the door center.
     const archResult = buildDecorativeBrickArchMeshes(getMat, 0.076, 0.044);
-    archResult.group.position.set(0.095, -op.height / 2, wallThickness / 2 - 0.002);
+    archResult.group.position.set(0.13, -op.height / 2, wallThickness / 2 - 0.002);
 
     registerMesh(archResult.outerBorderMesh, 'exterior_arch_brick', {
       id: `${op.id}_arch_border`,

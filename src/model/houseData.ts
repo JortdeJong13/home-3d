@@ -280,7 +280,7 @@ export function getHouseWalls(): WallSpec[] {
         {
           id: 'gf_door_entrance',
           prefabId: 'door_entrance_front',
-          offsetAlongWall: 6.96, // Z = -12.46 + 6.96 = -5.50 m (in Hal)
+          offsetAlongWall: 6.58, // Z = -12.46 + 6.58 = -5.88 m; front edge at -5.39 m = 143 cm inside Hal from 12 cm wall (-3.96 m)
         },
         {
           id: 'gf_win_side_living',
