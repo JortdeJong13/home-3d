@@ -88,7 +88,7 @@ All chains are automatically asserted by `npm run verify` (`src/scripts/verifyDi
    - The perpendicular *langskap* wing above Bouwnummer 55's Zolder (`X: 2.985..5.87 m`) is colored in `roof_tile_anthracite`; only the neighbour section (`X: 5.87..8.05 m`) is `neighbour_roof_grey`.
    - The front-right and rear-right corner *knieschotten* are flat-topped (not slanted) knee walls with a uniform height of `1.50 m` (`150 cm`), positioned at `X = 4.78 m` (spanning `79 cm` from the shared party wall) and `Z = -1.975 m` (front) / `Z = -8.485 m` (rear, `157.5 cm` corner depth), matching Verkooptekening VK-06.
 5. **Scroll-Driven Assembly & Staggered Secondary/Furniture Drop**:
-   - Scroll steps (`src/viewer/scrollTimeline.ts`): `0 · Kavel & Tuin` → `1 · Begane Grond` → `2 · 1e Verdieping (+ Dak Uitbouw & Berging)` → `3 · 2e Verdieping (Zolder)` → `4 · Kap & Volledige Woning`.
+   - Scroll steps (`src/viewer/scrollTimeline.ts`): `0 · Kavel` → `1 · Begane Grond` → `2 · 1e Verdieping` → `3 · 2e Verdieping` → `4 · Kap`.
    - Secondary/furniture assets (`staggeredAssets`: the 14 *Oprit* pavers, *Tuinpoort*, Zolder WP warmtepomp unit, and any furniture in `PLACED_ASSETS`) drop right behind their floor (`8%–26%` start offset, `6.5 m` relative drop height) in a pseudo-random staggered cascade.
 6. **Removed UI Toggles**:
    - Do **not** re-add the `Optie B33: Inloopkast Open` toggle (the 1st-floor walk-in closet is permanently enclosed) or the `Maatvoering & Bronnen` toggle (dimensions and provenance are inspected directly via the bottom-right selection card).
