@@ -9,6 +9,7 @@ import {
   getRoomFloors,
 } from '../model/houseData';
 import { MaterialId, MATERIAL_PALETTE } from '../model/materials';
+import { getExteriorBrickTextures, applyWorldBrickUVs } from '../model/brickTexture';
 import { ProvenanceType } from '../model/units';
 import {
   OPENING_PREFABS,
@@ -177,6 +178,7 @@ export function buildHouseScene(): HouseSceneGroups {
   roofGroup.add(furnitureGroups.roof);
 
   // Material instances (strictly separated from geometry)
+  const exteriorBrickTextures = getExteriorBrickTextures();
   const materialMap = new Map<MaterialId, THREE.MeshStandardMaterial>();
   for (const [id, def] of Object.entries(MATERIAL_PALETTE) as Array<[MaterialId, typeof MATERIAL_PALETTE[MaterialId]]>) {
     const mat = new THREE.MeshStandardMaterial({
@@ -188,6 +190,13 @@ export function buildHouseScene(): HouseSceneGroups {
       polygonOffset: true,
       polygonOffsetFactor: id.includes('floor') ? -1 : 0,
       polygonOffsetUnits: id.includes('floor') ? -1 : 0,
+      ...(id === 'exterior_brick_main'
+        ? {
+            map: exteriorBrickTextures.map,
+            bumpMap: exteriorBrickTextures.bumpMap,
+            bumpScale: 0.015,
+          }
+        : {}),
     });
     mat.name = id;
     materialMap.set(id, mat);
@@ -1946,6 +1955,9 @@ function buildWallWithOpenings(
   extrudeGeo.translate(0, 0, -wall.thickness / 2);
 
   const matId = wall.isExterior ? wall.exteriorMaterial : wall.interiorMaterial;
+  if (matId === 'exterior_brick_main') {
+    applyWorldBrickUVs(extrudeGeo, 0, wall.baseY, 0);
+  }
   const wallMesh = new THREE.Mesh(extrudeGeo, getMat(matId));
   registerMesh(wallMesh, matId, {
     id: wall.id,
@@ -2145,6 +2157,9 @@ function buildExtensionAndBergingFlatRoofs(
       getMat(matId)
     );
     mesh.position.set((x1 + x2) / 2, yCenter, (z1 + z2) / 2);
+    if (matId === 'exterior_brick_main') {
+      applyWorldBrickUVs(mesh.geometry, mesh.position.x, mesh.position.y, mesh.position.z);
+    }
     firstGroup.add(mesh);
     return mesh;
   };

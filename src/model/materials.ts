@@ -91,9 +91,11 @@ const SHARED_TERRACOTTA_BRICK = {
  */
 export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
   // Owned House Exterior (Warm sand-ochre brick & soft plaster)
+  // Note: exterior_brick_main uses a procedural running-bond DataTexture map,
+  // so colorDay is neutral white (#ffffff) and colorNight dims the texture.
   exterior_brick_main: {
-    colorDay: '#e6cfa8',
-    colorNight: '#7a6e5d',
+    colorDay: '#ffffff',
+    colorNight: '#7d776d',
     roughness: 0.92,
     metalness: 0.0,
   },

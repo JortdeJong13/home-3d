@@ -290,7 +290,7 @@ export function getHouseWalls(): WallSpec[] {
         {
           id: 'gf_win_side_living',
           prefabId: 'window_living_side',
-          offsetAlongWall: 10.375, // Z = -12.46 + 10.375 = -2.085 m; front edge at -1.26 m = 86 cm from inside front wall (-0.40 m)
+          offsetAlongWall: 10.50, // Z = -12.46 + 10.50 = -1.96 m; front edge at -1.26 m = 86 cm from inside front wall (-0.40 m)
         },
       ],
     },
@@ -581,7 +581,7 @@ export function getHouseWalls(): WallSpec[] {
         {
           id: 'ff_win_side_bedroom2',
           prefabId: 'window_bedroom_side',
-          offsetAlongWall: 7.94, // Z = -10.06 + 7.94 = -2.12 m (in Slaapkamer 2)
+          offsetAlongWall: 8.10, // Z = -10.06 + 8.10 = -1.96 m; front edge at -1.26 m = 86 cm from inside front wall (-0.40 m)
         },
       ],
     },
