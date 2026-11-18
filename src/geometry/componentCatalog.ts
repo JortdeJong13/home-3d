@@ -730,22 +730,66 @@ export function instantiateOpeningPrefab3D(
         group.add(mBar);
       }
 
-      // Center French double doors (each leaf 0.90 m wide, framed in white/cream with rounded brushed-steel handles)
+      // Center French double doors (each leaf 0.90 m wide, slim white/cream frame with vertical white window-style handles)
       const doorW = doorOpeningHalfW; // 0.90 m
-      const leafThick = 0.054;
-      const stileW = 0.09;
-      const topRailH = 0.09;
-      const bottomRailH = 0.11;
+      const leafThick = 0.052;
+      const stileW = 0.062;
+      const topRailH = 0.062;
+      const bottomRailH = 0.075;
       const glassW = doorW - stileW * 2;
       const glassH = innerH - topRailH - bottomRailH;
       const glassCenterY = (bottomRailH - topRailH) / 2;
 
-      const handleMat = new THREE.MeshStandardMaterial({
-        color: '#a8aeb5',
-        roughness: 0.35,
-        metalness: 0.75,
-        name: 'door_handle_steel',
-      });
+      const whiteHandleMat = getMat(op.frameMaterial);
+
+      const createVerticalWindowHandle = () => {
+        const hGroup = new THREE.Group();
+        // Compact rounded vertical escutcheon plate
+        const plateW = 0.026;
+        const plateR = plateW / 2;
+        const plateStraightH = 0.048;
+        const plateShape = new THREE.Shape();
+        plateShape.absarc(0, plateStraightH / 2, plateR, 0, Math.PI, false);
+        plateShape.absarc(0, -plateStraightH / 2, plateR, Math.PI, Math.PI * 2, false);
+        plateShape.closePath();
+        const plateDepth = leafThick + 0.012;
+        const plateGeo = new THREE.ExtrudeGeometry(plateShape, {
+          depth: plateDepth,
+          bevelEnabled: false,
+          curveSegments: 14,
+        });
+        plateGeo.translate(0, 0, -plateDepth / 2);
+        hGroup.add(new THREE.Mesh(plateGeo, whiteHandleMat));
+
+        // Cylindrical neck through both sides
+        const neckOffsetZ = leafThick / 2 + 0.028;
+        const neckR = 0.0075;
+        const neckGeo = new THREE.CylinderGeometry(neckR, neckR, neckOffsetZ * 2, 14);
+        neckGeo.rotateX(Math.PI / 2);
+        const neck = new THREE.Mesh(neckGeo, whiteHandleMat);
+        neck.position.set(0, 0.016, 0);
+        hGroup.add(neck);
+
+        // Vertical downward-pointing grip on both sides
+        const gripLen = 0.105;
+        const gripGeo = new THREE.CylinderGeometry(neckR, neckR, gripLen, 14);
+        const jointGeo = new THREE.SphereGeometry(neckR, 12, 10);
+        for (const zSide of [1, -1]) {
+          const zPos = zSide * neckOffsetZ;
+          const elbow = new THREE.Mesh(jointGeo, whiteHandleMat);
+          elbow.position.set(0, 0.016, zPos);
+          hGroup.add(elbow);
+
+          const grip = new THREE.Mesh(gripGeo, whiteHandleMat);
+          grip.position.set(0, 0.016 - gripLen / 2, zPos);
+          hGroup.add(grip);
+
+          const tip = new THREE.Mesh(jointGeo, whiteHandleMat);
+          tip.position.set(0, 0.016 - gripLen, zPos);
+          hGroup.add(tip);
+        }
+        return hGroup;
+      };
 
       const buildFrenchDoorLeaf = (side: -1 | 1) => {
         // side = -1: left leaf hinged at -doorOpeningHalfW, extends +X to 0
@@ -784,12 +828,8 @@ export function instantiateOpeningPrefab3D(
         glassMesh.position.set(leafCenterX, glassCenterY, 0);
         pivot.add(glassMesh);
 
-        // Rounded brushed-steel lever handle on the meeting stile
-        const handleGroup = createBrushedSteelLeverHandle({
-          leafThickness: leafThick,
-          handleMat,
-          leverDirection: -dir as 1 | -1,
-        });
+        // White vertical window-style handle pointing down on the meeting stile
+        const handleGroup = createVerticalWindowHandle();
         handleGroup.position.set(dir * (doorW - stileW / 2), -0.02, 0);
         pivot.add(handleGroup);
 
