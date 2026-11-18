@@ -285,21 +285,25 @@ export function buildDoorLeafWithVisionCutout(params: {
   leafMesh.receiveShadow = true;
   container.add(leafMesh);
 
-  // Subtle inner glazing bead lining the cutout
-  const beadW = 0.016;
-  const beadDepth = leafThickness + 0.004;
+  // Subtle inner glazing bead lining the cutout (inset into the cutout so it never z-fights with leafMesh)
+  const beadOuterHalfW = visionW / 2 + 0.008;
+  const beadOuterHalfH = visionH / 2 + 0.008;
+  const beadInnerHalfW = visionW / 2 - 0.012;
+  const beadInnerHalfH = visionH / 2 - 0.012;
+  const beadDepth = leafThickness + 0.012;
+
   const beadShape = new THREE.Shape();
-  beadShape.moveTo(visionCenterX - visionW / 2 - beadW, visionCenterY - visionH / 2 - beadW);
-  beadShape.lineTo(visionCenterX + visionW / 2 + beadW, visionCenterY - visionH / 2 - beadW);
-  beadShape.lineTo(visionCenterX + visionW / 2 + beadW, visionCenterY + visionH / 2 + beadW);
-  beadShape.lineTo(visionCenterX - visionW / 2 - beadW, visionCenterY + visionH / 2 + beadW);
+  beadShape.moveTo(visionCenterX - beadOuterHalfW, visionCenterY - beadOuterHalfH);
+  beadShape.lineTo(visionCenterX + beadOuterHalfW, visionCenterY - beadOuterHalfH);
+  beadShape.lineTo(visionCenterX + beadOuterHalfW, visionCenterY + beadOuterHalfH);
+  beadShape.lineTo(visionCenterX - beadOuterHalfW, visionCenterY + beadOuterHalfH);
   beadShape.closePath();
 
   const beadHole = new THREE.Path();
-  beadHole.moveTo(visionCenterX - visionW / 2, visionCenterY - visionH / 2);
-  beadHole.lineTo(visionCenterX + visionW / 2, visionCenterY - visionH / 2);
-  beadHole.lineTo(visionCenterX + visionW / 2, visionCenterY + visionH / 2);
-  beadHole.lineTo(visionCenterX - visionW / 2, visionCenterY + visionH / 2);
+  beadHole.moveTo(visionCenterX - beadInnerHalfW, visionCenterY - beadInnerHalfH);
+  beadHole.lineTo(visionCenterX + beadInnerHalfW, visionCenterY - beadInnerHalfH);
+  beadHole.lineTo(visionCenterX + beadInnerHalfW, visionCenterY + beadInnerHalfH);
+  beadHole.lineTo(visionCenterX - beadInnerHalfW, visionCenterY + beadInnerHalfH);
   beadHole.closePath();
   beadShape.holes.push(beadHole);
 
@@ -311,9 +315,9 @@ export function buildDoorLeafWithVisionCutout(params: {
   const beadMesh = new THREE.Mesh(beadGeo, frameMat);
   container.add(beadMesh);
 
-  // Transparent vision glass pane (inset 3 mm on all sides so it never z-fights with the white glazing bead)
+  // Transparent vision glass pane (edges sit inside the glazing bead rim, no coplanar faces)
   const glassPane = new THREE.Mesh(
-    new THREE.BoxGeometry(visionW - 0.006, visionH - 0.006, 0.014),
+    new THREE.BoxGeometry(visionW - 0.012, visionH - 0.012, 0.012),
     glassMat
   );
   glassPane.position.set(visionCenterX, visionCenterY, 0);
