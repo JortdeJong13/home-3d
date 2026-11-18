@@ -6,11 +6,11 @@ import type { RegisterMeshFn } from './houseBuilder';
 
 export type HedgeStyleId =
   | 'bush_cluster'
-  | 'bush_dense_neat'
-  | 'crystal_dense'
-  | 'sculpted_poly'
-  | 'woody_natural'
-  | 'hybrid_bush_crystal';
+  | 'bush_v1_fine'
+  | 'bush_v1_bold'
+  | 'bush_v1_wavy'
+  | 'bush_v1_clipped'
+  | 'bush_v1_upright_stems';
 
 export interface HedgeStyleMeta {
   id: HedgeStyleId;
@@ -24,50 +24,50 @@ export const HEDGE_STYLE_OPTIONS: HedgeStyleMeta[] = [
   {
     id: 'bush_cluster',
     number: 1,
-    title: 'Struik-cluster haag',
-    shortTitle: 'Struik-cluster',
+    title: 'Basis struik-cluster (Optie 1)',
+    shortTitle: 'Basis (Optie 1)',
     description:
-      'Direct geïnspireerd op de tuin-struiken: grotere, asymmetrisch geschaalde en gedraaide facet-clusters.',
+      'Referentie-optie 1: directe struik-clusters met middelgrote, asymmetrisch gedraaide facet-bollen.',
   },
   {
-    id: 'bush_dense_neat',
+    id: 'bush_v1_fine',
     number: 2,
-    title: 'Strakkere struik-haag (var. op 1)',
-    shortTitle: 'Strakke struik',
+    title: 'Fijner & dichter blad (var. 1)',
+    shortTitle: 'Fijner loof',
     description:
-      'Zelfde organische struik-clusters als optie 1, maar dichter gepakt en strakker in één lijn en hoogte geknipt.',
+      'Zelfde organische struik-opbouw als 1, maar met meer en kleinere bladclusters voor een fijnere textuur.',
   },
   {
-    id: 'crystal_dense',
+    id: 'bush_v1_bold',
     number: 3,
-    title: 'Fijn kristal-loof (var. op 4)',
-    shortTitle: 'Fijn kristal',
+    title: 'Grof & sculpturaal (var. 1)',
+    shortTitle: 'Grof & vol',
     description:
-      'Puur opgebouwd uit kleinere, strakke 20-vlaks laag-poly kristallen voor een fijne maquette-bladtextuur.',
+      'Grotere, uitgerekte struik-lobben met rustige, krachtige laag-poly facetten langs de haaglijn.',
   },
   {
-    id: 'sculpted_poly',
+    id: 'bush_v1_wavy',
     number: 4,
-    title: 'Geometrische laag-poly haag',
-    shortTitle: 'Laag-poly',
+    title: 'Natuurlijk golvende top (var. 1)',
+    shortTitle: 'Golvende top',
     description:
-      'Sculpturale kristallijne haag opgebouwd uit gekantelde en uitgerekte laag-poly icosaëders.',
+      'Organische struik-haag met een licht golvende bovenlijn en subtiele breedte-variatie.',
   },
   {
-    id: 'woody_natural',
+    id: 'bush_v1_clipped',
     number: 5,
-    title: 'Natuurlijke haag op korte takjes',
-    shortTitle: 'Korte takbasis',
+    title: 'Strak geknipte struikhaag (var. 1)',
+    shortTitle: 'Strak geknipt',
     description:
-      'Struik-haag met korte houten stammetjes (~9 cm zichtbaar) net boven het teelaardebed.',
+      'Struik-clusters strak binnen een licht taps toelopend profiel en rechte bovenlijn geknipt.',
   },
   {
-    id: 'hybrid_bush_crystal',
+    id: 'bush_v1_upright_stems',
     number: 6,
-    title: 'Struik-facet mix (1 + 4)',
-    shortTitle: 'Mix 1 + 4',
+    title: 'Opgaande struik + korte takjes (var. 1)',
+    shortTitle: 'Opgaand + tak',
     description:
-      'Volle organische struik-kern (optie 1) met scherp gefacetteerde laag-poly bladtakjes (optie 4) aan de buitenzijde.',
+      'Verticaal opgaande struik-toeven op hele korte houten stammetjes (~8 cm boven de grond).',
   },
 ];
 
@@ -108,7 +108,7 @@ function mergeSafe(geos: THREE.BufferGeometry[]): THREE.BufferGeometry {
 }
 
 /**
- * Build a hedge segment using one of the bush- & low-poly-inspired styles.
+ * Build a hedge segment exploring bush-cluster variations inspired by Option 1.
  */
 export function buildStyledHedgeSegment(
   group: THREE.Group,
@@ -139,14 +139,11 @@ export function buildStyledHedgeSegment(
   }
 
   const mainGeos: THREE.BufferGeometry[] = [];
-  const deepGeos: THREE.BufferGeometry[] = [];
   const trunkGeos: THREE.BufferGeometry[] = [];
-
   const yFloor = soilMatId ? 0.035 : 0.01;
-  const isNeighbour = matId === 'neighbour_hedge_grey';
 
   if (style === 'bush_cluster') {
-    // Option 1: Direct bush-cluster lineage (overlapping multi-scale rotated icosahedron mounds)
+    // 1. Reference Option 1: Direct bush-cluster lineage
     const stepZ = Math.min(0.26, Math.max(0.18, width * 0.68));
     const numClusters = Math.max(3, Math.round(length / stepZ) + 1);
     const zSpan = Math.max(0.05, length - width * 0.56);
@@ -182,116 +179,162 @@ export function buildStyledHedgeSegment(
         mainGeos.push(puff);
       }
     }
-  } else if (style === 'bush_dense_neat') {
-    // Option 2 (variation of 1): Tighter, denser bush-mound hedge trimmed to a disciplined top & side line
-    const stepZ = 0.19;
+  } else if (style === 'bush_v1_fine') {
+    // 2. Finer & denser bush clusters (more smaller rotated puffs)
+    const stepZ = 0.16;
     const numClusters = Math.max(4, Math.round(length / stepZ) + 1);
-    const zSpan = Math.max(0.05, length - width * 0.46);
+    const zSpan = Math.max(0.05, length - width * 0.44);
 
     for (let ic = 0; ic < numClusters; ic++) {
       const tz = numClusters > 1 ? ic / (numClusters - 1) : 0.5;
       const cz = -zSpan * 0.5 + tz * zSpan;
 
-      // Dense overlapping core stack
-      const coreR = Math.min(width * 0.42, height * 0.30);
-      for (const yRatio of [0.34, 0.66]) {
-        const core = new THREE.IcosahedronGeometry(coreR * (0.94 + rand() * 0.10), 1);
-        core.scale(0.86 + rand() * 0.12, 1.05 + rand() * 0.14, 1.15 + rand() * 0.18);
+      // Solid inner core so there are no gaps
+      for (const yr of [0.34, 0.66]) {
+        const coreR = Math.min(width * 0.38, height * 0.26);
+        const core = new THREE.IcosahedronGeometry(coreR, 1);
+        core.scale(0.88 + rand() * 0.12, 1.0 + rand() * 0.14, 1.1 + rand() * 0.2);
         core.rotateY(rand() * Math.PI * 2);
-        core.translate((rand() - 0.5) * width * 0.06, yFloor + height * yRatio, cz);
+        core.translate((rand() - 0.5) * width * 0.08, yFloor + height * yr, cz);
         mainGeos.push(core);
       }
 
-      // Tightly disciplined outer bush lobes forming a neat subtle-batter profile
+      // 10 smaller organic outer puffs across height & sides
+      const numPuffs = 10;
+      for (let ip = 0; ip < numPuffs; ip++) {
+        const tierT = ip / (numPuffs - 1);
+        const sideSign = ip % 3 === 0 ? 0 : ip % 2 === 0 ? 1 : -1;
+        const r = Math.min(width * 0.27, 0.108) * (0.78 + rand() * 0.36);
+        const puff = new THREE.IcosahedronGeometry(r, 1);
+        puff.scale(0.86 + rand() * 0.24, 0.80 + rand() * 0.28, 0.94 + rand() * 0.30);
+        puff.rotateX(rand() * Math.PI);
+        puff.rotateY(rand() * Math.PI * 2);
+        puff.rotateZ(rand() * Math.PI);
+
+        const px = sideSign * width * (0.18 + rand() * 0.12) * (1 - tierT * 0.18) + (rand() - 0.5) * 0.04;
+        const py = yFloor + height * (0.12 + tierT * 0.78) + (rand() - 0.5) * 0.04;
+        const pz = cz + (rand() - 0.5) * stepZ * 1.1;
+        puff.translate(px, Math.min(height - r * 0.45, Math.max(yFloor + r * 0.45, py)), pz);
+        mainGeos.push(puff);
+      }
+    }
+  } else if (style === 'bush_v1_bold') {
+    // 3. Bold & chunky sculptural bush lobes (fewer, larger, elongated along hedge)
+    const stepZ = 0.28;
+    const numClusters = Math.max(3, Math.round(length / stepZ) + 1);
+    const zSpan = Math.max(0.05, length - width * 0.62);
+
+    for (let ic = 0; ic < numClusters; ic++) {
+      const tz = numClusters > 1 ? ic / (numClusters - 1) : 0.5;
+      const cz = -zSpan * 0.5 + tz * zSpan;
+
+      const coreR = Math.min(width * 0.48, height * 0.36) * (0.94 + rand() * 0.14);
+      const core = new THREE.IcosahedronGeometry(coreR, 1);
+      core.scale(0.92 + rand() * 0.14, (height * 0.46) / Math.max(0.14, coreR), 1.32 + rand() * 0.26);
+      core.rotateY(rand() * Math.PI * 2);
+      core.rotateZ((rand() - 0.5) * 0.15);
+      core.translate((rand() - 0.5) * width * 0.08, yFloor + height * 0.46, cz);
+      mainGeos.push(core);
+
+      const numLobes = 4;
+      for (let ip = 0; ip < numLobes; ip++) {
+        const tierT = ip / (numLobes - 1);
+        const sideSign = ip % 2 === 0 ? 1 : -1;
+        const r = Math.min(width * 0.42, height * 0.28) * (0.88 + rand() * 0.24);
+        const lobe = new THREE.IcosahedronGeometry(r, 1);
+        lobe.scale(0.84 + rand() * 0.20, 0.86 + rand() * 0.24, 1.25 + rand() * 0.35);
+        lobe.rotateX((rand() - 0.5) * 0.7);
+        lobe.rotateY(rand() * Math.PI * 2);
+        lobe.rotateZ((rand() - 0.5) * 0.7);
+
+        const px = sideSign * width * (0.13 + rand() * 0.14);
+        const py = yFloor + height * (0.22 + tierT * 0.58) + (rand() - 0.5) * 0.04;
+        const pz = cz + (rand() - 0.5) * 0.14;
+        lobe.translate(px, Math.min(height - r * 0.45, Math.max(yFloor + r * 0.45, py)), pz);
+        mainGeos.push(lobe);
+      }
+    }
+  } else if (style === 'bush_v1_wavy') {
+    // 4. Natural undulating crown & organic swell (lively hand-pruned bush row)
+    const stepZ = 0.21;
+    const numClusters = Math.max(4, Math.round(length / stepZ) + 1);
+    const zSpan = Math.max(0.05, length - width * 0.52);
+
+    for (let ic = 0; ic < numClusters; ic++) {
+      const tz = numClusters > 1 ? ic / (numClusters - 1) : 0.5;
+      const cz = -zSpan * 0.5 + tz * zSpan;
+      // Distinct organic wave along top (+7 cm / -10 cm) & gentle side breath
+      const waveOffset = Math.sin(tz * Math.PI * 2.2 + 0.6) * 0.085 + (rand() - 0.5) * 0.04;
+      const clusterH = Math.max(height * 0.76, height * 0.96 + waveOffset);
+      const swellW = width * (0.94 + 0.16 * Math.cos(tz * Math.PI * 2.0));
+
+      const coreR = Math.min(swellW * 0.44, clusterH * 0.34);
+      const core = new THREE.IcosahedronGeometry(coreR, 1);
+      core.scale(0.95 + rand() * 0.14, (clusterH * 0.45) / Math.max(0.12, coreR), 1.15 + rand() * 0.22);
+      core.rotateY(rand() * Math.PI * 2);
+      core.translate((rand() - 0.5) * swellW * 0.12, yFloor + clusterH * 0.44, cz);
+      mainGeos.push(core);
+
+      const numPuffs = 7;
+      for (let ip = 0; ip < numPuffs; ip++) {
+        const tierT = ip / (numPuffs - 1);
+        const sideSign = ip % 2 === 0 ? 1 : -1;
+        const r = Math.min(swellW * 0.36, clusterH * 0.24) * (0.76 + rand() * 0.38);
+        const puff = new THREE.IcosahedronGeometry(r, 1);
+        puff.scale(0.86 + rand() * 0.28, 0.82 + rand() * 0.34, 0.95 + rand() * 0.30);
+        puff.rotateX(rand() * Math.PI);
+        puff.rotateY(rand() * Math.PI * 2);
+        puff.rotateZ(rand() * Math.PI);
+
+        const px = sideSign * swellW * (0.14 + rand() * 0.18) * (1 - tierT * 0.18);
+        const py = yFloor + clusterH * (0.18 + tierT * 0.68) + (rand() - 0.5) * 0.04;
+        const pz = cz + (rand() - 0.5) * stepZ * 0.9;
+        puff.translate(px, Math.min(clusterH - r * 0.42, Math.max(yFloor + r * 0.42, py)), pz);
+        mainGeos.push(puff);
+      }
+    }
+  } else if (style === 'bush_v1_clipped') {
+    // 5. Disciplined clipped-line bush hedge (Option 1 puffs tightly shaped into a neat tapered hedge)
+    const stepZ = 0.18;
+    const numClusters = Math.max(4, Math.round(length / stepZ) + 1);
+    const zSpan = Math.max(0.05, length - width * 0.44);
+
+    for (let ic = 0; ic < numClusters; ic++) {
+      const tz = numClusters > 1 ? ic / (numClusters - 1) : 0.5;
+      const cz = -zSpan * 0.5 + tz * zSpan;
+
+      for (const yr of [0.34, 0.68]) {
+        const coreR = Math.min(width * 0.40, height * 0.28);
+        const core = new THREE.IcosahedronGeometry(coreR * (0.94 + rand() * 0.08), 1);
+        core.scale(0.84 + rand() * 0.10, 1.02 + rand() * 0.12, 1.18 + rand() * 0.16);
+        core.rotateY(rand() * Math.PI * 2);
+        core.translate((rand() - 0.5) * width * 0.05, yFloor + height * yr, cz);
+        mainGeos.push(core);
+      }
+
       const tiers = 4;
       for (let it = 0; it < tiers; it++) {
         const ty = it / (tiers - 1);
-        const rowHalfW = width * (0.28 - ty * 0.06);
-        const py = yFloor + 0.10 + ty * (height - 0.20);
+        // Subtle inward batter toward top, flat-ish crown
+        const rowHalfW = width * (0.29 - ty * 0.07);
+        const py = yFloor + 0.09 + ty * (height - 0.19);
         for (const side of [-1, 1] as const) {
-          const r = Math.min(width * 0.28, 0.125) * (0.88 + rand() * 0.22);
+          const r = Math.min(width * 0.27, 0.12) * (0.90 + rand() * 0.16);
           const puff = new THREE.IcosahedronGeometry(r, 1);
-          puff.scale(0.76 + rand() * 0.16, 0.88 + rand() * 0.18, 1.12 + rand() * 0.24);
-          puff.rotateX((rand() - 0.5) * 0.5);
+          puff.scale(0.74 + rand() * 0.14, 0.86 + rand() * 0.16, 1.14 + rand() * 0.20);
+          puff.rotateX((rand() - 0.5) * 0.45);
           puff.rotateY(rand() * Math.PI * 2);
           puff.translate(
-            side * rowHalfW + (rand() - 0.5) * 0.02,
-            Math.min(height - r * 0.52, py + (rand() - 0.5) * 0.025),
-            cz + (rand() - 0.5) * 0.07
+            side * rowHalfW + (rand() - 0.5) * 0.015,
+            Math.min(height - r * 0.52, py + (rand() - 0.5) * 0.02),
+            cz + (rand() - 0.5) * 0.06
           );
           mainGeos.push(puff);
         }
       }
     }
-  } else if (style === 'crystal_dense') {
-    // Option 3 (variation of 4): Finer all-crystal 20-face icosahedra layered densely
-    const stepZ = 0.16;
-    const numCols = Math.max(5, Math.round(length / stepZ) + 1);
-    const zSpan = Math.max(0.05, length - width * 0.42);
-    const layers = Math.max(4, Math.round(height / 0.18));
-
-    for (let ic = 0; ic < numCols; ic++) {
-      const tz = numCols > 1 ? ic / (numCols - 1) : 0.5;
-      const cz = -zSpan * 0.5 + tz * zSpan;
-
-      for (let iy = 0; iy < layers; iy++) {
-        const ty = layers > 1 ? iy / (layers - 1) : 0.5;
-        const py = yFloor + 0.09 + ty * (height - 0.19);
-        const spreadX = width * (0.24 - ty * 0.06);
-
-        for (const side of [-1, 0, 1] as const) {
-          if (side === 0 && iy > 0 && iy < layers - 1 && rand() < 0.45) continue;
-          const r = Math.min(width * 0.30, 0.128) * (0.84 + rand() * 0.30);
-          const crystal = new THREE.IcosahedronGeometry(r, 0);
-          crystal.scale(0.84 + rand() * 0.22, 0.90 + rand() * 0.26, 1.08 + rand() * 0.34);
-          crystal.rotateX(rand() * Math.PI);
-          crystal.rotateY(rand() * Math.PI * 2);
-          crystal.rotateZ(rand() * Math.PI);
-          crystal.translate(
-            side * spreadX + (rand() - 0.5) * 0.03,
-            Math.min(height - r * 0.48, Math.max(yFloor + r * 0.45, py + (rand() - 0.5) * 0.03)),
-            cz + (rand() - 0.5) * 0.06
-          );
-          mainGeos.push(crystal);
-        }
-      }
-    }
-  } else if (style === 'sculpted_poly') {
-    // Option 4: Crisp geometric low-poly crystal foliage (detail=0 icosahedra + elongated faceted chunks)
-    const stepZ = 0.22;
-    const numCols = Math.max(4, Math.round(length / stepZ) + 1);
-    const zSpan = Math.max(0.05, length - width * 0.45);
-
-    for (let ic = 0; ic < numCols; ic++) {
-      const tz = numCols > 1 ? ic / (numCols - 1) : 0.5;
-      const cz = -zSpan * 0.5 + tz * zSpan;
-
-      const layers = Math.max(3, Math.round(height / 0.24));
-      for (let iy = 0; iy < layers; iy++) {
-        const ty = layers > 1 ? iy / (layers - 1) : 0.5;
-        const py = yFloor + 0.12 + ty * (height - 0.22);
-        const rowSpreadX = width * 0.22 * (1 - ty * 0.28);
-
-        for (const side of [-1, 0, 1] as const) {
-          if (side === 0 && iy < layers - 1 && rand() < 0.4) continue;
-          const r = Math.min(width * 0.36, 0.175) * (0.82 + rand() * 0.32);
-          const detail = (ic + iy + side) % 2 === 0 ? 0 : 1;
-          const chunk = new THREE.IcosahedronGeometry(r, detail);
-          chunk.scale(0.80 + rand() * 0.25, 0.85 + rand() * 0.30, 1.20 + rand() * 0.45);
-          chunk.rotateX(rand() * Math.PI);
-          chunk.rotateY(rand() * Math.PI * 2);
-          chunk.rotateZ(rand() * Math.PI);
-          chunk.translate(
-            side * rowSpreadX + (rand() - 0.5) * 0.04,
-            Math.min(height - r * 0.45, Math.max(yFloor + r * 0.45, py + (rand() - 0.5) * 0.05)),
-            cz + (rand() - 0.5) * 0.08
-          );
-          mainGeos.push(chunk);
-        }
-      }
-    }
-  } else if (style === 'woody_natural') {
-    // Option 5: Woody-base natural hedge with SHORTER visible stems (~8-10 cm above soil)
+  } else {
+    // 6. Upright bush tufts + short woody stems (~8 cm visible stems above soil)
     const stemStep = 0.14;
     const stemCount = Math.max(4, Math.round(length / stemStep));
     const zSpan = Math.max(0.05, length - 0.16);
@@ -300,81 +343,47 @@ export function buildStyledHedgeSegment(
       const tz = stemCount > 1 ? i / (stemCount - 1) : 0.5;
       const sz = -zSpan * 0.5 + tz * zSpan + (rand() - 0.5) * 0.03;
       for (let t = 0; t < 2; t++) {
-        const stemH = Math.min(height * 0.24, 0.13 + rand() * 0.05);
+        const stemH = Math.min(height * 0.22, 0.12 + rand() * 0.045);
         const stem = new THREE.CylinderGeometry(0.011, 0.016, stemH, 6);
-        stem.rotateZ((rand() - 0.5) * 0.22);
-        stem.rotateX((rand() - 0.5) * 0.18);
-        stem.translate((rand() - 0.5) * width * 0.30, yFloor + stemH * 0.45, sz + (rand() - 0.5) * 0.04);
+        stem.rotateZ((rand() - 0.5) * 0.20);
+        stem.rotateX((rand() - 0.5) * 0.16);
+        stem.translate((rand() - 0.5) * width * 0.28, yFloor + stemH * 0.45, sz + (rand() - 0.5) * 0.04);
         trunkGeos.push(stem);
       }
     }
 
-    // Bush-mound canopy dipping down close to the soil (Y ~ 0.09 m) so stems stay compact & natural
-    const stepZ = 0.22;
-    const numClusters = Math.max(3, Math.round(length / stepZ) + 1);
-    const canopyBase = Math.min(0.09, height * 0.12);
-    for (let ic = 0; ic < numClusters; ic++) {
-      const tz = numClusters > 1 ? ic / (numClusters - 1) : 0.5;
-      const cz = -zSpan * 0.5 + tz * zSpan;
-      const waveTop = height * (0.92 + 0.09 * Math.sin(tz * Math.PI * 2.5 + seed) + (rand() - 0.5) * 0.04);
-
-      const rLow = Math.min(width * 0.36, height * 0.26) * (0.85 + rand() * 0.20);
-      const lowPuff = new THREE.IcosahedronGeometry(rLow, 1);
-      lowPuff.scale(0.92 + rand() * 0.18, 0.76 + rand() * 0.18, 1.12 + rand() * 0.24);
-      lowPuff.rotateY(rand() * Math.PI * 2);
-      lowPuff.translate((rand() - 0.5) * width * 0.14, canopyBase + rLow * 0.72, cz);
-      (isNeighbour ? mainGeos : deepGeos).push(lowPuff);
-
-      const numPuffs = 6;
-      for (let ip = 0; ip < numPuffs; ip++) {
-        const tierT = ip / (numPuffs - 1);
-        const r = Math.min(width * 0.35, height * 0.23) * (0.78 + rand() * 0.34);
-        const puff = new THREE.IcosahedronGeometry(r, 1);
-        puff.scale(0.88 + rand() * 0.24, 0.82 + rand() * 0.30, 0.98 + rand() * 0.30);
-        puff.rotateX((rand() - 0.5) * 0.6);
-        puff.rotateY(rand() * Math.PI * 2);
-        puff.rotateZ((rand() - 0.5) * 0.6);
-
-        const py = canopyBase + (waveTop - canopyBase) * (0.16 + tierT * 0.74);
-        const px = (ip % 2 === 0 ? 1 : -1) * width * (0.12 + rand() * 0.16) * (1 - tierT * 0.25);
-        puff.translate(px, Math.min(waveTop - r * 0.40, py), cz + (rand() - 0.5) * 0.14);
-        mainGeos.push(puff);
-      }
-    }
-  } else {
-    // Option 6 (hybrid_bush_crystal): Organic bush-mound core (1) + crisp detail=0 crystal outer facets (4)
-    const stepZ = 0.21;
+    const stepZ = 0.20;
     const numClusters = Math.max(4, Math.round(length / stepZ) + 1);
-    const zSpan = Math.max(0.05, length - width * 0.48);
-
+    const canopyBase = Math.min(0.085, height * 0.11);
     for (let ic = 0; ic < numClusters; ic++) {
       const tz = numClusters > 1 ? ic / (numClusters - 1) : 0.5;
       const cz = -zSpan * 0.5 + tz * zSpan;
+      const clusterTop = height * (0.94 + (rand() - 0.5) * 0.08);
 
-      // Full organic bush core (like Option 1)
-      const coreR = Math.min(width * 0.42, height * 0.34) * (0.92 + rand() * 0.14);
+      // Upright vertical-oval bush core
+      const coreR = Math.min(width * 0.36, height * 0.28);
       const core = new THREE.IcosahedronGeometry(coreR, 1);
-      core.scale(0.90 + rand() * 0.14, (height * 0.42) / Math.max(0.12, coreR), 1.15 + rand() * 0.22);
+      core.scale(0.82 + rand() * 0.14, 1.38 + rand() * 0.24, 1.05 + rand() * 0.18);
       core.rotateY(rand() * Math.PI * 2);
-      core.translate((rand() - 0.5) * width * 0.08, yFloor + height * 0.44, cz);
+      core.translate((rand() - 0.5) * width * 0.08, canopyBase + (clusterTop - canopyBase) * 0.48, cz);
       mainGeos.push(core);
 
-      // Crisp 20-face low-poly outer foliage clusters (like Option 4)
-      const numOuter = 6;
-      for (let ip = 0; ip < numOuter; ip++) {
-        const tierT = ip / (numOuter - 1);
+      // Upright outer tufts reaching skyward
+      const numTufts = 6;
+      for (let ip = 0; ip < numTufts; ip++) {
+        const tierT = ip / (numTufts - 1);
         const sideSign = ip % 2 === 0 ? 1 : -1;
-        const r = Math.min(width * 0.34, height * 0.21) * (0.78 + rand() * 0.32);
-        const facet = new THREE.IcosahedronGeometry(r, 0);
-        facet.scale(0.84 + rand() * 0.24, 0.82 + rand() * 0.28, 1.05 + rand() * 0.32);
-        facet.rotateX(rand() * Math.PI);
-        facet.rotateY(rand() * Math.PI * 2);
-        facet.rotateZ(rand() * Math.PI);
+        const r = Math.min(width * 0.30, 0.135) * (0.78 + rand() * 0.32);
+        const tuft = new THREE.IcosahedronGeometry(r, 1);
+        tuft.scale(0.76 + rand() * 0.18, 1.24 + rand() * 0.34, 0.88 + rand() * 0.22);
+        tuft.rotateY(rand() * Math.PI * 2);
+        tuft.rotateZ((rand() - 0.5) * 0.24);
+        tuft.rotateX((rand() - 0.5) * 0.24);
 
-        const py = yFloor + height * (0.16 + tierT * 0.70) + (rand() - 0.5) * 0.04;
-        const px = sideSign * width * (0.16 + rand() * 0.14) * (1 - tierT * 0.20);
-        facet.translate(px, Math.min(height - r * 0.45, Math.max(yFloor + r * 0.45, py)), cz + (rand() - 0.5) * 0.14);
-        mainGeos.push(facet);
+        const py = canopyBase + (clusterTop - canopyBase) * (0.18 + tierT * 0.70);
+        const px = sideSign * width * (0.14 + rand() * 0.14) * (1 - tierT * 0.22);
+        tuft.translate(px, Math.min(clusterTop - r * 0.48, py), cz + (rand() - 0.5) * 0.12);
+        mainGeos.push(tuft);
       }
     }
   }
@@ -396,13 +405,6 @@ export function buildStyledHedgeSegment(
       true
     );
     segmentGroup.add(mainMesh);
-  }
-
-  if (deepGeos.length > 0) {
-    const deepMesh = new THREE.Mesh(mergeSafe(deepGeos), getMat('plot_hedge_beech_deep'));
-    deepMesh.castShadow = true;
-    deepMesh.receiveShadow = true;
-    segmentGroup.add(deepMesh);
   }
 
   if (trunkGeos.length > 0) {
