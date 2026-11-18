@@ -554,11 +554,14 @@ function buildPlotAndEnvironment(
   gravelShape.lineTo(-3.27, 7.73);
   gravelShape.lineTo(0.00, 7.73);
   // Branch across the front garden between the flower border (Z: 0..1.05 m) and lawn (Z: 1.95..4.82 m)
-  gravelShape.lineTo(0.00, -1.05);
+  // Tuck slightly under the 0.20 m rounded corner of the soil bed at (0.00, 1.05) so gravel shows cleanly
+  gravelShape.lineTo(0.00, -0.83);
+  gravelShape.lineTo(0.22, -0.83);
+  gravelShape.lineTo(0.22, -1.05);
   gravelShape.lineTo(5.85, -1.05);
   gravelShape.lineTo(5.85, -1.95);
-  gravelShape.lineTo(0.35, -1.95);
-  gravelShape.quadraticCurveTo(0.00, -1.95, 0.00, -2.30);
+  gravelShape.lineTo(0.20, -1.95);
+  gravelShape.quadraticCurveTo(0.00, -1.95, 0.00, -2.15);
   gravelShape.closePath();
 
   const gravelGeo = new THREE.ExtrudeGeometry(gravelShape, {
@@ -1208,14 +1211,23 @@ function buildFrontGardenFlowerBorder(
     return s / 4294967296;
   };
 
-  // Soil / mulch bed against the front wall (flush with driveway gravel at X = 0.00 m)
+  // Soil / mulch bed against the front wall (flush with driveway gravel at X = 0.00 m, with 0.20 m rounded corner)
   const bedW = 5.85;
   const bedD = 1.05;
-  const soilMesh = new THREE.Mesh(
-    new THREE.BoxGeometry(bedW, 0.045, bedD),
-    getMat('plot_soil_border')
-  );
-  soilMesh.position.set(bedW / 2, 0.0225, bedD / 2);
+  const soilShape = new THREE.Shape();
+  soilShape.moveTo(0.00, 0.00);
+  soilShape.lineTo(bedW, 0.00);
+  soilShape.lineTo(bedW, -bedD);
+  soilShape.lineTo(0.20, -bedD);
+  soilShape.quadraticCurveTo(0.00, -bedD, 0.00, -(bedD - 0.20));
+  soilShape.closePath();
+
+  const soilGeo = new THREE.ExtrudeGeometry(soilShape, {
+    depth: 0.045,
+    bevelEnabled: false,
+  });
+  soilGeo.rotateX(-Math.PI / 2);
+  const soilMesh = new THREE.Mesh(soilGeo, getMat('plot_soil_border'));
   soilMesh.receiveShadow = true;
   group.add(soilMesh);
 
