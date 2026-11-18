@@ -86,10 +86,39 @@ canvas.addEventListener(
 
 // Slow, eased programmatic scroll for floor-selector clicks (native smooth scroll is too fast).
 let scrollAnimId = 0;
-function animateScrollTo(targetY: number) {
+let programmaticTargetIndex: number | null = null;
+let activeLabelTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function showFloorLabel(index: number, durationMs = 1800) {
+  for (const btn of floorDotBtns) {
+    const idx = Number(btn.dataset.stopIndex ?? -1);
+    btn.classList.toggle('label-visible', idx === index);
+  }
+  if (activeLabelTimeout !== null) {
+    clearTimeout(activeLabelTimeout);
+  }
+  activeLabelTimeout = setTimeout(() => {
+    for (const btn of floorDotBtns) {
+      btn.classList.remove('label-visible');
+    }
+    activeLabelTimeout = null;
+  }, durationMs);
+}
+
+function animateScrollTo(targetY: number, targetIdx?: number) {
   const startY = window.scrollY;
   const distance = targetY - startY;
-  if (Math.abs(distance) < 1) return;
+  if (targetIdx !== undefined) {
+    programmaticTargetIndex = targetIdx;
+    showFloorLabel(targetIdx, 10000);
+  }
+  if (Math.abs(distance) < 1) {
+    if (targetIdx !== undefined) {
+      programmaticTargetIndex = null;
+      showFloorLabel(targetIdx, 1800);
+    }
+    return;
+  }
   const levels = Math.abs(distance) / (getMaxScrollPx() * 0.25);
   const durationMs = Math.min(5200, 1700 + levels * 1100);
   const startTime = performance.now();
@@ -99,13 +128,27 @@ function animateScrollTo(targetY: number) {
     const p = Math.min(1, (nowMs - startTime) / durationMs);
     const e = 1 - (1 - p) * (1 - p); // ease-out: starts moving immediately, settles gently
     window.scrollTo(0, startY + distance * e);
-    if (p < 1) requestAnimationFrame(step);
+    if (p < 1) {
+      requestAnimationFrame(step);
+    } else {
+      if (programmaticTargetIndex !== null) {
+        const finalIdx = programmaticTargetIndex;
+        programmaticTargetIndex = null;
+        showFloorLabel(finalIdx, 1800);
+      }
+    }
   };
   requestAnimationFrame(step);
 }
 // Manual wheel / touch input cancels a running click-scroll
-window.addEventListener('wheel', () => { scrollAnimId++; }, { passive: true });
-window.addEventListener('touchstart', () => { scrollAnimId++; }, { passive: true });
+window.addEventListener('wheel', () => {
+  scrollAnimId++;
+  programmaticTargetIndex = null;
+}, { passive: true });
+window.addEventListener('touchstart', () => {
+  scrollAnimId++;
+  programmaticTargetIndex = null;
+}, { passive: true });
 
 // Manual Floor Selector Dots (Section 5.4)
 for (const btn of floorDotBtns) {
@@ -114,7 +157,7 @@ for (const btn of floorDotBtns) {
     const stop = FLOOR_STOPS[idx];
     if (!stop) return;
     const targetScrollY = stop.progress * getMaxScrollPx();
-    animateScrollTo(targetScrollY);
+    animateScrollTo(targetScrollY, idx);
   });
 }
 
@@ -246,6 +289,7 @@ window.addEventListener('resize', () => {
 // 4. MAIN ANIMATION LOOP
 // =============================================================================
 let lastTime = performance.now();
+let lastTrackedStopIndex = -1;
 applyDayNightState(lightingRig, houseGroups, 0, celestialRotorEl);
 applyScrollProgressToScene(houseGroups, 0);
 
@@ -279,6 +323,14 @@ function animate(now: number) {
   for (const btn of floorDotBtns) {
     const idx = Number(btn.dataset.stopIndex ?? -1);
     btn.classList.toggle('active', idx === activeStop.index);
+  }
+  if (lastTrackedStopIndex === -1) {
+    lastTrackedStopIndex = activeStop.index;
+  } else if (activeStop.index !== lastTrackedStopIndex) {
+    lastTrackedStopIndex = activeStop.index;
+    if (programmaticTargetIndex === null) {
+      showFloorLabel(activeStop.index, 1800);
+    }
   }
 
   // 2. Smoothly animate Day / Night transition & Rotating Celestial Backdrop

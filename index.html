@@ -252,12 +252,12 @@
         opacity: 0;
         transform: translateX(6px);
         pointer-events: none;
-        transition: all 0.2s ease;
+        transition: opacity 0.3s ease, transform 0.3s ease;
         box-shadow: var(--shadow-soft);
       }
 
       .floor-dot-btn:hover .floor-dot-label,
-      .floor-dot-btn.active .floor-dot-label {
+      .floor-dot-btn.label-visible .floor-dot-label {
         opacity: 1;
         transform: translateX(0);
       }
