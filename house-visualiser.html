@@ -4654,16 +4654,30 @@ bool isOccludedByScene() {
 
           void main() {
             float life = fract(uTime * 0.44 + vPhase);
-            // Slanted roof splashes stretch into an ellipse and drift slightly downhill (vUv.y > 0)
-            vec2 p = uIsSlanted > 0.5
-              ? vec2(vUv.x * 1.15, (vUv.y - life * 0.16) * 0.78)
-              : vUv;
-            float r = length(p);
-            float targetR = 0.08 + life * 0.78;
-            float ring = exp(-pow((r - targetR) / 0.075, 2.0));
-            float splash = exp(-dot(p, p) * 34.0) * (1.0 - smoothstep(0.0, 0.24, life));
-            float env = smoothstep(0.0, 0.16, life) * (1.0 - smoothstep(0.45, 1.0, life));
-            float alpha = uAlpha * (ring * env * 0.22 + splash * 0.28);
+            float alpha = 0.0;
+            if (uIsSlanted > 0.5) {
+              // Slanted roof splash: uphill top rim stays pinned at impact point (vUv.y = 0, never moves uphill),
+              // while the splash fans downward and widens on the bottom (downhill, vUv.y > 0) side.
+              float R = 0.07 + life * 0.52;
+              float cy = R * 0.4545;
+              float dy = vUv.y - cy;
+              float yNorm = dy < 0.0 ? dy * 2.2 : dy * 0.88;
+              float widthScale = mix(0.54, 1.32, smoothstep(0.0, 0.85, vUv.y));
+              float xNorm = vUv.x / widthScale;
+              float r = length(vec2(xNorm, yNorm));
+              float ring = exp(-pow((r - R) / 0.065, 2.0));
+              float splash = exp(-dot(vec2(xNorm, vUv.y * 1.4), vec2(xNorm, vUv.y * 1.4)) * 30.0) * (1.0 - smoothstep(0.0, 0.24, life));
+              float env = smoothstep(0.0, 0.16, life) * (1.0 - smoothstep(0.45, 1.0, life));
+              float topClip = smoothstep(-0.12, 0.02, vUv.y);
+              alpha = uAlpha * topClip * (ring * env * 0.24 + splash * 0.28);
+            } else {
+              float r = length(vUv);
+              float targetR = 0.08 + life * 0.78;
+              float ring = exp(-pow((r - targetR) / 0.075, 2.0));
+              float splash = exp(-dot(vUv, vUv) * 34.0) * (1.0 - smoothstep(0.0, 0.24, life));
+              float env = smoothstep(0.0, 0.16, life) * (1.0 - smoothstep(0.45, 1.0, life));
+              alpha = uAlpha * (ring * env * 0.22 + splash * 0.28);
+            }
             if (alpha < 0.003) discard;
 
             vec3 col = mix(vec3(0.92, 0.96, 0.99), vec3(0.68, 0.78, 0.90), uNightFactor);
