@@ -234,19 +234,20 @@ export class WeatherSystem {
 
   private createRainMesh(): THREE.Mesh {
     const geo = buildBillboardParticleGeometry({
-      count: 420,
+      count: 460,
       seed: 404,
       xRange: [-4.8, 7.2],
       yRange: [0.0, 14.0],
       zRange: [-20.6, 5.1],
-      sizeRange: [0.28, 0.66],
-      speedRange: [7.8, 11.4],
+      sizeRange: [0.36, 0.72],
+      speedRange: [7.2, 10.6],
     });
 
     const mat = new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: false,
       depthTest: false,
+      side: THREE.DoubleSide,
       toneMapped: false,
       uniforms: {
         ...this.sharedUniforms,
@@ -278,17 +279,18 @@ export class WeatherSystem {
           );
 
           vec3 rainDir = normalize(vec3(0.065, -1.0, 0.03));
-          // Project streak onto camera plane for crisp uniform thickness at any angle
-          vec2 screenDir = normalize(vec2(dot(rainDir, uCamRight), dot(rainDir, uCamUp)));
-          vec2 screenPerp = vec2(-screenDir.y, screenDir.x);
+          vec2 rawDir = vec2(dot(rainDir, uCamRight), dot(rainDir, uCamUp));
+          vec2 screenDir = length(rawDir) > 0.001 ? normalize(rawDir) : vec2(0.0, -1.0);
+          // Positive-determinant perpendicular so quad keeps CCW front-facing winding
+          vec2 screenPerp = vec2(screenDir.y, -screenDir.x);
 
-          float halfW = 0.0085;
+          float halfW = 0.024;
           float halfL = streakLen * 0.5;
           vec3 offset = uCamRight * (screenPerp.x * aCorner.x * halfW + screenDir.x * aCorner.y * halfL)
                       + uCamUp    * (screenPerp.y * aCorner.x * halfW + screenDir.y * aCorner.y * halfL);
 
           vUv = aCorner * 0.5 + 0.5;
-          vHeightFade = smoothstep(0.05, 0.85, y) * smoothstep(14.0, 11.8, y);
+          vHeightFade = smoothstep(0.05, 0.80, y) * smoothstep(14.0, 11.8, y);
 
           gl_Position = projectionMatrix * modelViewMatrix * vec4(worldCenter + offset, 1.0);
         }
@@ -302,14 +304,19 @@ export class WeatherSystem {
 
         void main() {
           if (isOccludedByScene()) discard;
-          float across = 1.0 - abs(vUv.x * 2.0 - 1.0);
-          float along = sin(vUv.y * 3.14159265);
-          float shape = pow(across, 1.4) * pow(max(along, 0.0), 0.85);
-          float alpha = uAlpha * vHeightFade * shape * 0.34;
-          if (alpha < 0.003) discard;
+          // Teardrop-tapered raindrop: soft fine tail at vUv.y=0, fuller bead near vUv.y=0.85
+          float widthScale = mix(0.28, 1.0, smoothstep(0.0, 0.85, vUv.y));
+          float xNorm = abs(vUv.x * 2.0 - 1.0) / widthScale;
+          if (xNorm > 1.0) discard;
 
-          vec3 colDay = vec3(0.84, 0.90, 0.95);
-          vec3 colNight = vec3(0.62, 0.72, 0.86);
+          float across = smoothstep(1.0, 0.15, xNorm);
+          float along = smoothstep(0.0, 0.78, vUv.y) * smoothstep(1.0, 0.86, vUv.y);
+          float shape = across * along;
+          float alpha = uAlpha * vHeightFade * shape * 0.58;
+          if (alpha < 0.004) discard;
+
+          vec3 colDay = vec3(0.92, 0.96, 1.0);
+          vec3 colNight = vec3(0.72, 0.82, 0.96);
           vec3 col = mix(colDay, colNight, uNightFactor);
           gl_FragColor = vec4(col, alpha);
         }
