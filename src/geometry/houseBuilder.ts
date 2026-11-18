@@ -3098,10 +3098,11 @@ function buildPitchedRoofSystem(
   };
 
   // Skylight bounds (rear-left slope, cut through both tile shell and interior ceiling lining)
-  const winX0 = 1.12;
-  const winX1 = 1.76;
-  const winZ0 = -8.72;
-  const winZ1 = -7.78;
+  // Positioned ~3-4 tile courses above the bakgoot matching the exterior render & VK-06
+  const winX0 = 0.72;
+  const winX1 = 1.34;
+  const winZ0 = -8.60;
+  const winZ1 = -7.70;
   const yWallOuter = getZolderRoofTopY(leftWallOuterX); // 6.23 m
   const yTileEdge = getZolderRoofTopY(leftTileEdgeX);   // 6.167 m (strictly above bakgoot yTop=6.12 m)
   const yWin0 = getZolderRoofTopY(winX0);
@@ -3212,38 +3213,42 @@ function buildPitchedRoofSystem(
     roofGroup.add(skGroup);
   }
 
-  // 1b. Roof Ventilation Pipes (Ontluchting & WTW Dakdoorvoer on left slope)
-  const addRoofVent = (x: number, z: number, radius: number, heightAboveSlope: number, hasCowl: boolean) => {
-    const yBase = getZolderRoofTopY(x, z);
+  // 1b. Single Curved Roof Exhaust Pipe (Ontluchtingspijp on lower left slope, matching render)
+  {
+    const ventX = 0.88;
+    const ventZ = -4.35;
+    const yBase = getZolderRoofTopY(ventX, ventZ);
+    const ventMat = getMat('roof_tile_anthracite');
     const ventGroup = new THREE.Group();
-    ventGroup.position.set(x, yBase, z);
-    const pipe = new THREE.Mesh(
-      new THREE.CylinderGeometry(radius, radius, heightAboveSlope, 16),
-      getMat('roof_tile_anthracite')
-    );
-    pipe.position.y = heightAboveSlope / 2 - 0.04;
-    pipe.castShadow = true;
-    ventGroup.add(pipe);
+    ventGroup.position.set(ventX, yBase, ventZ);
 
     const collar = new THREE.Mesh(
-      new THREE.BoxGeometry(radius * 4.0, 0.035, radius * 4.0),
-      getMat('roof_tile_anthracite')
+      new THREE.BoxGeometry(0.24, 0.03, 0.22),
+      ventMat
     );
     collar.rotation.z = leftAngle;
     ventGroup.add(collar);
 
-    const cap = new THREE.Mesh(
-      new THREE.CylinderGeometry(radius * (hasCowl ? 1.45 : 1.35), radius * (hasCowl ? 1.25 : 1.35), hasCowl ? 0.14 : 0.04, 16),
-      getMat('roof_tile_anthracite')
+    const curve = new THREE.QuadraticBezierCurve3(
+      new THREE.Vector3(0.06, -0.05, 0),
+      new THREE.Vector3(-0.08, 0.14, 0),
+      new THREE.Vector3(-0.08, 0.44, 0)
     );
-    cap.position.y = heightAboveSlope - 0.02;
-    if (hasCowl) cap.rotation.z = 0.25;
+    const tubeGeo = new THREE.TubeGeometry(curve, 14, 0.045, 14, false);
+    const tubeMesh = new THREE.Mesh(tubeGeo, ventMat);
+    tubeMesh.castShadow = true;
+    ventGroup.add(tubeMesh);
+
+    const cap = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.065, 0.06, 0.035, 16),
+      ventMat
+    );
+    cap.position.set(-0.08, 0.45, 0);
     cap.castShadow = true;
     ventGroup.add(cap);
+
     roofGroup.add(ventGroup);
-  };
-  addRoofVent(1.98, -6.95, 0.055, 0.42, false);
-  addRoofVent(2.26, -8.95, 0.075, 0.56, true);
+  }
 
   // 2. Slim Outer Tile Layer — Right Dwarskap Wings of Bouwnummer 55
   addTileSlope(
