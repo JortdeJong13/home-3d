@@ -43,7 +43,7 @@ interface CloudPuff {
 }
 
 interface CloudDef {
-  baseAzimuth: number;
+  relAzimuth: number; // Azimuth angle relative to the sun direction (0 = sun position)
   elevation: number;
   driftSpeed: number;
   scale: number;
@@ -51,9 +51,9 @@ interface CloudDef {
 }
 
 const CLOUD_DEFS: CloudDef[] = [
-  // Cloud 0 — Wide Horizon Cumulus (flatter, wide side circles, high in sky)
+  // Cloud 0 — Wide Horizon Cumulus (+32° from sun)
   {
-    baseAzimuth: 0.15,
+    relAzimuth: 0.56,
     elevation: 0.46,
     driftSpeed: 0.00060,
     scale: 1.35,
@@ -67,9 +67,9 @@ const CLOUD_DEFS: CloudDef[] = [
       { dx: 0.060, dy: -0.004, r: 0.022, isBase: true },
     ],
   },
-  // Cloud 1 — Stepped Flat Cumulus
+  // Cloud 1 — Stepped Flat Cumulus (+58° from sun)
   {
-    baseAzimuth: 0.68,
+    relAzimuth: 1.02,
     elevation: 0.42,
     driftSpeed: 0.00052,
     scale: 1.25,
@@ -82,9 +82,9 @@ const CLOUD_DEFS: CloudDef[] = [
       { dx: 0.062, dy: -0.006, r: 0.020, isBase: true },
     ],
   },
-  // Cloud 2 — Elongated Puffy Flattop (extra wide pillowy bar)
+  // Cloud 2 — Elongated Puffy Flattop (+85° from sun)
   {
-    baseAzimuth: 1.20,
+    relAzimuth: 1.48,
     elevation: 0.50,
     driftSpeed: 0.00068,
     scale: 1.40,
@@ -98,9 +98,9 @@ const CLOUD_DEFS: CloudDef[] = [
       { dx: 0.068, dy: -0.004, r: 0.020, isBase: true },
     ],
   },
-  // Cloud 3 — Flat Cumulus Shelf
+  // Cloud 3 — Flat Cumulus Shelf (+112° from sun)
   {
-    baseAzimuth: 1.72,
+    relAzimuth: 1.95,
     elevation: 0.43,
     driftSpeed: 0.00055,
     scale: 1.20,
@@ -112,9 +112,9 @@ const CLOUD_DEFS: CloudDef[] = [
       { dx: 0.050, dy: -0.005, r: 0.022, isBase: true },
     ],
   },
-  // Cloud 4 — Wide Horizon Cumulus
+  // Cloud 4 — Wide Horizon Cumulus (+140° from sun)
   {
-    baseAzimuth: 2.24,
+    relAzimuth: 2.44,
     elevation: 0.48,
     driftSpeed: 0.00062,
     scale: 1.35,
@@ -128,9 +128,9 @@ const CLOUD_DEFS: CloudDef[] = [
       { dx: 0.060, dy: -0.004, r: 0.022, isBase: true },
     ],
   },
-  // Cloud 5 — Stepped Flat Cumulus
+  // Cloud 5 — Stepped Flat Cumulus (+168° from sun)
   {
-    baseAzimuth: 2.76,
+    relAzimuth: 2.93,
     elevation: 0.44,
     driftSpeed: 0.00050,
     scale: 1.30,
@@ -143,9 +143,9 @@ const CLOUD_DEFS: CloudDef[] = [
       { dx: 0.062, dy: -0.006, r: 0.020, isBase: true },
     ],
   },
-  // Cloud 6 — Elongated Puffy Flattop
+  // Cloud 6 — Elongated Puffy Flattop (+198° from sun)
   {
-    baseAzimuth: 3.28,
+    relAzimuth: 3.45,
     elevation: 0.52,
     driftSpeed: 0.00070,
     scale: 1.45,
@@ -159,9 +159,9 @@ const CLOUD_DEFS: CloudDef[] = [
       { dx: 0.068, dy: -0.004, r: 0.020, isBase: true },
     ],
   },
-  // Cloud 7 — Flat Cumulus Shelf
+  // Cloud 7 — Flat Cumulus Shelf (+226° from sun)
   {
-    baseAzimuth: 3.80,
+    relAzimuth: 3.94,
     elevation: 0.43,
     driftSpeed: 0.00054,
     scale: 1.20,
@@ -173,9 +173,9 @@ const CLOUD_DEFS: CloudDef[] = [
       { dx: 0.050, dy: -0.005, r: 0.022, isBase: true },
     ],
   },
-  // Cloud 8 — Wide Horizon Cumulus
+  // Cloud 8 — Wide Horizon Cumulus (+254° from sun)
   {
-    baseAzimuth: 4.32,
+    relAzimuth: 4.43,
     elevation: 0.47,
     driftSpeed: 0.00064,
     scale: 1.38,
@@ -189,9 +189,9 @@ const CLOUD_DEFS: CloudDef[] = [
       { dx: 0.060, dy: -0.004, r: 0.022, isBase: true },
     ],
   },
-  // Cloud 9 — Stepped Flat Cumulus
+  // Cloud 9 — Stepped Flat Cumulus (+280° from sun)
   {
-    baseAzimuth: 4.84,
+    relAzimuth: 4.88,
     elevation: 0.42,
     driftSpeed: 0.00052,
     scale: 1.25,
@@ -204,9 +204,9 @@ const CLOUD_DEFS: CloudDef[] = [
       { dx: 0.062, dy: -0.006, r: 0.020, isBase: true },
     ],
   },
-  // Cloud 10 — Elongated Puffy Flattop
+  // Cloud 10 — Elongated Puffy Flattop (+305° from sun)
   {
-    baseAzimuth: 5.36,
+    relAzimuth: 5.32,
     elevation: 0.51,
     driftSpeed: 0.00066,
     scale: 1.40,
@@ -220,9 +220,9 @@ const CLOUD_DEFS: CloudDef[] = [
       { dx: 0.068, dy: -0.004, r: 0.020, isBase: true },
     ],
   },
-  // Cloud 11 — Flat Cumulus Shelf
+  // Cloud 11 — Flat Cumulus Shelf (+328° from sun / -32° gap)
   {
-    baseAzimuth: 5.88,
+    relAzimuth: 5.72,
     elevation: 0.44,
     driftSpeed: 0.00056,
     scale: 1.22,
@@ -338,10 +338,12 @@ export class SkyRenderer {
     };
 
     // 2. Daytime Clouds (soft stylized diorama puffs, drifting slowly, fading at dusk/night)
+    const S0 = H.clone().multiplyScalar(Math.cos(SUN_ELEV)).addScaledVector(this.Y, Math.sin(SUN_ELEV));
     const cloudDayFactor = 1 - THREE.MathUtils.smoothstep(t, 0.48, 0.76);
     if (cloudDayFactor > 0.005) {
       const nowSec = performance.now() * 0.001;
       const sunsetFactor = Math.sin(t * Math.PI); // peaks at golden hour (t = 0.5)
+      const sunAzimuth = Math.atan2(H.z, H.x);
 
       // Interpolate puff color tones between crisp daylight white and warm sunset peach/mauve
       const hlR = Math.round(THREE.MathUtils.lerp(255, 255, sunsetFactor));
@@ -360,11 +362,16 @@ export class SkyRenderer {
       const pxPerRadX = (0.5 * W) / tanH;
 
       for (const cloud of CLOUD_DEFS) {
-        // Slow celestial drift across the sky
-        const az = cloud.baseAzimuth + cloud.driftSpeed * nowSec;
+        // Slow celestial drift across the sky, positioned with clear angular margin from the sun
+        const az = sunAzimuth + cloud.relAzimuth + cloud.driftSpeed * nowSec;
         const cosEl = Math.cos(cloud.elevation);
         const sinEl = Math.sin(cloud.elevation);
         const S_cloud = new THREE.Vector3(cosEl * Math.cos(az), sinEl, cosEl * Math.sin(az));
+
+        // Sun clearance guard: ensure no drifting cloud ever encroaches on or covers the sun
+        const dotWithSun = S_cloud.dot(S0);
+        const sunClearance = 1 - THREE.MathUtils.smoothstep(dotWithSun, 0.86, 0.94);
+        if (sunClearance <= 0.01) continue;
 
         rot(S_cloud, this.v_cloud);
 
@@ -383,7 +390,7 @@ export class SkyRenderer {
         const screenFade = 1 - THREE.MathUtils.smoothstep(normY, 0.24, 0.44);
         if (screenFade <= 0.01) continue;
 
-        const totalAlpha = cloudDayFactor * horizonFade * screenFade;
+        const totalAlpha = cloudDayFactor * horizonFade * screenFade * sunClearance;
         if (totalAlpha <= 0.01) continue;
 
         this.ctx.globalAlpha = totalAlpha;
@@ -451,7 +458,6 @@ export class SkyRenderer {
     this.ctx.globalAlpha = 1;
 
     // 4. Sun and Moon (moon is exactly opposite the sun on the celestial sphere)
-    const S0 = H.clone().multiplyScalar(Math.cos(SUN_ELEV)).addScaledVector(this.Y, Math.sin(SUN_ELEV));
     const sun = rot(S0, new THREE.Vector3());
     const moon = rot(S0.clone().negate(), new THREE.Vector3());
     const body = (dir: THREE.Vector3, size: number, inner: string, mid: string, glow: string) => {
