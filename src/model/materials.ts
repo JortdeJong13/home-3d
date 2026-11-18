@@ -355,11 +355,11 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
   },
   garden_lamp_glow: {
     colorDay: '#f4efe6',
-    colorNight: '#ffe3a8',
+    colorNight: '#fff0c4',
     roughness: 0.35,
     metalness: 0.0,
-    emissiveNight: '#ffbe6b',
-    emissiveIntensityNight: 1.35,
+    emissiveNight: '#ffd180',
+    emissiveIntensityNight: 2.4,
   },
   plinth_base_white: {
     colorDay: '#f4f2ed',
