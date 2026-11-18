@@ -24,13 +24,13 @@ export const GROUND_TILE_ORIGIN_Z = -0.15;
 
 const TEX_SIZE = 1024;
 
-// Subtle ~5.6 mm rectified joint width (world metres)
-const JOINT_HALF_M = 0.0028;
+// Hairline rectified joint (~1.6 mm) with tone closely matched to the tile
+const JOINT_HALF_M = 0.0008;
 
-// Warm taupe-sand mortar close in value to the smooth limestone body
-const GROUT_R = 178;
-const GROUT_G = 167;
-const GROUT_B = 148;
+// Tone-on-tone warm limestone mortar so seams stay whisper-thin and subtle
+const GROUT_R = 198;
+const GROUT_G = 188;
+const GROUT_B = 169;
 
 function clamp(v: number, min: number, max: number): number {
   return v < min ? min : v > max ? max : v;
@@ -149,8 +149,8 @@ export function getGroundFloorTileTextures(): GroundFloorTileTextureSet {
 
   const jointFracU = JOINT_HALF_M / GROUND_TILE_WIDTH_M;
   const jointFracV = JOINT_HALF_M / GROUND_TILE_LENGTH_M;
-  const featherU = (1.6 / TEX_SIZE) * GROUND_TILE_COLS;
-  const featherV = (1.6 / TEX_SIZE) * GROUND_TILE_ROWS;
+  const featherU = (0.9 / TEX_SIZE) * GROUND_TILE_COLS;
+  const featherV = (0.9 / TEX_SIZE) * GROUND_TILE_ROWS;
 
   for (let py = 0; py < TEX_SIZE; py++) {
     const vNorm = (py + 0.5) / TEX_SIZE;
@@ -217,25 +217,12 @@ export function getGroundFloorTileTextures(): GroundFloorTileTextureSet {
       }
 
       // Gentle per-tile tonal variation
-      const tileBrightness = 0.97 + hash2D(col, row, 71) * 0.06;
-      const tileWarmth = (hash2D(col, row, 89) - 0.5) * 4.0;
+      const tileBrightness = 0.978 + hash2D(col, row, 71) * 0.044;
+      const tileWarmth = (hash2D(col, row, 89) - 0.5) * 3.5;
 
-      // Subtle light-catching rectified edge highlight (0.5..1.8 cm inside tile edge)
-      const distEdgeM = Math.min(
-        lx,
-        GROUND_TILE_WIDTH_M - lx,
-        ly,
-        GROUND_TILE_LENGTH_M - ly
-      );
-      const edgeHighlight =
-        smoothstep(0.003, 0.007, distEdgeM) *
-        (1.0 - smoothstep(0.007, 0.022, distEdgeM)) *
-        0.024;
-
-      const shade = tileBrightness + edgeHighlight;
-      const tileR = clamp(baseR * shade + tileWarmth, 0, 255);
-      const tileG = clamp(baseG * shade, 0, 255);
-      const tileB = clamp(baseB * shade - tileWarmth * 0.7, 0, 255);
+      const tileR = clamp(baseR * tileBrightness + tileWarmth, 0, 255);
+      const tileG = clamp(baseG * tileBrightness, 0, 255);
+      const tileB = clamp(baseB * tileBrightness - tileWarmth * 0.7, 0, 255);
 
       const pIdx = py * TEX_SIZE + px;
       const idx = pIdx * 4;
@@ -264,11 +251,11 @@ export function getGroundFloorTileTextures(): GroundFloorTileTextureSet {
         0.12,
         1.0
       );
-      heightField[pIdx] = lerp(0.0, tileHeight, tileMask);
+      heightField[pIdx] = lerp(tileHeight * 0.72, tileHeight, tileMask);
 
       // Roughness map: chalky matte inside stone depressions & grout, softer satin on smooth high spots
       const tileRough = lerp(246, 196, tileHeight);
-      const groutRough = 252;
+      const groutRough = 242;
       const roughVal = Math.round(clamp(lerp(groutRough, tileRough, tileMask), 0, 255));
       roughnessData[idx] = roughVal;
       roughnessData[idx + 1] = roughVal;
