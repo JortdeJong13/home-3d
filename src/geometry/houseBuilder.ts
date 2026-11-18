@@ -834,8 +834,8 @@ function buildPlotAndEnvironment(
     label: 'Bolboom Voortuin Links (met boompalen)',
     x: 1.55,
     z: 2.38,
-    totalHeight: 3.16,
-    crownRadius: 0.52,
+    totalHeight: 2.22,
+    crownRadius: 0.44,
     rotationDeg: 18,
     seed: 501,
   });
@@ -844,8 +844,8 @@ function buildPlotAndEnvironment(
     label: 'Bolboom Voortuin Rechts (met boompalen)',
     x: 4.35,
     z: 2.44,
-    totalHeight: 3.24,
-    crownRadius: 0.50,
+    totalHeight: 2.26,
+    crownRadius: 0.42,
     rotationDeg: -14,
     seed: 502,
   });
@@ -1101,12 +1101,12 @@ function addFrontBolboomTree(
   treeGroup.add(trunk);
 
   // 2. Twin wooden stakes ("boompalen") flanking the trunk + horizontal tie strap ("boomband")
-  const stakeOffset = 0.23;
-  const stakeHeight = 1.12;
+  const stakeOffset = 0.21;
+  const stakeHeight = 0.88;
   const stakeTiltRad = THREE.MathUtils.degToRad(1.5);
   const stakeGeos: THREE.BufferGeometry[] = [];
   for (const side of [-1, 1] as const) {
-    const stake = new THREE.CylinderGeometry(0.026, 0.029, stakeHeight, 8);
+    const stake = new THREE.CylinderGeometry(0.025, 0.028, stakeHeight, 8);
     stake.rotateZ(side * stakeTiltRad);
     stake.translate(side * stakeOffset, stakeHeight / 2, 0);
     stakeGeos.push(stake);
@@ -1116,7 +1116,7 @@ function addFrontBolboomTree(
   stakesMesh.receiveShadow = true;
   treeGroup.add(stakesMesh);
 
-  const strapY = 0.96;
+  const strapY = 0.76;
   const strapGeos: THREE.BufferGeometry[] = [];
   const crossStrap = new THREE.BoxGeometry(stakeOffset * 2 + 0.055, 0.042, 0.024).toNonIndexed();
   crossStrap.translate(0, strapY, 0);
