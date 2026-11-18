@@ -95,9 +95,9 @@ export class IsometricCameraController {
     // We handle pinch-to-zoom (ctrlKey + wheel) and UI +/- zoom buttons explicitly.
     this.controls.enableZoom = false;
 
-    // Limit zoom range: focus on architectural layout & diorama style, never zooming too close
+    // Limit zoom range: allow zooming in closely for room/furniture inspection while keeping diorama overview
     this.controls.minZoom = 0.68;
-    this.controls.maxZoom = 2.35;
+    this.controls.maxZoom = 6.5;
 
     // Limit vertical orbit angle so camera stays above ground level
     this.controls.minPolarAngle = 0.08;

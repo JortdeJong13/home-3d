@@ -7,6 +7,7 @@ import { InteractiveDoor } from '../viewer/interactiveDoors';
 import {
   buildDecorativeBrickArchMeshes,
   buildDoorLeafWithVisionCutout,
+  createBrushedSteelLeverHandle,
 } from '../assets/items/frontDoorArch';
 
 /**
@@ -840,13 +841,50 @@ export function instantiateOpeningPrefab3D(
       const doorPanel = new THREE.Mesh(mergedDoorGeo, getMat(op.panelMaterial));
       doorPivot.add(doorPanel);
 
-      // Centered kanteldeur grip/handle near bottom third
-      const handle = new THREE.Mesh(
-        new THREE.BoxGeometry(0.14, 0.028, 0.035),
-        getMat('roof_tile_anthracite')
-      );
-      handle.position.set(0, -doorH / 2 + 0.48, plateDepth / 2 + slatDepth + 0.012);
-      doorPivot.add(handle);
+      // Centered rounded brushed-steel kanteldeur T-handle near bottom third (matching front door steel)
+      const garageHandleMat = new THREE.MeshStandardMaterial({
+        color: '#a8aeb5',
+        roughness: 0.35,
+        metalness: 0.75,
+        name: 'door_handle_steel',
+      });
+      const garageHandleGroup = new THREE.Group();
+      const handleBaseZ = plateDepth / 2 + slatDepth;
+      garageHandleGroup.position.set(0, -doorH / 2 + 0.48, handleBaseZ);
+
+      // Rounded pill-shaped escutcheon plate
+      const escW = 0.038;
+      const escR = escW / 2;
+      const escH = 0.055;
+      const escShape = new THREE.Shape();
+      escShape.absarc(0, escH / 2, escR, 0, Math.PI, false);
+      escShape.absarc(0, -escH / 2, escR, Math.PI, Math.PI * 2, false);
+      escShape.closePath();
+      const escGeo = new THREE.ExtrudeGeometry(escShape, { depth: 0.01, bevelEnabled: false, curveSegments: 14 });
+      garageHandleGroup.add(new THREE.Mesh(escGeo, garageHandleMat));
+
+      // Cylindrical neck + rounded T-bar with spherical end caps
+      const gNeckGeo = new THREE.CylinderGeometry(0.009, 0.009, 0.036, 14);
+      gNeckGeo.rotateX(Math.PI / 2);
+      const gNeck = new THREE.Mesh(gNeckGeo, garageHandleMat);
+      gNeck.position.set(0, 0.01, 0.022);
+      garageHandleGroup.add(gNeck);
+
+      const tBarLen = 0.125;
+      const tBarGeo = new THREE.CylinderGeometry(0.009, 0.009, tBarLen, 14);
+      tBarGeo.rotateZ(Math.PI / 2);
+      const tBar = new THREE.Mesh(tBarGeo, garageHandleMat);
+      tBar.position.set(0, 0.01, 0.04);
+      garageHandleGroup.add(tBar);
+
+      const capGeo = new THREE.SphereGeometry(0.009, 12, 10);
+      for (const side of [-1, 1]) {
+        const cap = new THREE.Mesh(capGeo, garageHandleMat);
+        cap.position.set((side * tBarLen) / 2, 0.01, 0.04);
+        garageHandleGroup.add(cap);
+      }
+
+      doorPivot.add(garageHandleGroup);
 
       group.add(doorPivot);
 
@@ -976,13 +1014,20 @@ export function instantiateOpeningPrefab3D(
       glassPane.position.set(-innerW / 2, glassCenterY, 0);
       doorPivot.add(glassPane);
 
-      // Door handle on left stile
-      const handle = new THREE.Mesh(
-        new THREE.BoxGeometry(0.11, 0.02, 0.09),
-        getMat('roof_tile_anthracite')
-      );
-      handle.position.set(-innerW + 0.075, -0.10, 0);
-      doorPivot.add(handle);
+      // Rounded brushed-steel door handle on left stile (matching front door)
+      const rearHandleMat = new THREE.MeshStandardMaterial({
+        color: '#a8aeb5',
+        roughness: 0.35,
+        metalness: 0.75,
+        name: 'door_handle_steel',
+      });
+      const rearHandle = createBrushedSteelLeverHandle({
+        leafThickness: leafThick,
+        handleMat: rearHandleMat,
+        leverDirection: 1,
+      });
+      rearHandle.position.set(-innerW + stileW / 2, -0.02, 0);
+      doorPivot.add(rearHandle);
 
       group.add(doorPivot);
 

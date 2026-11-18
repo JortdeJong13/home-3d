@@ -89,6 +89,78 @@ export function buildDecorativeBrickArchMeshes(
 }
 
 /**
+ * Build a rounded brushed-steel door shield ("langschild") with Euro cylinder and
+ * cylindrical lever grip on both sides of a door leaf.
+ */
+export function createBrushedSteelLeverHandle(params: {
+  leafThickness: number;
+  handleMat: THREE.Material;
+  leverDirection?: 1 | -1;
+}): THREE.Group {
+  const { leafThickness, handleMat, leverDirection = -1 } = params;
+  const group = new THREE.Group();
+
+  const shieldW = 0.036;
+  const shieldR = shieldW / 2;
+  const shieldStraightH = 0.145;
+
+  const shieldShape = new THREE.Shape();
+  shieldShape.absarc(0, shieldStraightH / 2, shieldR, 0, Math.PI, false);
+  shieldShape.absarc(0, -shieldStraightH / 2, shieldR, Math.PI, Math.PI * 2, false);
+  shieldShape.closePath();
+
+  const shieldDepth = leafThickness + 0.014;
+  const shieldGeo = new THREE.ExtrudeGeometry(shieldShape, {
+    depth: shieldDepth,
+    bevelEnabled: false,
+    curveSegments: 16,
+  });
+  shieldGeo.translate(0, 0, -shieldDepth / 2);
+  group.add(new THREE.Mesh(shieldGeo, handleMat));
+
+  // Subtle Euro cylinder keyhole on the lower half of the rounded shield
+  const cylinderGeo = new THREE.CylinderGeometry(0.0085, 0.0085, shieldDepth + 0.004, 14);
+  cylinderGeo.rotateX(Math.PI / 2);
+  const cylinderMesh = new THREE.Mesh(cylinderGeo, handleMat);
+  cylinderMesh.position.set(0, -0.048, 0);
+  group.add(cylinderMesh);
+
+  // Round cylindrical handle neck (through both sides of the door)
+  const leverY = 0.032;
+  const neckOffsetZ = leafThickness / 2 + 0.034;
+  const neckLen = neckOffsetZ * 2;
+  const neckRadius = 0.009;
+  const neckGeo = new THREE.CylinderGeometry(neckRadius, neckRadius, neckLen, 16);
+  neckGeo.rotateX(Math.PI / 2);
+  const neckMesh = new THREE.Mesh(neckGeo, handleMat);
+  neckMesh.position.set(0, leverY, 0);
+  group.add(neckMesh);
+
+  // Round cylindrical lever grip + rounded elbow & tip on both sides
+  const gripLen = 0.112;
+  const gripGeo = new THREE.CylinderGeometry(neckRadius, neckRadius, gripLen, 16);
+  gripGeo.rotateZ(Math.PI / 2);
+  const jointGeo = new THREE.SphereGeometry(neckRadius, 14, 10);
+
+  for (const side of [1, -1]) {
+    const zPos = side * neckOffsetZ;
+    const elbow = new THREE.Mesh(jointGeo, handleMat);
+    elbow.position.set(0, leverY, zPos);
+    group.add(elbow);
+
+    const grip = new THREE.Mesh(gripGeo, handleMat);
+    grip.position.set((leverDirection * gripLen) / 2, leverY, zPos);
+    group.add(grip);
+
+    const tip = new THREE.Mesh(jointGeo, handleMat);
+    tip.position.set(leverDirection * gripLen, leverY, zPos);
+    group.add(tip);
+  }
+
+  return group;
+}
+
+/**
  * Builds the sage-green entrance door leaf with a true extruded cutout for the
  * vertical vision window, thin glazing bead, glass pane, and brushed metal handle.
  *
@@ -173,66 +245,13 @@ export function buildDoorLeafWithVisionCutout(params: {
   container.add(glassPane);
 
   // Rounded pill-shaped door shield (langschild) + cylindrical lever handle
-  const handleX = innerW - 0.075;
-  const handleY = -0.02;
-  const shieldW = 0.036;
-  const shieldR = shieldW / 2;
-  const shieldStraightH = 0.145;
-
-  const shieldShape = new THREE.Shape();
-  shieldShape.absarc(0, shieldStraightH / 2, shieldR, 0, Math.PI, false);
-  shieldShape.absarc(0, -shieldStraightH / 2, shieldR, Math.PI, Math.PI * 2, false);
-  shieldShape.closePath();
-
-  const shieldDepth = leafThickness + 0.014;
-  const shieldGeo = new THREE.ExtrudeGeometry(shieldShape, {
-    depth: shieldDepth,
-    bevelEnabled: false,
-    curveSegments: 16,
+  const handleGroup = createBrushedSteelLeverHandle({
+    leafThickness,
+    handleMat,
+    leverDirection: -1,
   });
-  shieldGeo.translate(0, 0, -shieldDepth / 2);
-  const shieldMesh = new THREE.Mesh(shieldGeo, handleMat);
-  shieldMesh.position.set(handleX, handleY, 0);
-  container.add(shieldMesh);
-
-  // Subtle Euro cylinder keyhole on the lower half of the rounded shield
-  const cylinderGeo = new THREE.CylinderGeometry(0.0085, 0.0085, shieldDepth + 0.004, 14);
-  cylinderGeo.rotateX(Math.PI / 2);
-  const cylinderMesh = new THREE.Mesh(cylinderGeo, handleMat);
-  cylinderMesh.position.set(handleX, handleY - 0.048, 0);
-  container.add(cylinderMesh);
-
-  // Round cylindrical handle neck (through both sides of the door)
-  const leverY = handleY + 0.032;
-  const neckOffsetZ = leafThickness / 2 + 0.034;
-  const neckLen = neckOffsetZ * 2;
-  const neckRadius = 0.009;
-  const neckGeo = new THREE.CylinderGeometry(neckRadius, neckRadius, neckLen, 16);
-  neckGeo.rotateX(Math.PI / 2);
-  const neckMesh = new THREE.Mesh(neckGeo, handleMat);
-  neckMesh.position.set(handleX, leverY, 0);
-  container.add(neckMesh);
-
-  // Round cylindrical lever grip + rounded elbow & tip on both sides
-  const gripLen = 0.112;
-  const gripGeo = new THREE.CylinderGeometry(neckRadius, neckRadius, gripLen, 16);
-  gripGeo.rotateZ(Math.PI / 2);
-  const jointGeo = new THREE.SphereGeometry(neckRadius, 14, 10);
-
-  for (const side of [1, -1]) {
-    const zPos = side * neckOffsetZ;
-    const elbow = new THREE.Mesh(jointGeo, handleMat);
-    elbow.position.set(handleX, leverY, zPos);
-    container.add(elbow);
-
-    const grip = new THREE.Mesh(gripGeo, handleMat);
-    grip.position.set(handleX - gripLen / 2, leverY, zPos);
-    container.add(grip);
-
-    const tip = new THREE.Mesh(jointGeo, handleMat);
-    tip.position.set(handleX - gripLen, leverY, zPos);
-    container.add(tip);
-  }
+  handleGroup.position.set(innerW - 0.075, -0.02, 0);
+  container.add(handleGroup);
 
   return { leafPivotContent: container, leafMesh };
 }
