@@ -82,40 +82,75 @@ export function buildBushHedgeSegment(
     const cz = -zSpan * 0.5 + tz * zSpan + (rand() - 0.5) * 0.04;
     const clusterH = height * (0.94 + rand() * 0.09);
 
-    // Stack core mounds cleanly when the hedge is tall (e.g. 2.10 m)
-    const numCores = Math.max(1, Math.round(clusterH / 0.95));
-    const coreHeightSpan = (clusterH * 0.44) / numCores;
-    for (let k = 0; k < numCores; k++) {
+    const isTall = clusterH > 1.10;
+    if (!isTall) {
+      // Low hedge (0.75–0.90 m): exact Option 1 single-core bush-cluster recipe
       const coreR = Math.min(width * 0.42, clusterH * 0.34) * (0.94 + rand() * 0.14);
       const corePuff = new THREE.IcosahedronGeometry(coreR, 1);
-      corePuff.scale(0.92 + rand() * 0.14, coreHeightSpan / Math.max(0.12, coreR), 1.15 + rand() * 0.25);
+      corePuff.scale(0.92 + rand() * 0.14, (clusterH * 0.44) / Math.max(0.12, coreR), 1.15 + rand() * 0.25);
       corePuff.rotateY(rand() * Math.PI * 2);
       corePuff.rotateX((rand() - 0.5) * 0.25);
-      const cy =
-        numCores === 1
-          ? yFloor + clusterH * 0.44
-          : yFloor + clusterH * (0.26 + (k / (numCores - 1)) * 0.44);
-      corePuff.translate((rand() - 0.5) * width * 0.10, cy, cz);
+      corePuff.translate((rand() - 0.5) * width * 0.10, yFloor + clusterH * 0.44, cz);
       mainGeos.push(corePuff);
-    }
 
-    // Multi-tier asymmetrical outer bush puffs scaled proportionally to hedge height
-    const numPuffs = Math.max(6, Math.round(clusterH / 0.15));
-    for (let ip = 0; ip < numPuffs; ip++) {
-      const tierT = numPuffs > 1 ? ip / (numPuffs - 1) : 0.5;
-      const sideSign = ip % 2 === 0 ? 1 : -1;
-      const px = sideSign * width * (0.11 + rand() * 0.14);
-      const py = yFloor + clusterH * (0.16 + tierT * 0.70) + (rand() - 0.5) * 0.05;
-      const pz = cz + (rand() - 0.5) * stepZ * 0.95;
+      const numPuffs = 6;
+      for (let ip = 0; ip < numPuffs; ip++) {
+        const tierT = ip / (numPuffs - 1);
+        const sideSign = ip % 2 === 0 ? 1 : -1;
+        const px = sideSign * width * (0.11 + rand() * 0.14);
+        const py = yFloor + clusterH * (0.16 + tierT * 0.70) + (rand() - 0.5) * 0.05;
+        const pz = cz + (rand() - 0.5) * stepZ * 0.95;
 
-      const r = Math.min(width * 0.34, clusterH * 0.24) * (0.78 + rand() * 0.34);
-      const puff = new THREE.IcosahedronGeometry(r, 1);
-      puff.scale(0.84 + rand() * 0.26, 0.80 + rand() * 0.34, 0.95 + rand() * 0.32);
-      puff.rotateX(rand() * Math.PI);
-      puff.rotateY(rand() * Math.PI * 2);
-      puff.rotateZ(rand() * Math.PI);
-      puff.translate(px, Math.min(clusterH - r * 0.45, Math.max(yFloor + r * 0.45, py)), pz);
-      mainGeos.push(puff);
+        const r = Math.min(width * 0.34, clusterH * 0.24) * (0.78 + rand() * 0.34);
+        const puff = new THREE.IcosahedronGeometry(r, 1);
+        puff.scale(0.84 + rand() * 0.26, 0.80 + rand() * 0.34, 0.95 + rand() * 0.32);
+        puff.rotateX(rand() * Math.PI);
+        puff.rotateY(rand() * Math.PI * 2);
+        puff.rotateZ(rand() * Math.PI);
+        puff.translate(px, Math.min(clusterH - r * 0.45, Math.max(yFloor + r * 0.45, py)), pz);
+        mainGeos.push(puff);
+      }
+    } else {
+      // Tall hedge (e.g. 2.10 m): heavily overlapping multi-core spine (no middle pinch/seam)
+      // plus stratified, vertically proportioned bush tufts across the full height.
+      const numCores = Math.max(3, Math.ceil(clusterH / 0.55));
+      const coreRadiusY = clusterH * 0.26;
+      for (let k = 0; k < numCores; k++) {
+        const kt = numCores > 1 ? k / (numCores - 1) : 0.5;
+        const coreR = width * (0.38 + rand() * 0.08) * (1 - Math.max(0, kt - 0.65) * 0.25);
+        const corePuff = new THREE.IcosahedronGeometry(coreR, 1);
+        corePuff.scale(0.90 + rand() * 0.12, coreRadiusY / Math.max(0.12, coreR), 1.15 + rand() * 0.25);
+        corePuff.rotateY(rand() * Math.PI * 2);
+        corePuff.rotateX((rand() - 0.5) * 0.22);
+        const cy = yFloor + clusterH * (0.18 + kt * 0.62) + (rand() - 0.5) * 0.06;
+        corePuff.translate((rand() - 0.5) * width * 0.08, cy, cz + (rand() - 0.5) * 0.06);
+        mainGeos.push(corePuff);
+      }
+
+      const numPuffs = Math.max(12, Math.round(clusterH * 9));
+      const vScaleBoost = Math.min(1.45, Math.max(1.05, clusterH / 1.55));
+      for (let ip = 0; ip < numPuffs; ip++) {
+        // Stratified + jittered height so puffs bridge smoothly across mid-height with no horizontal seam
+        const baseT = (ip + rand()) / numPuffs;
+        const sideSign = ip % 2 === 0 ? 1 : -1;
+        const crownTaper = 1 - Math.max(0, baseT - 0.72) * 0.45;
+        const px = sideSign * width * (0.11 + rand() * 0.14) * crownTaper;
+        const py = yFloor + clusterH * (0.07 + baseT * 0.85);
+        const pz = cz + (rand() - 0.5) * stepZ * 1.05;
+
+        const r = width * 0.34 * (0.78 + rand() * 0.36);
+        const puff = new THREE.IcosahedronGeometry(r, 1);
+        puff.scale(
+          0.84 + rand() * 0.24,
+          (0.90 + rand() * 0.34) * vScaleBoost,
+          0.95 + rand() * 0.34
+        );
+        puff.rotateX(rand() * Math.PI);
+        puff.rotateY(rand() * Math.PI * 2);
+        puff.rotateZ(rand() * Math.PI);
+        puff.translate(px, Math.min(clusterH - r * 0.48, Math.max(yFloor + r * 0.45, py)), pz);
+        mainGeos.push(puff);
+      }
     }
   }
 
