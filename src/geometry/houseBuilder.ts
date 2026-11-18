@@ -2740,7 +2740,7 @@ function buildQuarterTurnStaircase(
 }
 
 /**
- * Add Zolder technical installations (WP boiler, WP indoor unit, WTW) in the rear-left installation zone
+ * Add Zolder technical installation (warmtepomp reservoir) in the rear-left installation zone
  * matching Verkooptekening VK-06.
  */
 function buildZolderDetails(
@@ -2751,7 +2751,7 @@ function buildZolderDetails(
 ) {
   const Y2 = HOUSE_DIMENSIONS.secondFloorElevation.metres; // 5.70 m
 
-  // 1. Heat pump buffer tank / boiler cylinder (VK-06 circular 'wp' symbol)
+  // Heat pump buffer tank / boiler reservoir (VK-06 circular 'wp' symbol)
   const wpGeo = new THREE.CylinderGeometry(0.32, 0.32, 1.65, 24);
   const wpMesh = new THREE.Mesh(wpGeo, getMat('window_frame_cream'));
   wpMesh.position.set(2.22, Y2 + 0.825, -6.95);
@@ -2766,38 +2766,6 @@ function buildZolderDetails(
   });
   secondGroup.add(wpMesh);
   registerStaggered('sf_tech_wp', wpMesh, 'second', Y2 + 0.825);
-
-  // 2. Heat pump indoor module against rear wall of Overloop (VK-06 'wp' box)
-  const wpBoxGeo = new THREE.BoxGeometry(0.46, 0.88, 0.38);
-  const wpBoxMesh = new THREE.Mesh(wpBoxGeo, getMat('window_frame_cream'));
-  wpBoxMesh.position.set(1.55, Y2 + 0.44, -6.55);
-  registerMesh(wpBoxMesh, 'window_frame_cream', {
-    id: 'sf_tech_wp_unit',
-    label: 'Warmtepomp Binnenunit (WP)',
-    dimensionsLabel: '0.46 × 0.38 × 0.88 m',
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 Zolder (wp tegen achterwand overloop)',
-    floor: 'second',
-    category: 'furniture',
-  });
-  secondGroup.add(wpBoxMesh);
-  registerStaggered('sf_tech_wp_unit', wpBoxMesh, 'second', Y2 + 0.44);
-
-  // 3. Balanced ventilation heat-recovery unit (VK-06 'wtw' on rear gable wall)
-  const wtwGeo = new THREE.BoxGeometry(0.64, 0.82, 0.36);
-  const wtwMesh = new THREE.Mesh(wtwGeo, getMat('window_frame_cream'));
-  wtwMesh.position.set(1.55, Y2 + 0.96, -9.87);
-  registerMesh(wtwMesh, 'window_frame_cream', {
-    id: 'sf_tech_wtw',
-    label: 'WTW Ventilatie-unit',
-    dimensionsLabel: '0.64 × 0.36 × 0.82 m',
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 Zolder (wtw tegen achtergevel)',
-    floor: 'second',
-    category: 'furniture',
-  });
-  secondGroup.add(wtwMesh);
-  registerStaggered('sf_tech_wtw', wtwMesh, 'second', Y2 + 0.96);
 }
 
 /**
