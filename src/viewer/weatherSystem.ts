@@ -153,8 +153,8 @@ function buildRippleGeometry(
 /**
  * Peaceful, GPU-driven seasonal weather system tailored to the soft architectural diorama:
  * - Spring: drifting pastel blossom petals
- * - Summer: gentle sunlit garden motes (day) & warm pulsing fireflies (evening)
- * - Autumn: calm diagonal rain streaks, expanding water ripples on patio/driveway/flat roofs, & tumbling autumn leaves
+ * - Summer: clean sunny day & warm pulsing fireflies in the evening
+ * - Autumn: gentle multi-layered raindrops & expanding water splash ripples on patio/driveway/flat roofs
  * - Winter: unhurried, pillowy snowfall
  */
 export class WeatherSystem {
@@ -175,7 +175,6 @@ export class WeatherSystem {
 
   private rainMesh: THREE.Mesh;
   private snowMesh: THREE.Mesh;
-  private leavesMesh: THREE.Mesh;
   private petalsMesh: THREE.Mesh;
   private firefliesMesh: THREE.Mesh;
   private plotRipplesMesh: THREE.Mesh;
@@ -184,7 +183,6 @@ export class WeatherSystem {
 
   private rainAlphaUniform = { value: 0 };
   private snowAlphaUniform = { value: 0 };
-  private leafAlphaUniform = { value: 0 };
   private petalAlphaUniform = { value: 0 };
   private fireflyAlphaUniform = { value: 0 };
   private rippleAlphaUniform = { value: 0 };
@@ -201,7 +199,7 @@ export class WeatherSystem {
       uUseDepthTex: { value: 1 },
     };
 
-    // 1. Autumn Rain Streaks (fine, calm, softly tapered droplets)
+    // 1. Autumn Raindrops (calm, soft multi-density raindrops)
     this.rainMesh = this.createRainMesh();
     this.weatherScene.add(this.rainMesh);
 
@@ -209,45 +207,24 @@ export class WeatherSystem {
     this.snowMesh = this.createSnowMesh();
     this.weatherScene.add(this.snowMesh);
 
-    // 3. Autumn Leaves (sparse tumbling warm ochre/terracotta leaves)
-    this.leavesMesh = this.createPetalOrLeafMesh(
-      {
-        count: 34,
-        seed: 303,
-        xRange: [-4.6, 6.8],
-        yRange: [0.0, 13.5],
-        zRange: [-20.4, 4.9],
-        sizeRange: [0.085, 0.135],
-        speedRange: [0.55, 0.92],
-        palette: ['#c86b42', '#d99343', '#e0b150', '#a65134'],
-      },
-      this.leafAlphaUniform,
-      false
-    );
-    this.weatherScene.add(this.leavesMesh);
-
-    // 4. Spring Blossom Petals (delicate pastel pink & cream petals)
-    this.petalsMesh = this.createPetalOrLeafMesh(
-      {
-        count: 46,
-        seed: 101,
-        xRange: [-4.6, 6.8],
-        yRange: [0.0, 13.0],
-        zRange: [-20.4, 4.9],
-        sizeRange: [0.048, 0.082],
-        speedRange: [0.36, 0.62],
-        palette: ['#fce4ec', '#f8c8d8', '#fff5f8', '#f5d4df'],
-      },
-      this.petalAlphaUniform,
-      true
-    );
+    // 3. Spring Blossom Petals (delicate pastel pink & cream petals)
+    this.petalsMesh = this.createPetalMesh({
+      count: 46,
+      seed: 101,
+      xRange: [-4.6, 6.8],
+      yRange: [0.0, 13.0],
+      zRange: [-20.4, 4.9],
+      sizeRange: [0.048, 0.082],
+      speedRange: [0.36, 0.62],
+      palette: ['#fce4ec', '#f8c8d8', '#fff5f8', '#f5d4df'],
+    });
     this.weatherScene.add(this.petalsMesh);
 
-    // 5. Summer Sunlit Motes & Evening Fireflies
+    // 4. Summer Evening Fireflies (clean/plain in daytime)
     this.firefliesMesh = this.createFirefliesMesh();
     this.weatherScene.add(this.firefliesMesh);
 
-    // 6. Calm Rain Ripples on Plot Surfaces (Patio + Driveway) and Flat Roofs (Berging + B11a)
+    // 5. Calm Rain Ripples & Splashes on Plot Surfaces (Patio + Driveway) and Flat Roofs (Berging + B11a)
     const { plotRipples, roofRipples } = this.createRainRippleMeshes();
     this.plotRipplesMesh = plotRipples;
     this.roofRipplesMesh = roofRipples;
@@ -257,13 +234,13 @@ export class WeatherSystem {
 
   private createRainMesh(): THREE.Mesh {
     const geo = buildBillboardParticleGeometry({
-      count: 250,
+      count: 420,
       seed: 404,
       xRange: [-4.8, 7.2],
       yRange: [0.0, 14.0],
       zRange: [-20.6, 5.1],
-      sizeRange: [0.42, 0.72],
-      speedRange: [8.4, 11.4],
+      sizeRange: [0.28, 0.66],
+      speedRange: [7.8, 11.4],
     });
 
     const mat = new THREE.ShaderMaterial({
@@ -425,11 +402,7 @@ export class WeatherSystem {
     return mesh;
   }
 
-  private createPetalOrLeafMesh(
-    spec: QuadFieldSpec,
-    alphaUniform: { value: number },
-    isPetal: boolean
-  ): THREE.Mesh {
+  private createPetalMesh(spec: QuadFieldSpec): THREE.Mesh {
     const geo = buildBillboardParticleGeometry(spec);
     const mat = new THREE.ShaderMaterial({
       transparent: true,
@@ -438,8 +411,7 @@ export class WeatherSystem {
       toneMapped: false,
       uniforms: {
         ...this.sharedUniforms,
-        uAlpha: alphaUniform,
-        uIsPetal: { value: isPetal ? 1.0 : 0.0 },
+        uAlpha: this.petalAlphaUniform,
       },
       vertexShader: /* glsl */ `
         attribute vec2 aCorner;
@@ -447,7 +419,6 @@ export class WeatherSystem {
         attribute vec4 aParams; // speed, size, phase, swayAmp
         attribute vec3 aColor;
         uniform float uTime;
-        uniform float uIsPetal;
         uniform vec3 uCamRight;
         uniform vec3 uCamUp;
         varying vec2 vCorner;
@@ -460,11 +431,11 @@ export class WeatherSystem {
           float phase = aParams.z;
           float swayAmp = aParams.w;
 
-          float span = uIsPetal > 0.5 ? 13.0 : 13.5;
+          float span = 13.0;
           float y = mod(aOrigin.y - uTime * speed + phase * 4.5, span);
           float fallDist = span - y;
 
-          float driftX = sin(uTime * 0.85 + phase) * 0.65 * swayAmp + fallDist * (uIsPetal > 0.5 ? 0.16 : 0.11);
+          float driftX = sin(uTime * 0.85 + phase) * 0.65 * swayAmp + fallDist * 0.16;
           float driftZ = cos(uTime * 0.72 + phase * 1.4) * 0.55 * swayAmp + fallDist * 0.05;
 
           // Keep wrapped within gentle diorama region
@@ -494,23 +465,13 @@ export class WeatherSystem {
         ${SHARED_DEPTH_CHUNK}
         uniform float uAlpha;
         uniform float uNightFactor;
-        uniform float uIsPetal;
         varying vec2 vCorner;
         varying vec3 vColor;
         varying float vFade;
 
         void main() {
           if (isOccludedByScene()) discard;
-          // Stylized almond/leaf or soft petal silhouette
-          float x = vCorner.x;
-          float y = vCorner.y;
-          float dist;
-          if (uIsPetal > 0.5) {
-            dist = length(vec2(x * 1.15, y * 0.92));
-          } else {
-            float pinch = 1.0 + 0.55 * abs(y);
-            dist = length(vec2(x * pinch * 1.25, y * 0.95));
-          }
+          float dist = length(vec2(vCorner.x * 1.15, vCorner.y * 0.92));
           if (dist > 1.0) discard;
 
           float edge = smoothstep(1.0, 0.65, dist);
@@ -637,8 +598,8 @@ export class WeatherSystem {
           float halo = exp(-r2 * 3.6) * 0.55;
           float glow = core + halo;
 
-          // Day: subtle sunlit golden pollen shimmer; Evening: cozy glowing fireflies
-          float modeIntensity = mix(0.24, 0.95, smoothstep(0.25, 0.8, uNightFactor));
+          // Plain summer daytime; cozy glowing fireflies only in Summer Evening
+          float modeIntensity = smoothstep(0.35, 0.85, uNightFactor);
           float alpha = uAlpha * modeIntensity * (0.25 + 0.75 * vPulse) * glow;
           if (alpha < 0.003) discard;
 
@@ -660,42 +621,42 @@ export class WeatherSystem {
     const plotSpots: Array<{ x: number; y: number; z: number; size: number; phase: number }> = [];
     const roofSpots: Array<{ x: number; y: number; z: number; size: number; phase: number }> = [];
 
-    // Patio limestone spots (X: 0.2..5.5, Z: -16.1..-13.0, Y: 0.045)
-    for (let i = 0; i < 12; i++) {
+    // Patio limestone spots (X: 0.2..5.5, Z: -16.1..-13.0, Y: 0.044)
+    for (let i = 0; i < 18; i++) {
       plotSpots.push({
         x: THREE.MathUtils.lerp(0.3, 5.5, rand()),
         y: 0.044,
         z: THREE.MathUtils.lerp(-16.1, -13.1, rand()),
-        size: 0.22 + rand() * 0.14,
+        size: 0.20 + rand() * 0.14,
         phase: rand(),
       });
     }
     // Driveway pavers & front path (X: -4.2..-0.3, Z: -7.2..4.6, Y: 0.036)
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 15; i++) {
       plotSpots.push({
         x: THREE.MathUtils.lerp(-4.1, -0.35, rand()),
         y: 0.036,
         z: THREE.MathUtils.lerp(-7.0, 4.5, rand()),
-        size: 0.20 + rand() * 0.12,
+        size: 0.18 + rand() * 0.12,
         phase: rand(),
       });
     }
-    // Flat roofs: Berging (-3.0..-0.2, Z: -13.4..-8.0) & B11a extension (0.2..5.5, Z: -12.6..-10.7) at Y = 2.915
-    for (let i = 0; i < 6; i++) {
+    // Flat roofs: Berging (-3.0..-0.2, Z: -13.4..-8.0) & B11a extension (0.2..5.5, Z: -12.6..-10.7) at Y = 2.916
+    for (let i = 0; i < 9; i++) {
       roofSpots.push({
         x: THREE.MathUtils.lerp(-3.0, -0.2, rand()),
         y: 2.916,
         z: THREE.MathUtils.lerp(-13.4, -8.1, rand()),
-        size: 0.22 + rand() * 0.14,
+        size: 0.20 + rand() * 0.14,
         phase: rand(),
       });
     }
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 8; i++) {
       roofSpots.push({
         x: THREE.MathUtils.lerp(0.3, 5.5, rand()),
         y: 2.916,
         z: THREE.MathUtils.lerp(-12.5, -10.7, rand()),
-        size: 0.22 + rand() * 0.14,
+        size: 0.20 + rand() * 0.14,
         phase: rand(),
       });
     }
@@ -728,15 +689,16 @@ export class WeatherSystem {
           varying float vPhase;
 
           void main() {
-            float life = fract(uTime * 0.58 + vPhase);
+            float life = fract(uTime * 0.68 + vPhase);
             float r = length(vUv);
             float targetR = 0.08 + life * 0.82;
             float ring = exp(-pow((r - targetR) / 0.07, 2.0));
-            float env = smoothstep(0.0, 0.18, life) * (1.0 - smoothstep(0.45, 1.0, life));
-            float alpha = uAlpha * ring * env * 0.26;
+            float splash = exp(-r * r * 36.0) * (1.0 - smoothstep(0.0, 0.22, life));
+            float env = smoothstep(0.0, 0.16, life) * (1.0 - smoothstep(0.45, 1.0, life));
+            float alpha = uAlpha * (ring * env * 0.28 + splash * 0.34);
             if (alpha < 0.003) discard;
 
-            vec3 col = mix(vec3(0.92, 0.96, 0.99), vec3(0.66, 0.76, 0.88), uNightFactor);
+            vec3 col = mix(vec3(0.92, 0.96, 0.99), vec3(0.68, 0.78, 0.90), uNightFactor);
             gl_FragColor = vec4(col, alpha);
           }
         `,
@@ -782,14 +744,12 @@ export class WeatherSystem {
     const summerW = seasonWeights.summer;
 
     this.rainAlphaUniform.value = rainW;
-    this.leafAlphaUniform.value = rainW;
     this.rippleAlphaUniform.value = rainW;
     this.snowAlphaUniform.value = snowW;
     this.petalAlphaUniform.value = springW;
     this.fireflyAlphaUniform.value = summerW;
 
     this.rainMesh.visible = rainW > 0.003;
-    this.leavesMesh.visible = rainW > 0.003;
     this.plotRipplesMesh.visible = rainW > 0.003;
     this.roofRipplesMesh.visible =
       rainW > 0.003 &&
@@ -798,13 +758,12 @@ export class WeatherSystem {
       scrollProgress > 0.15;
     this.snowMesh.visible = snowW > 0.003;
     this.petalsMesh.visible = springW > 0.003;
-    this.firefliesMesh.visible = summerW > 0.003;
+    this.firefliesMesh.visible = summerW > 0.003 && nightFactor > 0.32;
 
     const depthTestMode = !edgeBlur.enabled;
     for (const mesh of [
       this.rainMesh,
       this.snowMesh,
-      this.leavesMesh,
       this.petalsMesh,
       this.firefliesMesh,
     ]) {
@@ -817,7 +776,6 @@ export class WeatherSystem {
     const anyAirborneVisible =
       this.rainMesh.visible ||
       this.snowMesh.visible ||
-      this.leavesMesh.visible ||
       this.petalsMesh.visible ||
       this.firefliesMesh.visible;
 
