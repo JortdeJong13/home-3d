@@ -207,15 +207,15 @@ export class WeatherSystem {
     this.snowMesh = this.createSnowMesh();
     this.weatherScene.add(this.snowMesh);
 
-    // 3. Spring Blossom Petals (delicate pastel pink & cream petals)
+    // 3. Spring Blossom Petals (delicate pastel pink & cream petals wafting on a breeze)
     this.petalsMesh = this.createPetalMesh({
-      count: 46,
+      count: 42,
       seed: 101,
-      xRange: [-4.6, 6.8],
-      yRange: [0.0, 13.0],
-      zRange: [-20.4, 4.9],
-      sizeRange: [0.048, 0.082],
-      speedRange: [0.36, 0.62],
+      xRange: [-4.8, 7.0],
+      yRange: [0.5, 5.2],
+      zRange: [-20.5, 5.0],
+      sizeRange: [0.056, 0.092],
+      speedRange: [0.95, 1.55],
       palette: ['#fce4ec', '#f8c8d8', '#fff5f8', '#f5d4df'],
     });
     this.weatherScene.add(this.petalsMesh);
@@ -433,26 +433,31 @@ export class WeatherSystem {
         varying float vFade;
 
         void main() {
-          float speed = aParams.x;
+          float breezeSpeed = aParams.x;
           float size = aParams.y;
           float phase = aParams.z;
           float swayAmp = aParams.w;
 
-          float span = 13.0;
-          float y = mod(aOrigin.y - uTime * speed + phase * 4.5, span);
-          float fallDist = span - y;
+          // Waft predominantly horizontally along a gentle spring breeze (X & Z),
+          // while floating up and down on light thermal eddies instead of dropping straight down.
+          float xSpan = 11.8;
+          float zSpan = 25.5;
+          float ySpan = 4.9;
 
-          float driftX = sin(uTime * 0.85 + phase) * 0.65 * swayAmp + fallDist * 0.16;
-          float driftZ = cos(uTime * 0.72 + phase * 1.4) * 0.55 * swayAmp + fallDist * 0.05;
+          float wx = mod((aOrigin.x + 4.8) + uTime * breezeSpeed + sin(uTime * 0.55 + phase) * 0.65 * swayAmp, xSpan) - 4.8;
+          float wz = mod((aOrigin.z + 20.5) + uTime * (breezeSpeed * 0.38) + cos(uTime * 0.62 + phase * 1.3) * 0.90 * swayAmp, zSpan) - 20.5;
 
-          // Keep wrapped within gentle diorama region
-          float wx = mod(aOrigin.x + driftX + 5.2, 12.2) - 5.2;
-          float wz = mod(aOrigin.z + driftZ + 20.8, 26.0) - 20.8;
-          vec3 worldCenter = vec3(wx, y, wz);
+          // Gentle slow settle + buoyant lift/dip wave
+          float baseY = mod((aOrigin.y - 0.35) - uTime * (0.12 + swayAmp * 0.08) + phase * 2.0, ySpan) + 0.35;
+          float liftWave = sin(uTime * 0.95 + phase * 1.7) * 0.42 * swayAmp
+                         + cos(uTime * 0.48 + phase * 2.3) * 0.25;
+          float wy = clamp(baseY + liftWave, 0.22, 5.8);
 
-          // Gentle tumble & flutter
-          float angle = uTime * (1.2 + swayAmp * 0.9) + phase * 2.0;
-          float flutter = 0.55 + 0.45 * cos(uTime * 2.4 + phase * 3.0);
+          vec3 worldCenter = vec3(wx, wy, wz);
+
+          // Gentle flutter & tilt along the breeze
+          float angle = uTime * (1.4 + swayAmp * 1.0) + phase * 2.0 + sin(uTime * 1.1 + phase) * 0.5;
+          float flutter = 0.48 + 0.52 * cos(uTime * 2.6 + phase * 3.0);
           float ca = cos(angle);
           float sa = sin(angle);
 
@@ -463,7 +468,12 @@ export class WeatherSystem {
 
           vCorner = aCorner;
           vColor = aColor;
-          vFade = smoothstep(0.10, 0.95, y) * smoothstep(span, span - 2.2, y);
+
+          // Smooth fade along all entry/exit boundaries so petals waft in & out seamlessly
+          float fadeX = smoothstep(-4.8, -3.5, wx) * smoothstep(7.0, 5.7, wx);
+          float fadeZ = smoothstep(-20.5, -18.5, wz) * smoothstep(5.0, 3.2, wz);
+          float fadeY = smoothstep(0.22, 0.75, wy) * smoothstep(5.8, 4.7, wy);
+          vFade = fadeX * fadeZ * fadeY;
 
           gl_Position = projectionMatrix * modelViewMatrix * vec4(worldCenter + offset, 1.0);
         }
@@ -478,10 +488,11 @@ export class WeatherSystem {
 
         void main() {
           if (isOccludedByScene()) discard;
-          float dist = length(vec2(vCorner.x * 1.15, vCorner.y * 0.92));
+          // Distinct elongated blossom petal silhouette
+          float dist = length(vec2(vCorner.x * 1.45, vCorner.y * 0.82));
           if (dist > 1.0) discard;
 
-          float edge = smoothstep(1.0, 0.65, dist);
+          float edge = smoothstep(1.0, 0.62, dist);
           float alpha = uAlpha * vFade * edge * 0.92;
           if (alpha < 0.003) discard;
 
