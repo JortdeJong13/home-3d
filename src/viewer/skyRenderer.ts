@@ -18,9 +18,9 @@ const DAY_BIAS = 0.7;
 const STOPS: Array<[number, THREE.Color]> = [
   [0.45, new THREE.Color('#bcdbe8')],
   [0.3, new THREE.Color('#e9f1ee')],
-  [0.15, new THREE.Color('#ebd6c3')],
-  [0.02, new THREE.Color('#c9a094')],
-  [-0.12, new THREE.Color('#696685')],
+  [0.15, new THREE.Color('#e7dfd7')],
+  [0.02, new THREE.Color('#b8a9aa')],
+  [-0.12, new THREE.Color('#5c607c')],
   [-0.3, new THREE.Color('#2a3a6e')],
   [-0.5, new THREE.Color('#26356a')],
 ];
@@ -361,16 +361,16 @@ export class SkyRenderer {
 
       // Interpolate puff color tones between crisp daylight white and muted sunset warmth
       const hlR = Math.round(THREE.MathUtils.lerp(255, 255, sunsetFactor));
-      const hlG = Math.round(THREE.MathUtils.lerp(255, 248, sunsetFactor));
-      const hlB = Math.round(THREE.MathUtils.lerp(255, 236, sunsetFactor));
+      const hlG = Math.round(THREE.MathUtils.lerp(255, 251, sunsetFactor));
+      const hlB = Math.round(THREE.MathUtils.lerp(255, 245, sunsetFactor));
 
-      const bodyR = Math.round(THREE.MathUtils.lerp(242, 250, sunsetFactor));
-      const bodyG = Math.round(THREE.MathUtils.lerp(248, 228, sunsetFactor));
-      const bodyB = Math.round(THREE.MathUtils.lerp(254, 212, sunsetFactor));
+      const bodyR = Math.round(THREE.MathUtils.lerp(242, 246, sunsetFactor));
+      const bodyG = Math.round(THREE.MathUtils.lerp(248, 238, sunsetFactor));
+      const bodyB = Math.round(THREE.MathUtils.lerp(254, 232, sunsetFactor));
 
-      const baseR = Math.round(THREE.MathUtils.lerp(218, 212, sunsetFactor));
-      const baseG = Math.round(THREE.MathUtils.lerp(232, 188, sunsetFactor));
-      const baseB = Math.round(THREE.MathUtils.lerp(244, 194, sunsetFactor));
+      const baseR = Math.round(THREE.MathUtils.lerp(218, 214, sunsetFactor));
+      const baseG = Math.round(THREE.MathUtils.lerp(232, 206, sunsetFactor));
+      const baseB = Math.round(THREE.MathUtils.lerp(244, 212, sunsetFactor));
 
       const pxPerRadY = (0.5 * Hh) / TAN_V;
       const pxPerRadX = (0.5 * W) / tanH;

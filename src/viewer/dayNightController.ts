@@ -76,7 +76,7 @@ export function applyDayNightState(
 
   // 3. Interpolate light colours and intensities (including subtle golden-hour warmth at t ~ 0.5)
   const daySunColor = new THREE.Color('#fff5e4');
-  const duskSunColor = new THREE.Color('#f0c0a0');
+  const duskSunColor = new THREE.Color('#edd8c8');
   const nightMoonColor = new THREE.Color('#a9b8e8');
 
   const currentSunColor = new THREE.Color();
