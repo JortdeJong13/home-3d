@@ -761,51 +761,96 @@ function buildPlotAndEnvironment(
     registerStaggered(id, stone, 'ground', -0.0125);
   };
 
-  // Generate 7 alternating large flagstones + paired/triangular filler stones along t ∈ [0.02..0.98]
-  const bands = 7;
-  const dt = 0.96 / bands;
+  // True 2D Voronoi flagstone mosaic in path-local (u, v) space (u: 0..L along curve, v: -0.40..+0.40 across)
+  const pathLen = 3.95;
+  const pathVMax = 0.40;
+  let vs = (4242 * 1664525 + 1013904223) >>> 0;
+  const vRand = () => {
+    vs = (vs * 1664525 + 1013904223) >>> 0;
+    return vs / 4294967296;
+  };
+
+  // Non-uniform natural seed distribution: mix of wide-spaced central stones and offset medium/small stones
+  const voronoiSeeds: Array<[number, number]> = [];
+  let uCursor = 0.20;
+  while (uCursor < pathLen - 0.12) {
+    const roll = vRand();
+    if (roll < 0.42) {
+      // Single large full-width flagstone
+      voronoiSeeds.push([uCursor, (vRand() - 0.5) * 0.22]);
+      uCursor += 0.44 + vRand() * 0.14;
+    } else if (roll < 0.80) {
+      // Two staggered medium stones
+      const side = vRand() < 0.5 ? 1 : -1;
+      voronoiSeeds.push([uCursor - 0.04 + vRand() * 0.08, side * (0.16 + vRand() * 0.12)]);
+      voronoiSeeds.push([uCursor + 0.12 + vRand() * 0.10, -side * (0.16 + vRand() * 0.12)]);
+      uCursor += 0.48 + vRand() * 0.14;
+    } else {
+      // One medium-large stone + one smaller corner stone
+      const side = vRand() < 0.5 ? 1 : -1;
+      voronoiSeeds.push([uCursor, -side * (0.08 + vRand() * 0.12)]);
+      voronoiSeeds.push([uCursor + 0.08 + vRand() * 0.10, side * (0.24 + vRand() * 0.08)]);
+      uCursor += 0.40 + vRand() * 0.12;
+    }
+  }
+
+  // Sutherland-Hodgman half-plane clip of a convex polygon against (P - M) · N <= 0
+  const clipHalfPlane = (
+    poly: Array<[number, number]>,
+    mx: number,
+    my: number,
+    nx: number,
+    ny: number
+  ): Array<[number, number]> => {
+    const out: Array<[number, number]> = [];
+    const len = poly.length;
+    for (let i = 0; i < len; i++) {
+      const a = poly[i];
+      const b = poly[(i + 1) % len];
+      const da = (a[0] - mx) * nx + (a[1] - my) * ny;
+      const db = (b[0] - mx) * nx + (b[1] - my) * ny;
+      if (da <= 0) {
+        out.push(a);
+        if (db > 0) {
+          const frac = da / (da - db);
+          out.push([a[0] + (b[0] - a[0]) * frac, a[1] + (b[1] - a[1]) * frac]);
+        }
+      } else if (db <= 0) {
+        const frac = da / (da - db);
+        out.push([a[0] + (b[0] - a[0]) * frac, a[1] + (b[1] - a[1]) * frac]);
+      }
+    }
+    return out;
+  };
+
   let stoneCounter = 0;
-  for (let b = 0; b < bands; b++) {
-    const t0 = 0.02 + b * dt;
-    const t1 = t0 + dt;
-    const tGap = 0.008;
-    const a0 = t0 + tGap;
-    const a1 = t1 - tGap;
-    const tMid = (a0 + a1) * 0.5;
-    const flip = b % 2 === 1 ? -1 : 1; // alternate main stone left vs right
+  for (let i = 0; i < voronoiSeeds.length; i++) {
+    const [ui, vi] = voronoiSeeds[i];
+    let cell: Array<[number, number]> = [
+      [0.03, -pathVMax],
+      [pathLen - 0.03, -pathVMax],
+      [pathLen - 0.03, pathVMax],
+      [0.03, pathVMax],
+    ];
+    for (let j = 0; j < voronoiSeeds.length; j++) {
+      if (i === j) continue;
+      const [uj, vj] = voronoiSeeds[j];
+      cell = clipHalfPlane(cell, (ui + uj) * 0.5, (vi + vj) * 0.5, uj - ui, vj - vi);
+      if (cell.length < 3) break;
+    }
+    if (cell.length < 3) continue;
 
-    // Large main flagstone (5-sided organic polygon)
-    buildRoundedPolyStone(
-      [
-        [a0, flip * -0.39],
-        [a0 + (a1 - a0) * 0.14, flip * 0.18],
-        [tMid + (a1 - a0) * 0.06, flip * 0.28],
-        [a1 - (a1 - a0) * 0.08, flip * 0.14],
-        [a1, flip * -0.39],
-      ],
-      stoneCounter++
-    );
-
-    // Two smaller triangular / trapezoidal filler stones nestled in the opposite pocket
-    buildRoundedPolyStone(
-      [
-        [a0 + (a1 - a0) * 0.04, flip * 0.39],
-        [a0 + (a1 - a0) * 0.18, flip * 0.22],
-        [tMid - (a1 - a0) * 0.03, flip * 0.33],
-        [tMid - (a1 - a0) * 0.04, flip * 0.39],
-      ],
-      stoneCounter++
-    );
-
-    buildRoundedPolyStone(
-      [
-        [tMid + (a1 - a0) * 0.02, flip * 0.39],
-        [tMid + (a1 - a0) * 0.10, flip * 0.31],
-        [a1 - (a1 - a0) * 0.06, flip * 0.20],
-        [a1 - (a1 - a0) * 0.02, flip * 0.39],
-      ],
-      stoneCounter++
-    );
+    // Inset cell uniformly toward its centroid for ~4.5 cm gravel joints, and map (u, v) -> (t, v)
+    const cu = cell.reduce((acc, p) => acc + p[0], 0) / cell.length;
+    const cv = cell.reduce((acc, p) => acc + p[1], 0) / cell.length;
+    const insetCell = cell.map(([u, v]) => {
+      const du = u - cu;
+      const dv = v - cv;
+      const d = Math.hypot(du, dv) || 1;
+      const scale = Math.max(0.55, 1 - 0.025 / d);
+      return [(cu + du * scale) / pathLen, cv + dv * scale] as [number, number];
+    });
+    buildRoundedPolyStone(insetCell, stoneCounter++);
   }
 
   // Garden Gate ("Tuinpoort" at Z = -13.72 m between Berging X = -3.27 m and Left Hedge) -> Staggered drop on Ground Floor!
