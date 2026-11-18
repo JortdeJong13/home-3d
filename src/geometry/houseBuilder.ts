@@ -572,8 +572,16 @@ function buildPlotAndEnvironment(
   };
   const pathHalfW = 0.44;
   const pathSteps = 20;
-  gravelShape.lineTo(pathP0.x - pathHalfW, pathP0.y);
-  for (let i = 1; i <= pathSteps; i++) {
+  const filletStartIdx = 3; // t = 0.15: blend smoothly into the berging gravel path & patio edge
+  const leftFilletPt = evalPath(filletStartIdx / pathSteps);
+  gravelShape.lineTo(-1.05, -gravelRearZ);
+  gravelShape.quadraticCurveTo(
+    pathP0.x - pathHalfW,
+    -gravelRearZ,
+    leftFilletPt.x - leftFilletPt.nx * pathHalfW,
+    leftFilletPt.y - leftFilletPt.ny * pathHalfW
+  );
+  for (let i = filletStartIdx + 1; i <= pathSteps; i++) {
     const t = i / pathSteps;
     const pt = evalPath(t);
     const ex = i === pathSteps ? pathP3.x - pathHalfW : pt.x - pt.nx * pathHalfW;
@@ -581,12 +589,12 @@ function buildPlotAndEnvironment(
     gravelShape.lineTo(ex, ey);
   }
   gravelShape.lineTo(pathP3.x + pathHalfW, pathP3.y);
-  for (let i = pathSteps - 1; i >= 1; i--) {
+  for (let i = pathSteps - 1; i >= filletStartIdx; i--) {
     const t = i / pathSteps;
     const pt = evalPath(t);
     gravelShape.lineTo(pt.x + pt.nx * pathHalfW, pt.y + pt.ny * pathHalfW);
   }
-  gravelShape.lineTo(0.33, -gravelRearZ);
+  gravelShape.quadraticCurveTo(0.33, -gravelRearZ + 0.10, 0.33, 13.80);
   gravelShape.lineTo(0.33, 12.86);
   gravelShape.lineTo(0.00, 12.86);
   // Trace around the Berging footprint (X: -3.27..0.00, Z: -7.73..-13.72) so gravel never clips inside it
