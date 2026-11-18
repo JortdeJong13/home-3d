@@ -79,15 +79,15 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
   // 3. First Floor French Balcony Windows (Shared on Front Slaapkamer & Rear Kantoor)
   window_french_balcony_1st: {
     prefabId: 'window_french_balcony_1st',
-    defaultLabel: 'Frans Balkon Dubbel Draairaam (140 × 215 cm)',
+    defaultLabel: 'Frans Balkon Dubbel Draairaam (140 × 230 cm)',
     width: 1.40,
-    height: 2.15,
-    sillHeight: 0.15,
+    height: 2.30,
+    sillHeight: 0.00,
     frameMaterial: 'window_frame_cream',
     panelMaterial: 'window_glass_day',
     hasTerracottaSurround: true,
     provenance: 'user_supplied',
-    source: 'User specification (140 × 215 cm: 2 × 70 cm doors, front 64 cm from shared wall)',
+    source: 'User specification (140 × 230 cm: 2 × 70 cm doors, sill 0 cm, front 64 cm from shared wall)',
   },
 
   // 4. Narrow Vertical Slot Window (Shared on 1st Floor Overloop & 2nd Floor Front/Rear Gables)
@@ -936,9 +936,11 @@ export function instantiateOpeningPrefab3D(
       const glassH = Math.max(0.20, innerH - topRailH - bottomRailH);
       const glassCenterY = (bottomRailH - topRailH) / 2;
 
+      const innerCenterY = op.sillHeight > 0.05 ? 0 : -frameThick / 2;
+
       const buildBalconyLeaf = (side: -1 | 1) => {
         const pivot = new THREE.Group();
-        pivot.position.set(side * (innerW / 2), 0, frameCenterZ);
+        pivot.position.set(side * (innerW / 2), innerCenterY, frameCenterZ);
 
         const dir = -side; // +1 for left leaf, -1 for right leaf
         const leafCenterX = dir * (leafW / 2);
