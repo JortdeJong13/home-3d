@@ -20,6 +20,11 @@ import {
 } from './componentCatalog';
 import { ASSET_PREFABS, PLACED_ASSETS } from '../assets/assetRegistry';
 import { InteractiveDoorManager } from '../viewer/interactiveDoors';
+import {
+  HEDGE_STYLE_OPTIONS,
+  buildStyledHedgeSegment,
+  buildHedgeSamplePlaque,
+} from './hedgeStyles';
 
 export type ElementCategory = 'construction' | 'furniture' | 'site';
 
@@ -1146,6 +1151,47 @@ function buildPlotAndEnvironment(
     seed: 404,
     provenance: 'assumed',
     source: 'Neighbour context matching 75 cm front hedge',
+  });
+
+  // Side-by-side comparison showcase of 5 bush-inspired hedge styles on the open front lawn (Z = 2.25 m)
+  const sampleShortLabels: Record<string, string> = {
+    bush_cluster: 'Struik-cluster',
+    trimmed_faceted: 'Geschoren facet',
+    two_tone_layered: 'Twee-tinten',
+    sculpted_poly: 'Laag-poly',
+    woody_natural: 'Takbasis',
+  };
+  const sampleLength = 0.90;
+  const sampleGap = 0.20;
+  const sampleStartX = 0.40;
+  const sampleZ = 2.25;
+  HEDGE_STYLE_OPTIONS.forEach((opt, idx) => {
+    const sx0 = sampleStartX + idx * (sampleLength + sampleGap);
+    const sx1 = sx0 + sampleLength;
+    buildStyledHedgeSegment(plotGroup, getMat, registerMesh, {
+      id: `hedge_style_sample_${opt.number}_${opt.id}`,
+      label: `Haag Optie ${opt.number} · ${opt.title}`,
+      style: opt.id,
+      matId: 'plot_hedge_beech',
+      soilMatId: 'plot_soil_border',
+      x0: sx0,
+      z0: sampleZ,
+      x1: sx1,
+      z1: sampleZ,
+      width: 0.36,
+      height: 0.90,
+      seed: 1100 + opt.number * 73,
+      provenance: 'user_supplied',
+      source: `Comparison sample (${opt.title}): ${opt.description}`,
+    });
+    buildHedgeSamplePlaque(
+      plotGroup,
+      getMat,
+      (sx0 + sx1) * 0.5,
+      sampleZ + 0.38,
+      opt.number,
+      sampleShortLabels[opt.id] ?? opt.title
+    );
   });
 
   // 5. SOFT ARCHITECTURAL DIORAMA TREES (Matching positions in user's plot screenshot & front photo)
