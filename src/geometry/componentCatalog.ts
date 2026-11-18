@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { MaterialId } from '../model/materials';
+import { applyScaledLocalTileUVs } from '../model/floorTileTexture';
 import { FloorLayerId, ProvenanceType } from '../model/houseData';
 import { InspectableMetadata, ElementCategory, RegisterMeshFn } from './houseBuilder';
 import { InteractiveDoor } from '../viewer/interactiveDoors';
@@ -749,8 +750,12 @@ export function instantiateOpeningPrefab3D(
 
     const interiorDepth = zFrameInner - zInnerStart;
     if (interiorDepth > 0.005) {
+      const interiorStripGeo = new THREE.BoxGeometry(op.width, floorHeight, interiorDepth);
+      if (interiorFloorMat === 'floor_ground_tile') {
+        applyScaledLocalTileUVs(interiorStripGeo, op.width, floorHeight, interiorDepth);
+      }
       const interiorStrip = new THREE.Mesh(
-        new THREE.BoxGeometry(op.width, floorHeight, interiorDepth),
+        interiorStripGeo,
         getMat(interiorFloorMat)
       );
       interiorStrip.position.set(0, centerY, (zInnerStart + zFrameInner) / 2);
@@ -1087,7 +1092,7 @@ export function instantiateOpeningPrefab3D(
     }
 
     case 'door_garden_double_b13': {
-      addExteriorDoorThreshold('floor_living_oak');
+      addExteriorDoorThreshold('floor_ground_tile');
       // 1.80 m center double doors (2 x 0.90 m leaves) flanked by 0.80 m sidelights on each side (3.40 m total)
       const doorOpeningHalfW = 0.90; // 1.80 m clear double-door opening
       const mullionW = 0.055;
@@ -1343,7 +1348,7 @@ export function instantiateOpeningPrefab3D(
     }
 
     case 'door_entrance_front': {
-      addExteriorDoorThreshold('floor_hall_warm');
+      addExteriorDoorThreshold('floor_ground_tile');
       // Sage-green front entrance door with vertical glass vision panel, swings inward (-Z) into Hal
       buildSingleSwingingDoor(0.055, Math.PI * 0.45, true);
       break;

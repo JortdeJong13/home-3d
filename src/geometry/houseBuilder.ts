@@ -10,6 +10,7 @@ import {
 } from '../model/houseData';
 import { MaterialId, MATERIAL_PALETTE } from '../model/materials';
 import { getExteriorBrickTextures, applyWorldBrickUVs } from '../model/brickTexture';
+import { getGroundFloorTileTextures, applyWorldFloorTileUVs } from '../model/floorTileTexture';
 import { ProvenanceType } from '../model/units';
 import {
   OPENING_PREFABS,
@@ -192,6 +193,7 @@ export function buildHouseScene(): HouseSceneGroups {
 
   // Material instances (strictly separated from geometry)
   const exteriorBrickTextures = getExteriorBrickTextures();
+  const groundTileTextures = getGroundFloorTileTextures();
   const materialMap = new Map<MaterialId, THREE.MeshStandardMaterial>();
   for (const [id, def] of Object.entries(MATERIAL_PALETTE) as Array<[MaterialId, typeof MATERIAL_PALETTE[MaterialId]]>) {
     const mat = new THREE.MeshStandardMaterial({
@@ -209,6 +211,14 @@ export function buildHouseScene(): HouseSceneGroups {
             map: exteriorBrickTextures.map,
             bumpMap: exteriorBrickTextures.bumpMap,
             bumpScale: 0.002,
+          }
+        : {}),
+      ...(id === 'floor_ground_tile'
+        ? {
+            map: groundTileTextures.map,
+            bumpMap: groundTileTextures.bumpMap,
+            bumpScale: 0.003,
+            roughnessMap: groundTileTextures.roughnessMap,
           }
         : {}),
     });
@@ -283,6 +293,48 @@ export function buildHouseScene(): HouseSceneGroups {
 
   // Structural Slab Collars (25 cm structural slabs at Y=0.00m, Y=2.85m, Y=5.70m)
   buildStructuralSlabCollars(groundGroup, firstGroup, secondGroup, getMat, registerMesh);
+
+  // Seamless ground-floor tile infill through interior doorways (Hal <-> Woonkamer & Hal <-> Toilet)
+  const gfDoorwayThresholds: Array<{ id: string; label: string; bounds: [number, number, number, number] }> = [
+    {
+      id: 'gf_threshold_hall_to_living',
+      label: 'Vloertegels Dorpel Hal naar Woonkamer',
+      bounds: [2.94, -6.22, 3.01, -5.42],
+    },
+    {
+      id: 'gf_threshold_toilet',
+      label: 'Vloertegels Dorpel Hal naar Toilet',
+      bounds: [1.82, -6.45, 2.62, -6.38],
+    },
+  ];
+  for (const strip of gfDoorwayThresholds) {
+    const [x0, z0, x1, z1] = strip.bounds;
+    const w = x1 - x0;
+    const d = z1 - z0;
+    const t = 0.03;
+    const cx = (x0 + x1) / 2;
+    const cy = -t / 2 + 0.005;
+    const cz = (z0 + z1) / 2;
+    const geo = new THREE.BoxGeometry(w, t, d);
+    applyWorldFloorTileUVs(geo, cx, cy, cz);
+    const mesh = new THREE.Mesh(geo, getMat('floor_ground_tile'));
+    mesh.position.set(cx, cy, cz);
+    registerMesh(
+      mesh,
+      'floor_ground_tile',
+      {
+        id: strip.id,
+        label: strip.label,
+        dimensionsLabel: `${(w * 100).toFixed(0)} × ${(d * 100).toFixed(0)} cm`,
+        provenance: 'calculated',
+        source: 'Doorlopende 150×75 cm vloertegels ter plaatse van binnendeurkozijn',
+        floor: 'ground',
+      },
+      false,
+      true
+    );
+    groundGroup.add(mesh);
+  }
 
   // ===========================================================================
   // 3. ARCHITECTURAL WALLS & REUSABLE PREFAB OPENINGS
@@ -2245,14 +2297,16 @@ function buildRoomSlab(
 
   const width = maxX - minX;
   const depth = maxZ - minZ;
+  const centerX = (minX + maxX) / 2;
+  const centerY = room.elevationY - finishThickness / 2 + 0.005;
+  const centerZ = (minZ + maxZ) / 2;
 
   const finishGeo = new THREE.BoxGeometry(width, finishThickness, depth);
+  if (room.topMaterial === 'floor_ground_tile') {
+    applyWorldFloorTileUVs(finishGeo, centerX, centerY, centerZ);
+  }
   const finishMesh = new THREE.Mesh(finishGeo, getMat(room.topMaterial));
-  finishMesh.position.set(
-    (minX + maxX) / 2,
-    room.elevationY - finishThickness / 2 + 0.005,
-    (minZ + maxZ) / 2
-  );
+  finishMesh.position.set(centerX, centerY, centerZ);
   registerMesh(
     finishMesh,
     room.topMaterial,

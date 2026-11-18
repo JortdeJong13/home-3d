@@ -14,6 +14,7 @@ export type MaterialId =
   | 'interior_wall_plaster'
   | 'floor_living_oak'
   | 'floor_hall_warm'
+  | 'floor_ground_tile'
   | 'floor_tile_beige'
   | 'floor_berging_concrete'
   | 'floor_bedroom_soft'
@@ -140,6 +141,14 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     metalness: 0.0,
     emissiveNight: '#ffca85',
     emissiveIntensityNight: 0.14,
+  },
+  floor_ground_tile: {
+    colorDay: '#ffffff',
+    colorNight: '#cfc5b6',
+    roughness: 0.85,
+    metalness: 0.0,
+    emissiveNight: '#ffd199',
+    emissiveIntensityNight: 0.12,
   },
   floor_tile_beige: {
     colorDay: '#dfd9ce',
