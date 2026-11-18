@@ -29,7 +29,8 @@ export type OpeningPrefabId =
   | 'door_garden_double_b13'     // Rear extension double garden doors with sidelights (B13)
   | 'door_berging_garage_double' // Berging front double garage doors
   | 'door_berging_garden_rear'   // Berging rear single garden door
-  | 'neighbour_window_ground'    // Neighbour bnr. 56 ground floor window (grey context)
+  | 'neighbour_window_ground'    // Neighbour bnr. 56 ground floor front window (grey context)
+  | 'neighbour_window_rear_ground' // Neighbour bnr. 56 ground floor rear window (140x180 cm)
   | 'neighbour_french_balcony';  // Neighbour bnr. 56 1st floor French balcony (grey context)
 
 export interface OpeningPrefabSpec {
@@ -216,7 +217,7 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
     source: 'Verkooptekening VK-06 achtergevel & technische tekening achterdeur berging',
   },
 
-  // 13. Neighbour Context Ground Window
+  // 13. Neighbour Context Ground Front Window
   neighbour_window_ground: {
     prefabId: 'neighbour_window_ground',
     defaultLabel: 'Buurwoning Voorraam (Begane Grond — 260 × 180 cm)',
@@ -225,11 +226,26 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
     sillHeight: 0.50,
     frameMaterial: 'neighbour_window_grey',
     panelMaterial: 'neighbour_glass_grey',
+    hasTerracottaSurround: true,
     provenance: 'user_supplied',
     source: 'Verkooptekening VK-06 voorgevel bnr. 56 & user specification (260 × 180 cm, sill 50 cm)',
   },
 
-  // 14. Neighbour Context 1st Floor French Balcony
+  // 14. Neighbour Context Ground Rear Window (140 × 180 cm)
+  neighbour_window_rear_ground: {
+    prefabId: 'neighbour_window_rear_ground',
+    defaultLabel: 'Buurwoning Achterraam (Begane Grond — 140 × 180 cm)',
+    width: 1.40,
+    height: 1.80,
+    sillHeight: 0.50,
+    frameMaterial: 'neighbour_window_grey',
+    panelMaterial: 'neighbour_glass_grey',
+    hasTerracottaSurround: true,
+    provenance: 'user_supplied',
+    source: 'Verkooptekening VK-06 achtergevel bnr. 56 & user specification (140 × 180 cm, sill 50 cm)',
+  },
+
+  // 15. Neighbour Context 1st Floor French Balcony
   neighbour_french_balcony: {
     prefabId: 'neighbour_french_balcony',
     defaultLabel: 'Buurwoning Frans Balkon (1e Verdieping — 140 × 230 cm)',
@@ -238,8 +254,9 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
     sillHeight: 0.00,
     frameMaterial: 'neighbour_window_grey',
     panelMaterial: 'neighbour_glass_grey',
+    hasTerracottaSurround: true,
     provenance: 'user_supplied',
-    source: 'Verkooptekening VK-06 voorgevel bnr. 56 & user specification (140 × 230 cm, sill 0 cm)',
+    source: 'Verkooptekening VK-06 voorgevel/achtergevel bnr. 56 & user specification (140 × 230 cm, sill 0 cm)',
   },
 };
 
@@ -1439,8 +1456,13 @@ export function instantiateOpeningPrefab3D(
       // Exterior Windows & Exterior Single Doors
       const isGlassWindow = op.panelMaterial.includes('glass');
       if (isGlassWindow && op.width >= 1.2) {
-        // Asymmetrical vertical mullion (185 cm fixed + 75 cm casement for neighbour_window_ground)
-        const mullionRatio = op.prefabId === 'neighbour_window_ground' ? 0.55 / 2.60 : 0.14;
+        // Asymmetrical vertical mullion (185+75 for neighbour front, centered 70+70 for neighbour rear)
+        const mullionRatio =
+          op.prefabId === 'neighbour_window_ground'
+            ? 0.55 / 2.60
+            : op.prefabId === 'neighbour_window_rear_ground'
+              ? 0
+              : 0.14;
         const mullion = new THREE.Mesh(
           new THREE.BoxGeometry(0.055, innerH, frameDepth * 0.9),
           getMat(op.frameMaterial)

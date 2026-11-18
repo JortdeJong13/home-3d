@@ -1042,7 +1042,7 @@ export function getHouseWalls(): WallSpec[] {
         {
           id: 'nb_gf_win_front',
           prefabId: 'neighbour_window_ground',
-          offsetAlongWall: 1.70, // Left edge 40 cm from shared wall (X = 5.87 + 0.40 = 6.27 m) -> center = 6.27 + 1.30 = 7.57 m
+          offsetAlongWall: 2.10, // Left edge 80 cm from shared wall (X = 5.87 + 0.80 = 6.67 m) -> center = 6.67 + 1.30 = 7.97 m
         },
       ],
     },
@@ -1061,6 +1061,13 @@ export function getHouseWalls(): WallSpec[] {
       isNeighbour: true,
       provenance: 'verified_drawing',
       source: 'Verkooptekening VK-06 bnr. 56 base rear wall',
+      openings: [
+        {
+          id: 'nb_gf_win_rear',
+          prefabId: 'neighbour_window_rear_ground',
+          offsetAlongWall: 2.43, // Symmetrical to bnr. 55 rear French balcony (X = 7.62 m, 1.05 m from shared wall)
+        },
+      ],
     },
     {
       id: 'nb_ff_front',
@@ -1081,7 +1088,7 @@ export function getHouseWalls(): WallSpec[] {
         {
           id: 'nb_ff_win_front',
           prefabId: 'neighbour_french_balcony',
-          offsetAlongWall: 1.10, // Left-aligned with nb_gf_win_front (X = 6.27 m) -> center = 6.27 + 0.70 = 6.97 m
+          offsetAlongWall: 1.50, // Left-aligned with nb_gf_win_front (X = 6.67 m) -> center = 6.67 + 0.70 = 7.37 m
         },
       ],
     },
@@ -1100,6 +1107,13 @@ export function getHouseWalls(): WallSpec[] {
       isNeighbour: true,
       provenance: 'verified_drawing',
       source: 'Verkooptekening VK-06 achtergevel bnr. 56',
+      openings: [
+        {
+          id: 'nb_ff_win_rear',
+          prefabId: 'neighbour_french_balcony',
+          offsetAlongWall: 2.43, // Aligned above nb_gf_win_rear (X = 7.62 m)
+        },
+      ],
     },
     {
       id: 'nb_sf_front',
