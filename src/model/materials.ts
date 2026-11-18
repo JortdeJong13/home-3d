@@ -269,8 +269,8 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     metalness: 0.0,
   },
   plot_patio_limestone: {
-    colorDay: '#ebe1cf',
-    colorNight: '#787166',
+    colorDay: '#e8d7ce',
+    colorNight: '#786c66',
     roughness: 0.9,
     metalness: 0.0,
   },
