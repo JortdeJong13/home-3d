@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { HouseSceneGroups } from '../geometry/houseBuilder';
+import { HouseSceneGroups, ROOF_SPEC, getZolderRoofTopY } from '../geometry/houseBuilder';
 import { SeasonWeights } from '../model/seasons';
 import { EdgeBlurPass } from './edgeBlur';
 
@@ -150,6 +150,86 @@ function buildRippleGeometry(
   return geo;
 }
 
+interface SlantedRippleSpot {
+  x: number;
+  z: number;
+  sizeAcross: number;
+  sizeDown: number;
+  phase: number;
+}
+
+function buildSlantedRoofRippleGeometry(spots: SlantedRippleSpot[]): THREE.BufferGeometry {
+  const count = spots.length;
+  const positions = new Float32Array(count * 4 * 3);
+  const uvs = new Float32Array(count * 4 * 2);
+  const phases = new Float32Array(count * 4);
+  const indices: number[] = [];
+
+  const { yEavesTop, yRidge, ridgeX, leftWallOuterX, rightPartyX, nbRidgeZ, nbFrontEavesZ } = ROOF_SPEC;
+  const rise = yRidge - yEavesTop;
+  const spanZ = nbFrontEavesZ - nbRidgeZ;
+
+  const corners = [
+    [-1, -1],
+    [1, -1],
+    [1, 1],
+    [-1, 1],
+  ];
+
+  const across = new THREE.Vector3();
+  const down = new THREE.Vector3();
+  const normal = new THREE.Vector3();
+
+  for (let i = 0; i < count; i++) {
+    const s = spots[i];
+    const y = getZolderRoofTopY(s.x, s.z);
+
+    if (s.x < ridgeX) {
+      const run = ridgeX - leftWallOuterX;
+      across.set(0, 0, 1);
+      down.set(-run, -rise, 0).normalize();
+      normal.set(-rise, run, 0).normalize();
+    } else {
+      const uX = (s.x - ridgeX) / (rightPartyX - ridgeX);
+      const uZ = Math.abs(s.z - nbRidgeZ) / spanZ;
+      if (uZ >= uX) {
+        const run = rightPartyX - ridgeX;
+        across.set(0, 0, 1);
+        down.set(run, -rise, 0).normalize();
+        normal.set(rise, run, 0).normalize();
+      } else {
+        const zSign = s.z >= nbRidgeZ ? 1 : -1;
+        across.set(1, 0, 0);
+        down.set(0, -rise, zSign * spanZ).normalize();
+        normal.set(0, spanZ, zSign * rise).normalize();
+      }
+    }
+
+    const base = i * 4;
+    for (let c = 0; c < 4; c++) {
+      const v = base + c;
+      const cx = corners[c][0] * s.sizeAcross;
+      const cy = corners[c][1] * s.sizeDown;
+
+      positions[v * 3] = s.x + across.x * cx + down.x * cy + normal.x * 0.015;
+      positions[v * 3 + 1] = y + across.y * cx + down.y * cy + normal.y * 0.015;
+      positions[v * 3 + 2] = s.z + across.z * cx + down.z * cy + normal.z * 0.015;
+
+      uvs[v * 2] = corners[c][0];
+      uvs[v * 2 + 1] = corners[c][1];
+      phases[v] = s.phase;
+    }
+    indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  geo.setAttribute('aPhase', new THREE.BufferAttribute(phases, 1));
+  geo.setIndex(indices);
+  return geo;
+}
+
 /**
  * Peaceful, GPU-driven seasonal weather system tailored to the soft architectural diorama:
  * - Spring: drifting pastel blossom petals
@@ -179,7 +259,9 @@ export class WeatherSystem {
   private firefliesMesh: THREE.Mesh;
   private plotRipplesMesh: THREE.Mesh;
   private roofRipplesMesh: THREE.Mesh;
+  private pitchedRoofRipplesMesh: THREE.Mesh;
   private groundGroupRef: THREE.Group;
+  private roofGroupRef: THREE.Group;
 
   private rainAlphaUniform = { value: 0 };
   private snowAlphaUniform = { value: 0 };
@@ -189,6 +271,7 @@ export class WeatherSystem {
 
   constructor(houseGroups: HouseSceneGroups) {
     this.groundGroupRef = houseGroups.groundGroup;
+    this.roofGroupRef = houseGroups.roofGroup;
     this.sharedUniforms = {
       uTime: { value: 0 },
       uNightFactor: { value: 0 },
@@ -224,23 +307,25 @@ export class WeatherSystem {
     this.firefliesMesh = this.createFirefliesMesh();
     this.weatherScene.add(this.firefliesMesh);
 
-    // 5. Calm Rain Ripples & Splashes on Plot Surfaces (Patio + Driveway) and Flat Roofs (Berging + B11a)
-    const { plotRipples, roofRipples } = this.createRainRippleMeshes();
+    // 5. Calm Rain Ripples & Splashes on Plot Surfaces, Flat Roofs, and Slanted Main Roof
+    const { plotRipples, roofRipples, pitchedRoofRipples } = this.createRainRippleMeshes();
     this.plotRipplesMesh = plotRipples;
     this.roofRipplesMesh = roofRipples;
+    this.pitchedRoofRipplesMesh = pitchedRoofRipples;
     houseGroups.plotGroup.add(this.plotRipplesMesh);
     houseGroups.groundGroup.add(this.roofRipplesMesh);
+    houseGroups.roofGroup.add(this.pitchedRoofRipplesMesh);
   }
 
   private createRainMesh(): THREE.Mesh {
     const geo = buildBillboardParticleGeometry({
-      count: 460,
+      count: 185,
       seed: 404,
       xRange: [-4.8, 7.2],
       yRange: [0.0, 14.0],
       zRange: [-20.6, 5.1],
-      sizeRange: [0.36, 0.72],
-      speedRange: [7.2, 10.6],
+      sizeRange: [0.30, 0.54],
+      speedRange: [4.8, 6.8],
     });
 
     const mat = new THREE.ShaderMaterial({
@@ -284,7 +369,7 @@ export class WeatherSystem {
           // Positive-determinant perpendicular so quad keeps CCW front-facing winding
           vec2 screenPerp = vec2(screenDir.y, -screenDir.x);
 
-          float halfW = 0.024;
+          float halfW = 0.017;
           float halfL = streakLen * 0.5;
           vec3 offset = uCamRight * (screenPerp.x * aCorner.x * halfW + screenDir.x * aCorner.y * halfL)
                       + uCamUp    * (screenPerp.y * aCorner.x * halfW + screenDir.y * aCorner.y * halfL);
@@ -312,7 +397,7 @@ export class WeatherSystem {
           float across = smoothstep(1.0, 0.15, xNorm);
           float along = smoothstep(0.0, 0.78, vUv.y) * smoothstep(1.0, 0.86, vUv.y);
           float shape = across * along;
-          float alpha = uAlpha * vHeightFade * shape * 0.58;
+          float alpha = uAlpha * vHeightFade * shape * 0.38;
           if (alpha < 0.004) discard;
 
           vec3 colDay = vec3(0.92, 0.96, 1.0);
@@ -634,52 +719,95 @@ export class WeatherSystem {
     return mesh;
   }
 
-  private createRainRippleMeshes(): { plotRipples: THREE.Mesh; roofRipples: THREE.Mesh } {
+  private createRainRippleMeshes(): {
+    plotRipples: THREE.Mesh;
+    roofRipples: THREE.Mesh;
+    pitchedRoofRipples: THREE.Mesh;
+  } {
     const rand = createDeterministicRng(808);
     const plotSpots: Array<{ x: number; y: number; z: number; size: number; phase: number }> = [];
     const roofSpots: Array<{ x: number; y: number; z: number; size: number; phase: number }> = [];
+    const pitchedSpots: SlantedRippleSpot[] = [];
 
     // Patio limestone spots (X: 0.2..5.5, Z: -16.1..-13.0, Y: 0.044)
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 12; i++) {
       plotSpots.push({
         x: THREE.MathUtils.lerp(0.3, 5.5, rand()),
         y: 0.044,
         z: THREE.MathUtils.lerp(-16.1, -13.1, rand()),
-        size: 0.20 + rand() * 0.14,
+        size: 0.20 + rand() * 0.12,
         phase: rand(),
       });
     }
     // Driveway pavers & front path (X: -4.2..-0.3, Z: -7.2..4.6, Y: 0.036)
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 10; i++) {
       plotSpots.push({
         x: THREE.MathUtils.lerp(-4.1, -0.35, rand()),
         y: 0.036,
         z: THREE.MathUtils.lerp(-7.0, 4.5, rand()),
-        size: 0.18 + rand() * 0.12,
+        size: 0.18 + rand() * 0.11,
         phase: rand(),
       });
     }
     // Flat roofs: Berging (-3.0..-0.2, Z: -13.4..-8.0) & B11a extension (0.2..5.5, Z: -12.6..-10.7) at Y = 2.916
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < 5; i++) {
       roofSpots.push({
         x: THREE.MathUtils.lerp(-3.0, -0.2, rand()),
         y: 2.916,
         z: THREE.MathUtils.lerp(-13.4, -8.1, rand()),
-        size: 0.20 + rand() * 0.14,
+        size: 0.20 + rand() * 0.12,
         phase: rand(),
       });
     }
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 4; i++) {
       roofSpots.push({
         x: THREE.MathUtils.lerp(0.3, 5.5, rand()),
         y: 2.916,
         z: THREE.MathUtils.lerp(-12.5, -10.7, rand()),
-        size: 0.20 + rand() * 0.14,
+        size: 0.20 + rand() * 0.12,
         phase: rand(),
       });
     }
 
-    const createRippleMat = () =>
+    // Slanted main roof splashes (elliptical, elongated downhill along the roof tiles)
+    // Left slope (avoiding Velux skylight X: 0.6..1.5, Z: -8.8..-7.5 and vent pipe X: 0.6..1.2, Z: -4.7..-4.0)
+    const leftSlopeCoords: Array<[number, number]> = [
+      [1.85, -1.35],
+      [0.85, -2.55],
+      [2.30, -3.70],
+      [1.75, -5.85],
+      [0.60, -6.55],
+      [2.20, -9.25],
+    ];
+    for (const [x, z] of leftSlopeCoords) {
+      pitchedSpots.push({
+        x,
+        z,
+        sizeAcross: 0.15 + rand() * 0.06,
+        sizeDown: 0.24 + rand() * 0.08,
+        phase: rand(),
+      });
+    }
+    // Right Dwarskap & Langskap wings
+    const rightSlopeCoords: Array<[number, number]> = [
+      [3.60, -1.20],
+      [4.55, -2.10],
+      [5.10, -3.55],
+      [4.75, -7.25],
+      [3.80, -8.90],
+      [5.20, -9.20],
+    ];
+    for (const [x, z] of rightSlopeCoords) {
+      pitchedSpots.push({
+        x,
+        z,
+        sizeAcross: 0.15 + rand() * 0.06,
+        sizeDown: 0.24 + rand() * 0.08,
+        phase: rand(),
+      });
+    }
+
+    const createRippleMat = (isSlanted: boolean) =>
       new THREE.ShaderMaterial({
         transparent: true,
         depthWrite: false,
@@ -688,6 +816,7 @@ export class WeatherSystem {
           uTime: this.sharedUniforms.uTime,
           uAlpha: this.rippleAlphaUniform,
           uNightFactor: this.sharedUniforms.uNightFactor,
+          uIsSlanted: { value: isSlanted ? 1.0 : 0.0 },
         },
         vertexShader: /* glsl */ `
           attribute float aPhase;
@@ -703,17 +832,22 @@ export class WeatherSystem {
           uniform float uTime;
           uniform float uAlpha;
           uniform float uNightFactor;
+          uniform float uIsSlanted;
           varying vec2 vUv;
           varying float vPhase;
 
           void main() {
-            float life = fract(uTime * 0.68 + vPhase);
-            float r = length(vUv);
-            float targetR = 0.08 + life * 0.82;
-            float ring = exp(-pow((r - targetR) / 0.07, 2.0));
-            float splash = exp(-r * r * 36.0) * (1.0 - smoothstep(0.0, 0.22, life));
+            float life = fract(uTime * 0.44 + vPhase);
+            // Slanted roof splashes stretch into an ellipse and drift slightly downhill (vUv.y > 0)
+            vec2 p = uIsSlanted > 0.5
+              ? vec2(vUv.x * 1.15, (vUv.y - life * 0.16) * 0.78)
+              : vUv;
+            float r = length(p);
+            float targetR = 0.08 + life * 0.78;
+            float ring = exp(-pow((r - targetR) / 0.075, 2.0));
+            float splash = exp(-dot(p, p) * 34.0) * (1.0 - smoothstep(0.0, 0.24, life));
             float env = smoothstep(0.0, 0.16, life) * (1.0 - smoothstep(0.45, 1.0, life));
-            float alpha = uAlpha * (ring * env * 0.28 + splash * 0.34);
+            float alpha = uAlpha * (ring * env * 0.22 + splash * 0.28);
             if (alpha < 0.003) discard;
 
             vec3 col = mix(vec3(0.92, 0.96, 0.99), vec3(0.68, 0.78, 0.90), uNightFactor);
@@ -722,15 +856,22 @@ export class WeatherSystem {
         `,
       });
 
-    const plotRipples = new THREE.Mesh(buildRippleGeometry(plotSpots), createRippleMat());
+    const plotRipples = new THREE.Mesh(buildRippleGeometry(plotSpots), createRippleMat(false));
     plotRipples.userData.skipEdgeBlurDepth = true;
     plotRipples.renderOrder = 2;
 
-    const roofRipples = new THREE.Mesh(buildRippleGeometry(roofSpots), createRippleMat());
+    const roofRipples = new THREE.Mesh(buildRippleGeometry(roofSpots), createRippleMat(false));
     roofRipples.userData.skipEdgeBlurDepth = true;
     roofRipples.renderOrder = 2;
 
-    return { plotRipples, roofRipples };
+    const pitchedRoofRipples = new THREE.Mesh(
+      buildSlantedRoofRippleGeometry(pitchedSpots),
+      createRippleMat(true)
+    );
+    pitchedRoofRipples.userData.skipEdgeBlurDepth = true;
+    pitchedRoofRipples.renderOrder = 2;
+
+    return { plotRipples, roofRipples, pitchedRoofRipples };
   }
 
   /**
@@ -774,6 +915,11 @@ export class WeatherSystem {
       this.groundGroupRef.visible &&
       Math.abs(this.groundGroupRef.position.y) < 0.08 &&
       scrollProgress > 0.15;
+    this.pitchedRoofRipplesMesh.visible =
+      rainW > 0.003 &&
+      this.roofGroupRef.visible &&
+      Math.abs(this.roofGroupRef.position.y) < 0.08 &&
+      scrollProgress > 0.90;
     this.snowMesh.visible = snowW > 0.003;
     this.petalsMesh.visible = springW > 0.003;
     this.firefliesMesh.visible = summerW > 0.003 && nightFactor > 0.32;

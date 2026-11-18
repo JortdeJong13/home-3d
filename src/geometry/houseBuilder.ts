@@ -104,7 +104,7 @@ function deterministicStaggerRatio(id: string): number {
  * slim tile edge in side profile) while the interior ceiling lining spans strictly inside
  * the exterior walls at the true kapelement underside.
  */
-const ROOF_SPEC = {
+export const ROOF_SPEC = {
   /** Outer tile top at wall line (6.13 m goothoogte + 0.10 m tile thickness = 6.23 m, so tile underside = 6.13 m) */
   yEavesTop: HOUSE_DIMENSIONS.eavesGutterHeight.metres + 0.10, // +6.23 m
   yRidge: HOUSE_DIMENSIONS.roofRidgeHeight.metres,            // +10.90 m
@@ -128,7 +128,7 @@ const ROOF_SPEC = {
 /**
  * Analytically compute the exact 3D roof outer tile Y at any world coordinate (x, z).
  */
-function getZolderRoofTopY(x: number, z: number = ROOF_SPEC.nbRidgeZ): number {
+export function getZolderRoofTopY(x: number, z: number = ROOF_SPEC.nbRidgeZ): number {
   const { yEavesTop, yRidge, ridgeX, leftWallOuterX, rightPartyX, nbRidgeZ, nbFrontEavesZ } = ROOF_SPEC;
   const rise = yRidge - yEavesTop; // 4.67 m
   const spanZ = nbFrontEavesZ - nbRidgeZ; // 5.01 m
