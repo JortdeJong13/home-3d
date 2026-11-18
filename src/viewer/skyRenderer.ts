@@ -9,8 +9,10 @@ import * as THREE from 'three';
  */
 
 const TAN_V = Math.tan(THREE.MathUtils.degToRad(25)); // 50 deg vertical sky FOV
-const SUN_ELEV = THREE.MathUtils.degToRad(24);
+const SUN_ELEV = THREE.MathUtils.degToRad(26.5);
 const SUN_AZ_OFFSET = THREE.MathUtils.degToRad(34); // sun starts left of the default view direction
+const MOON_ELEV = THREE.MathUtils.degToRad(27.0);
+const MOON_AZ_OFFSET = THREE.MathUtils.degToRad(30); // moon starts right of the default view direction
 const DAY_BIAS = 0.7;
 
 const STOPS: Array<[number, THREE.Color]> = [
@@ -244,6 +246,7 @@ export class SkyRenderer {
   private stars: THREE.Vector3[] = [];
   private starSize: number[] = [];
   private H: THREE.Vector3 | null = null; // horizontal direction towards the sun
+  private H_moon: THREE.Vector3 | null = null; // horizontal direction towards the moon at night
   private readonly Y = new THREE.Vector3(0, 1, 0);
   private c = new THREE.Color();
   private v = new THREE.Vector3();
@@ -286,8 +289,11 @@ export class SkyRenderer {
     if (!this.H) {
       // First call = default camera: put the sun to the left of the initial view direction
       this.H = fh.clone().multiplyScalar(Math.cos(SUN_AZ_OFFSET)).addScaledVector(r, -Math.sin(SUN_AZ_OFFSET)).normalize();
+      // And put the moon to the right of the initial view direction so they are not in the exact same place
+      this.H_moon = fh.clone().multiplyScalar(Math.cos(MOON_AZ_OFFSET)).addScaledVector(r, Math.sin(MOON_AZ_OFFSET)).normalize();
     }
     const H = this.H;
+    const H_moon = this.H_moon!;
     const aspect = W / Hh;
     const tanH = TAN_V * aspect;
     const p = THREE.MathUtils.degToRad(14 - 0.3 * elevDeg); // sky camera pitch (up)
@@ -339,6 +345,11 @@ export class SkyRenderer {
 
     // 2. Daytime Clouds (soft stylized diorama puffs, drifting slowly, fading at dusk/night)
     const S0 = H.clone().multiplyScalar(Math.cos(SUN_ELEV)).addScaledVector(this.Y, Math.sin(SUN_ELEV));
+    // Celestial direction of the moon at night (t = 1): placed in the upper-right sky
+    const M_night = H_moon.clone().multiplyScalar(Math.cos(MOON_ELEV)).addScaledVector(this.Y, Math.sin(MOON_ELEV));
+    // At t = 0, M0 rotates to M_night at t = 1 (180° around A). Since 180° rotation is an involution:
+    const dotAM = A.dot(M_night);
+    const M0 = M_night.clone().negate().addScaledVector(A, 2 * dotAM);
     const cloudDayFactor = 1 - THREE.MathUtils.smoothstep(t, 0.48, 0.76);
     if (cloudDayFactor > 0.005) {
       const nowSec = performance.now() * 0.001;
@@ -457,12 +468,17 @@ export class SkyRenderer {
     }
     this.ctx.globalAlpha = 1;
 
-    // 4. Sun and Moon (moon is exactly opposite the sun on the celestial sphere)
+    // 4. Sun and Moon (sun in upper-left, moon in upper-right; fading appropriately across the day/night cycle)
     const sun = rot(S0, new THREE.Vector3());
-    const moon = rot(S0.clone().negate(), new THREE.Vector3());
-    const body = (dir: THREE.Vector3, size: number, inner: string, mid: string, glow: string) => {
+    const moon = rot(M0, new THREE.Vector3());
+    const sunOpacity = 1 - THREE.MathUtils.smoothstep(t, 0.55, 0.82);
+    const moonOpacity = THREE.MathUtils.smoothstep(t, 0.25, 0.65);
+    const body = (dir: THREE.Vector3, size: number, inner: string, mid: string, glow: string, opacity: number) => {
+      if (opacity <= 0.01) return;
+      if (dir.y < 0.02) return; // Below astronomical horizon
       const pt = project(dir);
       if (!pt) return;
+      this.ctx.globalAlpha = opacity;
       const g = this.ctx.createRadialGradient(pt[0], pt[1], 0, pt[0], pt[1], size * 2.6);
       g.addColorStop(0, inner);
       g.addColorStop(0.2, mid);
@@ -472,8 +488,9 @@ export class SkyRenderer {
       this.ctx.beginPath();
       this.ctx.arc(pt[0], pt[1], size * 2.6, 0, Math.PI * 2);
       this.ctx.fill();
+      this.ctx.globalAlpha = 1;
     };
-    body(sun, 44, '#fffdf5', '#ffe6a3', 'rgba(255,226,150,0.35)');
-    body(moon, 32, '#fefce8', '#f3f0d0', 'rgba(186,214,255,0.3)');
+    body(sun, 44, '#fffdf5', '#ffe6a3', 'rgba(255,226,150,0.35)', sunOpacity);
+    body(moon, 32, '#fefce8', '#f3f0d0', 'rgba(186,214,255,0.3)', moonOpacity);
   }
 }
