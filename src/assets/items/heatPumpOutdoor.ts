@@ -11,9 +11,9 @@ export const heatPumpOutdoorPrefab: AssetPrefabDefinition = {
   prefabId: 'heat_pump_outdoor',
   defaultLabel: 'Warmtepomp Buitenunit',
   defaultDimensions: {
-    width: cm(90, 'user_supplied', 'Verkooptekening VK-06 achtergevel berging: warmtepomp buitenunit (~90 cm breed)'),
-    depth: cm(40, 'user_supplied', 'Standaard diepte warmtepomp buitenunit incl. muurafstand (40 cm)'),
-    height: cm(78, 'user_supplied', 'Verkooptekening VK-06 achtergevel berging: warmtepomp buitenunit (~78 cm hoog incl. opstelvoeten)'),
+    width: cm(75, 'user_supplied', 'User specification: warmtepomp buitenunit 75 cm breed'),
+    depth: cm(30, 'user_supplied', 'User specification: warmtepomp buitenunit 30 cm diep'),
+    height: cm(55, 'user_supplied', 'User specification: warmtepomp buitenunit 55 cm hoog'),
   },
   build3D: ({ width, depth, height, getMat }) => {
     const group = new THREE.Group();

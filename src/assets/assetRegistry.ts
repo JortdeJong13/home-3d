@@ -30,10 +30,10 @@ export const PLACED_ASSETS: PlacedAssetSpec[] = [
     prefabId: 'heat_pump_outdoor',
     label: 'Warmtepomp Buitenunit (Achtergevel Berging)',
     floor: 'ground',
-    positionXZ: [-2.20, -13.92],
+    positionXZ: [-2.28, -13.87],
     rotationDeg: 180,
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 achtergevel berging: warmtepomp buitenunit rechts naast tuindeur',
+    provenance: 'user_supplied',
+    source: 'User specification (75 × 30 × 55 cm) & Verkooptekening VK-06 achtergevel berging',
   },
   {
     id: 'gf_berging_regenpijp_achter',
