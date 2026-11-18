@@ -1,4 +1,5 @@
 import { AssetPrefabDefinition, PlacedAssetSpec } from './assetTypes';
+import { frontDoorArchPrefab } from './items/frontDoorArch';
 
 /**
  * CENTRAL ASSET PREFAB CATALOG
@@ -9,7 +10,7 @@ import { AssetPrefabDefinition, PlacedAssetSpec } from './assetTypes';
  * 3. Add its placement(s) to `PLACED_ASSETS` below.
  */
 export const ASSET_PREFABS: Record<string, AssetPrefabDefinition> = {
-  // Register reusable 3D furniture / interior / garden prefabs here
+  front_entrance_portal: frontDoorArchPrefab,
 };
 
 /**

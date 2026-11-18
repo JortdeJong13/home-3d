@@ -51,75 +51,187 @@ interface CloudDef {
 }
 
 const CLOUD_DEFS: CloudDef[] = [
+  // Cloud 0 — Wide Horizon Cumulus (flatter, wide side circles, high in sky)
   {
-    baseAzimuth: 0.35,
-    elevation: 0.38,
-    driftSpeed: 0.0006,
-    scale: 1.15,
+    baseAzimuth: 0.15,
+    elevation: 0.46,
+    driftSpeed: 0.00060,
+    scale: 1.35,
     puffs: [
-      { dx: 0, dy: -0.012, r: 0.040, isBase: true },
-      { dx: -0.032, dy: 0.005, r: 0.028 },
-      { dx: -0.005, dy: 0.020, r: 0.036 },
-      { dx: 0.032, dy: 0.008, r: 0.026 },
-      { dx: 0.012, dy: 0.026, r: 0.022 },
+      { dx: -0.062, dy: -0.004, r: 0.024, isBase: true },
+      { dx: -0.038, dy: 0.006, r: 0.032 },
+      { dx: -0.022, dy: -0.008, r: 0.036, isBase: true },
+      { dx: -0.004, dy: 0.016, r: 0.038 },
+      { dx: 0.022, dy: -0.008, r: 0.034, isBase: true },
+      { dx: 0.038, dy: 0.008, r: 0.028 },
+      { dx: 0.060, dy: -0.004, r: 0.022, isBase: true },
     ],
   },
+  // Cloud 1 — Stepped Flat Cumulus
   {
-    baseAzimuth: 1.30,
-    elevation: 0.32,
-    driftSpeed: 0.0005,
-    scale: 0.95,
-    puffs: [
-      { dx: -0.028, dy: -0.008, r: 0.032, isBase: true },
-      { dx: 0.026, dy: -0.008, r: 0.030, isBase: true },
-      { dx: -0.006, dy: 0.014, r: 0.032 },
-      { dx: 0.022, dy: 0.008, r: 0.024 },
-    ],
-  },
-  {
-    baseAzimuth: 2.35,
-    elevation: 0.44,
-    driftSpeed: 0.0007,
-    scale: 1.05,
-    puffs: [
-      { dx: 0, dy: -0.008, r: 0.034, isBase: true },
-      { dx: -0.020, dy: 0.010, r: 0.025 },
-      { dx: 0.014, dy: 0.016, r: 0.030 },
-    ],
-  },
-  {
-    baseAzimuth: 3.30,
-    elevation: 0.35,
-    driftSpeed: 0.00055,
-    scale: 0.90,
-    puffs: [
-      { dx: 0, dy: -0.006, r: 0.028, isBase: true },
-      { dx: -0.016, dy: 0.006, r: 0.020 },
-      { dx: 0.010, dy: 0.012, r: 0.024 },
-    ],
-  },
-  {
-    baseAzimuth: 4.35,
+    baseAzimuth: 0.68,
     elevation: 0.42,
-    driftSpeed: 0.00065,
-    scale: 1.10,
+    driftSpeed: 0.00052,
+    scale: 1.25,
     puffs: [
-      { dx: -0.026, dy: -0.008, r: 0.030, isBase: true },
-      { dx: 0.024, dy: -0.008, r: 0.028, isBase: true },
-      { dx: -0.004, dy: 0.016, r: 0.034 },
-      { dx: 0.022, dy: 0.008, r: 0.024 },
-      { dx: 0.008, dy: 0.024, r: 0.020 },
+      { dx: -0.052, dy: -0.006, r: 0.026, isBase: true },
+      { dx: -0.024, dy: 0.014, r: 0.035 },
+      { dx: 0.005, dy: -0.008, r: 0.038, isBase: true },
+      { dx: 0.020, dy: 0.010, r: 0.030 },
+      { dx: 0.042, dy: -0.004, r: 0.026, isBase: true },
+      { dx: 0.062, dy: -0.006, r: 0.020, isBase: true },
     ],
   },
+  // Cloud 2 — Elongated Puffy Flattop (extra wide pillowy bar)
   {
-    baseAzimuth: 5.35,
-    elevation: 0.34,
-    driftSpeed: 0.0005,
-    scale: 1.00,
+    baseAzimuth: 1.20,
+    elevation: 0.50,
+    driftSpeed: 0.00068,
+    scale: 1.40,
     puffs: [
-      { dx: 0, dy: -0.008, r: 0.034, isBase: true },
-      { dx: -0.020, dy: 0.010, r: 0.025 },
-      { dx: 0.014, dy: 0.016, r: 0.030 },
+      { dx: -0.068, dy: -0.003, r: 0.022, isBase: true },
+      { dx: -0.044, dy: 0.008, r: 0.028 },
+      { dx: -0.020, dy: -0.007, r: 0.034, isBase: true },
+      { dx: 0.008, dy: 0.015, r: 0.034 },
+      { dx: 0.028, dy: -0.006, r: 0.032, isBase: true },
+      { dx: 0.048, dy: 0.005, r: 0.026 },
+      { dx: 0.068, dy: -0.004, r: 0.020, isBase: true },
+    ],
+  },
+  // Cloud 3 — Flat Cumulus Shelf
+  {
+    baseAzimuth: 1.72,
+    elevation: 0.43,
+    driftSpeed: 0.00055,
+    scale: 1.20,
+    puffs: [
+      { dx: -0.048, dy: -0.004, r: 0.024, isBase: true },
+      { dx: -0.020, dy: 0.012, r: 0.032 },
+      { dx: 0.004, dy: -0.007, r: 0.036, isBase: true },
+      { dx: 0.024, dy: 0.010, r: 0.028 },
+      { dx: 0.050, dy: -0.005, r: 0.022, isBase: true },
+    ],
+  },
+  // Cloud 4 — Wide Horizon Cumulus
+  {
+    baseAzimuth: 2.24,
+    elevation: 0.48,
+    driftSpeed: 0.00062,
+    scale: 1.35,
+    puffs: [
+      { dx: -0.062, dy: -0.004, r: 0.024, isBase: true },
+      { dx: -0.038, dy: 0.006, r: 0.032 },
+      { dx: -0.022, dy: -0.008, r: 0.036, isBase: true },
+      { dx: -0.004, dy: 0.016, r: 0.038 },
+      { dx: 0.022, dy: -0.008, r: 0.034, isBase: true },
+      { dx: 0.038, dy: 0.008, r: 0.028 },
+      { dx: 0.060, dy: -0.004, r: 0.022, isBase: true },
+    ],
+  },
+  // Cloud 5 — Stepped Flat Cumulus
+  {
+    baseAzimuth: 2.76,
+    elevation: 0.44,
+    driftSpeed: 0.00050,
+    scale: 1.30,
+    puffs: [
+      { dx: -0.052, dy: -0.006, r: 0.026, isBase: true },
+      { dx: -0.024, dy: 0.014, r: 0.035 },
+      { dx: 0.005, dy: -0.008, r: 0.038, isBase: true },
+      { dx: 0.020, dy: 0.010, r: 0.030 },
+      { dx: 0.042, dy: -0.004, r: 0.026, isBase: true },
+      { dx: 0.062, dy: -0.006, r: 0.020, isBase: true },
+    ],
+  },
+  // Cloud 6 — Elongated Puffy Flattop
+  {
+    baseAzimuth: 3.28,
+    elevation: 0.52,
+    driftSpeed: 0.00070,
+    scale: 1.45,
+    puffs: [
+      { dx: -0.068, dy: -0.003, r: 0.022, isBase: true },
+      { dx: -0.044, dy: 0.008, r: 0.028 },
+      { dx: -0.020, dy: -0.007, r: 0.034, isBase: true },
+      { dx: 0.008, dy: 0.015, r: 0.034 },
+      { dx: 0.028, dy: -0.006, r: 0.032, isBase: true },
+      { dx: 0.048, dy: 0.005, r: 0.026 },
+      { dx: 0.068, dy: -0.004, r: 0.020, isBase: true },
+    ],
+  },
+  // Cloud 7 — Flat Cumulus Shelf
+  {
+    baseAzimuth: 3.80,
+    elevation: 0.43,
+    driftSpeed: 0.00054,
+    scale: 1.20,
+    puffs: [
+      { dx: -0.048, dy: -0.004, r: 0.024, isBase: true },
+      { dx: -0.020, dy: 0.012, r: 0.032 },
+      { dx: 0.004, dy: -0.007, r: 0.036, isBase: true },
+      { dx: 0.024, dy: 0.010, r: 0.028 },
+      { dx: 0.050, dy: -0.005, r: 0.022, isBase: true },
+    ],
+  },
+  // Cloud 8 — Wide Horizon Cumulus
+  {
+    baseAzimuth: 4.32,
+    elevation: 0.47,
+    driftSpeed: 0.00064,
+    scale: 1.38,
+    puffs: [
+      { dx: -0.062, dy: -0.004, r: 0.024, isBase: true },
+      { dx: -0.038, dy: 0.006, r: 0.032 },
+      { dx: -0.022, dy: -0.008, r: 0.036, isBase: true },
+      { dx: -0.004, dy: 0.016, r: 0.038 },
+      { dx: 0.022, dy: -0.008, r: 0.034, isBase: true },
+      { dx: 0.038, dy: 0.008, r: 0.028 },
+      { dx: 0.060, dy: -0.004, r: 0.022, isBase: true },
+    ],
+  },
+  // Cloud 9 — Stepped Flat Cumulus
+  {
+    baseAzimuth: 4.84,
+    elevation: 0.42,
+    driftSpeed: 0.00052,
+    scale: 1.25,
+    puffs: [
+      { dx: -0.052, dy: -0.006, r: 0.026, isBase: true },
+      { dx: -0.024, dy: 0.014, r: 0.035 },
+      { dx: 0.005, dy: -0.008, r: 0.038, isBase: true },
+      { dx: 0.020, dy: 0.010, r: 0.030 },
+      { dx: 0.042, dy: -0.004, r: 0.026, isBase: true },
+      { dx: 0.062, dy: -0.006, r: 0.020, isBase: true },
+    ],
+  },
+  // Cloud 10 — Elongated Puffy Flattop
+  {
+    baseAzimuth: 5.36,
+    elevation: 0.51,
+    driftSpeed: 0.00066,
+    scale: 1.40,
+    puffs: [
+      { dx: -0.068, dy: -0.003, r: 0.022, isBase: true },
+      { dx: -0.044, dy: 0.008, r: 0.028 },
+      { dx: -0.020, dy: -0.007, r: 0.034, isBase: true },
+      { dx: 0.008, dy: 0.015, r: 0.034 },
+      { dx: 0.028, dy: -0.006, r: 0.032, isBase: true },
+      { dx: 0.048, dy: 0.005, r: 0.026 },
+      { dx: 0.068, dy: -0.004, r: 0.020, isBase: true },
+    ],
+  },
+  // Cloud 11 — Flat Cumulus Shelf
+  {
+    baseAzimuth: 5.88,
+    elevation: 0.44,
+    driftSpeed: 0.00056,
+    scale: 1.22,
+    puffs: [
+      { dx: -0.048, dy: -0.004, r: 0.024, isBase: true },
+      { dx: -0.020, dy: 0.012, r: 0.032 },
+      { dx: 0.004, dy: -0.007, r: 0.036, isBase: true },
+      { dx: 0.024, dy: 0.010, r: 0.028 },
+      { dx: 0.050, dy: -0.005, r: 0.022, isBase: true },
     ],
   },
 ];
@@ -265,10 +377,10 @@ export class SkyRenderer {
 
         const [cx, cy] = pt;
 
-        // Screen vertical fade: keep clouds in the upper sky above the house,
-        // ensuring zero clouds near the bottom or below the house.
+        // Screen vertical fade: keep clouds high in the upper sky above the house,
+        // ensuring zero clouds near the roofline, middle, or below the house.
         const normY = cy / Hh;
-        const screenFade = 1 - THREE.MathUtils.smoothstep(normY, 0.32, 0.54);
+        const screenFade = 1 - THREE.MathUtils.smoothstep(normY, 0.24, 0.44);
         if (screenFade <= 0.01) continue;
 
         const totalAlpha = cloudDayFactor * horizonFade * screenFade;

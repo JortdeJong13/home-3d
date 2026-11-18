@@ -156,7 +156,7 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
   // 9. Front Entrance Door with Exterior-Only Decorative Brick Arch
   door_entrance_front: {
     prefabId: 'door_entrance_front',
-    defaultLabel: 'Voordeur / Entree Hal (105 × 205 cm + Decoratieve Boog)',
+    defaultLabel: 'Voordeur & Decoratieve Gemetselde Boog (150 × 285 cm)',
     width: 1.05,
     height: 2.08,
     sillHeight: 0.00,
@@ -164,7 +164,7 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
     panelMaterial: 'door_exterior_sage',
     hasArchTrim: true,
     provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 linkerzijgevel & Woning.jpg',
+    source: 'Verkooptekening VK-06 & Woning.jpg (Builder Render)',
   },
 
   // 10. Rear Double Garden Doors with Sidelights (Option B13)
@@ -371,60 +371,197 @@ export function instantiateOpeningPrefab3D(
 
   // 3. Decorative Red-Brown Brick Portal & Arch around Front Entrance Door (ONLY on the exterior facade surface!)
   if (op.hasArchTrim) {
-    const pilasterW = 0.13;
-    const reliefDepth = 0.036; // 3.6 cm relief strictly on the outside face of the wall
+    const leftPilaW = 0.13; // 13 cm left pilaster
+    const rightPanelW = 0.32; // 32 cm right brick panel (door is offset to the left as seen in builder render & HomeByMe!)
+    const reliefDepth = 0.038; // 3.8 cm relief strictly on the outside face of the wall
     const exteriorFaceZ = wallThickness / 2 + reliefDepth / 2 - 0.002;
 
-    // Left & right decorative red-brown brick pilasters flanking the doorway on the outside face
+    const doorHalfW = op.width / 2; // 0.525 m
+    const xLeftPilaster = -doorHalfW - leftPilaW / 2; // -0.59 m
+    const xRightPanel = doorHalfW + rightPanelW / 2;  // +0.685 m
+
+    // Left decorative red-brown brick pilaster flanking the doorway on the outside face
     const pilasterL = new THREE.Mesh(
-      new THREE.BoxGeometry(pilasterW, op.height, reliefDepth),
+      new THREE.BoxGeometry(leftPilaW, op.height, reliefDepth),
       getMat('exterior_arch_brick')
     );
-    pilasterL.position.set(-op.width / 2 - pilasterW / 2, 0, exteriorFaceZ);
+    pilasterL.position.set(xLeftPilaster, 0, exteriorFaceZ);
     pilasterL.castShadow = true;
+    pilasterL.receiveShadow = true;
+    registerMesh(pilasterL, 'exterior_arch_brick', {
+      id: `${op.id}_pilaster_left`,
+      label: 'Decoratief Gemetseld Portaal (Linker Pilaster)',
+      dimensionsLabel: `${(leftPilaW * 100).toFixed(0)} × ${(op.height * 100).toFixed(0)} cm`,
+      provenance: op.provenance,
+      source: op.source,
+      floor,
+    });
     group.add(pilasterL);
 
+    // Right decorative red-brown brick panel flanking the doorway on the outside face
     const pilasterR = new THREE.Mesh(
-      new THREE.BoxGeometry(pilasterW, op.height, reliefDepth),
+      new THREE.BoxGeometry(rightPanelW, op.height, reliefDepth),
       getMat('exterior_arch_brick')
     );
-    pilasterR.position.set(op.width / 2 + pilasterW / 2, 0, exteriorFaceZ);
+    pilasterR.position.set(xRightPanel, 0, exteriorFaceZ);
     pilasterR.castShadow = true;
+    pilasterR.receiveShadow = true;
+    registerMesh(pilasterR, 'exterior_arch_brick', {
+      id: `${op.id}_panel_right`,
+      label: 'Decoratief Gemetseld Portaal (Rechter Gevelveld)',
+      dimensionsLabel: `${(rightPanelW * 100).toFixed(0)} × ${(op.height * 100).toFixed(0)} cm`,
+      provenance: op.provenance,
+      source: op.source,
+      floor,
+    });
     group.add(pilasterR);
 
-    // Semicircular decorative red-brown brick arch + recessed tympanum mounted strictly on the outside wall surface above the door
-    const outerRadius = op.width / 2 + pilasterW;
-    const innerRadius = op.width / 2;
+    // Horizontal coursing relief joints on right brick panel
+    const numCourses = 18;
+    for (let c = 1; c < numCourses; c++) {
+      const courseY = -op.height / 2 + (op.height / numCourses) * c;
+      const joint = new THREE.Mesh(
+        new THREE.BoxGeometry(rightPanelW, 0.005, 0.004),
+        getMat('interior_wall_plaster')
+      );
+      joint.position.set(xRightPanel, courseY, exteriorFaceZ + reliefDepth / 2 + 0.001);
+      group.add(joint);
+    }
+
+    // Semicircular decorative red-brown brick arch + recessed tympanum mounted on outside wall surface above door
+    // Semicircle center in local X: (-0.655 + 0.845) / 2 = +0.095 m (offset to right!)
+    const archCenterX = 0.095;
+    const archSpringY = op.height / 2; // top of door frame
+    const rOuter = 0.75; // 1.50 m total diameter
+    const rInner = 0.62; // 13 cm rollaag voussoir thickness
 
     // Outer arch ring (voussoir brickwork)
     const archRingShape = new THREE.Shape();
-    archRingShape.absarc(0, 0, outerRadius, 0, Math.PI, false);
-    archRingShape.absarc(0, 0, innerRadius, Math.PI, 0, true);
+    archRingShape.absarc(0, 0, rOuter, 0, Math.PI, false);
+    archRingShape.absarc(0, 0, rInner, Math.PI, 0, true);
     archRingShape.closePath();
 
     const archRingGeo = new THREE.ExtrudeGeometry(archRingShape, {
       depth: reliefDepth,
       bevelEnabled: false,
-      curveSegments: 24,
+      curveSegments: 36,
     });
     const archRingMesh = new THREE.Mesh(archRingGeo, getMat('exterior_arch_brick'));
-    archRingMesh.position.set(0, op.height / 2, wallThickness / 2 - 0.002);
+    archRingMesh.position.set(archCenterX, archSpringY, wallThickness / 2 - 0.002);
     archRingMesh.castShadow = true;
+    registerMesh(archRingMesh, 'exterior_arch_brick', {
+      id: `${op.id}_arch_ring`,
+      label: 'Decoratieve Gemetselde Rollaagboog',
+      dimensionsLabel: 'Spanwijdte 150 cm · Rollaag 13 cm',
+      provenance: op.provenance,
+      source: op.source,
+      floor,
+    });
     group.add(archRingMesh);
 
-    // Subtle inset red-brown brick tympanum panel inside the arch (1.6 cm proud of the main brick wall)
+    // Radial voussoir brick joints every ~7 degrees along the arch
+    const numVoussoirs = 26;
+    for (let i = 0; i <= numVoussoirs; i++) {
+      const angle = (Math.PI / numVoussoirs) * i;
+      const cosA = Math.cos(angle);
+      const sinA = Math.sin(angle);
+      const midR = (rInner + rOuter) / 2;
+      const lenR = rOuter - rInner;
+      const jointMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(lenR, 0.005, 0.004),
+        getMat('interior_wall_plaster')
+      );
+      jointMesh.position.set(
+        archCenterX + midR * cosA,
+        archSpringY + midR * sinA,
+        exteriorFaceZ + reliefDepth / 2 + 0.001
+      );
+      jointMesh.rotation.z = angle;
+      group.add(jointMesh);
+    }
+
+    // Right spandrel infill below arch (between door right X = +0.525 and arch spring point)
+    const spandrelLocalX = doorHalfW - archCenterX; // 0.43 m
+    const spandrelShape = new THREE.Shape();
+    spandrelShape.moveTo(spandrelLocalX, 0);
+    spandrelShape.lineTo(rInner, 0);
+    const angleAtDoorRight = Math.acos(Math.min(1.0, spandrelLocalX / rInner));
+    spandrelShape.absarc(0, 0, rInner, 0, angleAtDoorRight, false);
+    spandrelShape.lineTo(spandrelLocalX, 0);
+    spandrelShape.closePath();
+
+    const spandrelGeo = new THREE.ExtrudeGeometry(spandrelShape, {
+      depth: reliefDepth,
+      bevelEnabled: false,
+      curveSegments: 16,
+    });
+    const spandrelMesh = new THREE.Mesh(spandrelGeo, getMat('exterior_arch_brick'));
+    spandrelMesh.position.set(archCenterX, archSpringY, wallThickness / 2 - 0.002);
+    group.add(spandrelMesh);
+
+    // Semicircular recessed tympanum inside arch (2.4 cm proud of main brick wall)
     const tympanumShape = new THREE.Shape();
-    tympanumShape.absarc(0, 0, innerRadius, 0, Math.PI, false);
+    tympanumShape.absarc(0, 0, rInner, 0, Math.PI, false);
     tympanumShape.closePath();
 
     const tympanumGeo = new THREE.ExtrudeGeometry(tympanumShape, {
-      depth: reliefDepth * 0.55,
+      depth: reliefDepth * 0.72,
       bevelEnabled: false,
-      curveSegments: 24,
+      curveSegments: 36,
     });
     const tympanumMesh = new THREE.Mesh(tympanumGeo, getMat('window_trim_terracotta'));
-    tympanumMesh.position.set(0, op.height / 2, wallThickness / 2 - 0.002);
+    tympanumMesh.position.set(archCenterX, archSpringY, wallThickness / 2 - 0.002);
+    registerMesh(tympanumMesh, 'window_trim_terracotta', {
+      id: `${op.id}_tympanum`,
+      label: 'Gemetseld Boogveld (Staande Rollaag)',
+      dimensionsLabel: 'Boogveld radius 62 cm (Verticale Metselverbanden)',
+      provenance: op.provenance,
+      source: op.source,
+      floor,
+    });
     group.add(tympanumMesh);
+
+    // Vertical soldier-course brick flutes in tympanum (staande rollaag as in builder render!)
+    const soldierBrickW = 0.065;
+    const tympanumFaceZ = wallThickness / 2 - 0.002 + reliefDepth * 0.72 + 0.002;
+    for (let lx = -rInner + 0.04; lx <= rInner - 0.04; lx += soldierBrickW) {
+      const maxH = Math.sqrt(Math.max(0, rInner * rInner - lx * lx));
+      if (maxH > 0.05) {
+        const soldierGroove = new THREE.Mesh(
+          new THREE.BoxGeometry(0.005, maxH, 0.003),
+          getMat('interior_wall_plaster')
+        );
+        soldierGroove.position.set(archCenterX + lx, archSpringY + maxH / 2, tympanumFaceZ);
+        group.add(soldierGroove);
+      }
+    }
+
+    // Modern Up/Down Exterior Sconce Luminaire mounted on right brick panel
+    const lampX = xRightPanel;
+    const lampY = 0.10; // ~1.65 m from ground
+    const lampZ = exteriorFaceZ + reliefDepth / 2 + 0.022;
+
+    const lampBody = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.15, 0.045),
+      getMat('roof_tile_anthracite')
+    );
+    lampBody.position.set(lampX, lampY, lampZ);
+    lampBody.castShadow = true;
+    group.add(lampBody);
+
+    const lampLensTop = new THREE.Mesh(
+      new THREE.BoxGeometry(0.068, 0.012, 0.035),
+      getMat('floor_living_oak')
+    );
+    lampLensTop.position.set(lampX, lampY + 0.07, lampZ);
+    group.add(lampLensTop);
+
+    const lampLensBot = new THREE.Mesh(
+      new THREE.BoxGeometry(0.068, 0.012, 0.035),
+      getMat('floor_living_oak')
+    );
+    lampLensBot.position.set(lampX, lampY - 0.07, lampZ);
+    group.add(lampLensBot);
   }
 
   const innerW = Math.max(0.1, op.width - frameThick * 2);
@@ -625,29 +762,97 @@ export function instantiateOpeningPrefab3D(
     }
 
     case 'door_entrance_front': {
-      // Sage-green front entrance door with vertical glass vision panel (as seen in user's photo!)
-      const panel = new THREE.Mesh(
-        new THREE.BoxGeometry(innerW, innerH, 0.055),
+      // 1. Dark Belgian Bluestone Threshold (Arduin Onderdorpel)
+      const thresholdH = 0.05;
+      const thresholdW = op.width + 0.04;
+      const thresholdD = Math.min(wallThickness + 0.04, 0.22);
+      const threshold = new THREE.Mesh(
+        new THREE.BoxGeometry(thresholdW, thresholdH, thresholdD),
+        getMat('roof_tile_anthracite')
+      );
+      threshold.position.set(0, -op.height / 2 + thresholdH / 2, frameCenterZ + 0.02);
+      threshold.castShadow = true;
+      threshold.receiveShadow = true;
+      group.add(threshold);
+
+      // 2. Sage-Green Front Entrance Door Leaf with Centered Vision Window
+      const doorLeafW = innerW - 0.008; // 4 mm shadow gap
+      const doorLeafH = innerH - thresholdH - 0.004;
+      const doorLeafY = -op.height / 2 + thresholdH + doorLeafH / 2;
+
+      const doorLeaf = new THREE.Mesh(
+        new THREE.BoxGeometry(doorLeafW, doorLeafH, 0.054),
         getMat(op.panelMaterial)
       );
-      panel.position.set(0, -frameThick / 2, frameCenterZ);
-      registerMesh(panel, op.panelMaterial, {
+      doorLeaf.position.set(0, doorLeafY, frameCenterZ);
+      doorLeaf.castShadow = true;
+      doorLeaf.receiveShadow = true;
+      registerMesh(doorLeaf, op.panelMaterial, {
         id: op.id,
         label: op.label,
-        dimensionsLabel: `${op.width.toFixed(2)} × ${op.height.toFixed(2)} m`,
+        dimensionsLabel: `${op.width.toFixed(2)} × ${op.height.toFixed(2)} m (Deurblad ${(doorLeafW * 100).toFixed(0)} × ${(doorLeafH * 100).toFixed(0)} cm)`,
         provenance: op.provenance,
         source: op.source,
         floor,
       });
-      group.add(panel);
+      group.add(doorLeaf);
 
-      // Vertical glass strip in the front door leaf
+      // Centered Vertical Vision Window Cutout (centered in door width as seen in builder render & HomeByMe!)
+      const visionW = 0.24;
+      const visionH = 1.32;
+      const visionY = -op.height / 2 + thresholdH + 0.60 + visionH / 2;
+
+      // Glazing Bead Frame (Glaslatten)
+      const beadProfile = new THREE.Mesh(
+        new THREE.BoxGeometry(visionW + 0.04, visionH + 0.04, 0.066),
+        getMat('window_frame_cream')
+      );
+      beadProfile.position.set(0, visionY, frameCenterZ);
+      group.add(beadProfile);
+
+      // Glazing Glass Pane
       const visionGlass = new THREE.Mesh(
-        new THREE.BoxGeometry(0.14, innerH * 0.68, 0.062),
+        new THREE.BoxGeometry(visionW, visionH, 0.022),
         getMat('window_glass_day')
       );
-      visionGlass.position.set(0.08, -0.05, frameCenterZ);
+      visionGlass.position.set(0, visionY, frameCenterZ);
+      registerMesh(visionGlass, 'window_glass_day', {
+        id: `${op.id}_vision_glass`,
+        label: 'Voordeur Beglazing (Veiligheidsglas)',
+        dimensionsLabel: '24 × 132 cm (Dubbel Glas met Daglicht/Nachtgloed)',
+        provenance: op.provenance,
+        source: op.source,
+        floor,
+      });
       group.add(visionGlass);
+
+      // Lower Raised Door Panel Moulding
+      const lowerMouldingH = 0.42;
+      const lowerMoulding = new THREE.Mesh(
+        new THREE.BoxGeometry(doorLeafW * 0.72, lowerMouldingH, 0.06),
+        getMat(op.panelMaterial)
+      );
+      lowerMoulding.position.set(0, -op.height / 2 + thresholdH + 0.06 + lowerMouldingH / 2, frameCenterZ);
+      group.add(lowerMoulding);
+
+      // 3. Security Door Hardware (Brushed Metal Handle & Key Cylinder)
+      const handleX = doorLeafW / 2 - 0.085; // Right stile of door leaf
+      const handleY = -op.height / 2 + 1.05; // 1.05 m from ground
+      const handleFrontZ = frameCenterZ + 0.027 + 0.005;
+
+      const backplate = new THREE.Mesh(
+        new THREE.BoxGeometry(0.042, 0.22, 0.008),
+        getMat('roof_tile_anthracite')
+      );
+      backplate.position.set(handleX, handleY - 0.02, handleFrontZ + 0.004);
+      group.add(backplate);
+
+      const handleLever = new THREE.Mesh(
+        new THREE.BoxGeometry(0.125, 0.022, 0.055),
+        getMat('roof_tile_anthracite')
+      );
+      handleLever.position.set(handleX - 0.045, handleY + 0.04, handleFrontZ + 0.032);
+      group.add(handleLever);
       break;
     }
 
