@@ -862,6 +862,9 @@ function buildPlotAndEnvironment(
   // Front garden planted flower & ornamental grass border against the house front wall (Z: 0.00 -> 1.05 m)
   buildFrontGardenFlowerBorder(plotGroup, getMat, registerMesh);
 
+  // Flowering bushes along the left driveway grass strip next to the 90 cm beech hedge
+  buildDrivewayEdgeBushes(plotGroup, getMat, registerMesh, leftBoundaryXAtZ);
+
   // 6. SURROUNDINGS (outside the owned plot, neutral grey): pavement strip & garden fences (schuttingen)
   const ctxRightX = rightX + CONTEXT_MARGIN;
   const ctxLeftX = Math.min(rearLeftX, frontLeftX) - CONTEXT_MARGIN;
@@ -1333,6 +1336,116 @@ function buildFrontGardenFlowerBorder(
     grassMesh.castShadow = true;
     grassMesh.receiveShadow = true;
     group.add(grassMesh);
+  }
+}
+
+/**
+ * Build flowering bushes along the grass strip between the left boundary beech hedge
+ * and the driveway gravel (Z: +2.85 m back to -4.90 m), matching the reference photo:
+ * yellow-flowering green shrubs near the street, lavender-blue hydrangeas further back.
+ */
+function buildDrivewayEdgeBushes(
+  group: THREE.Group,
+  getMat: (id: MaterialId) => THREE.MeshStandardMaterial,
+  registerMesh: RegisterMeshFn,
+  leftBoundaryXAtZ: (z: number) => number
+) {
+  let s = (808 * 1664525 + 1013904223) >>> 0;
+  const rand = () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+
+  const shrubGeos: THREE.BufferGeometry[] = [];
+  const yellowFlowerGeos: THREE.BufferGeometry[] = [];
+  const lavenderFlowerGeos: THREE.BufferGeometry[] = [];
+
+  const bushes: Array<{
+    z: number;
+    rx: number;
+    ry: number;
+    rz: number;
+    yellowCount: number;
+    lavenderCount: number;
+  }> = [
+    { z: 2.75, rx: 0.38, ry: 0.54, rz: 0.48, yellowCount: 10, lavenderCount: 0 },
+    { z: 1.80, rx: 0.44, ry: 0.72, rz: 0.56, yellowCount: 14, lavenderCount: 0 },
+    { z: 0.75, rx: 0.42, ry: 0.64, rz: 0.54, yellowCount: 0, lavenderCount: 14 },
+    { z: -0.35, rx: 0.40, ry: 0.58, rz: 0.52, yellowCount: 0, lavenderCount: 18 },
+    { z: -1.45, rx: 0.40, ry: 0.62, rz: 0.50, yellowCount: 0, lavenderCount: 16 },
+    { z: -2.55, rx: 0.38, ry: 0.56, rz: 0.48, yellowCount: 0, lavenderCount: 14 },
+    { z: -3.65, rx: 0.36, ry: 0.54, rz: 0.46, yellowCount: 0, lavenderCount: 12 },
+    { z: -4.70, rx: 0.34, ry: 0.50, rz: 0.44, yellowCount: 0, lavenderCount: 10 },
+  ];
+
+  for (const bush of bushes) {
+    const hedgeInnerX = leftBoundaryXAtZ(bush.z) + 0.35;
+    const gravelLeftX = -3.45;
+    const cx = (hedgeInnerX + gravelLeftX) * 0.5 - 0.08;
+
+    const numPuffs = 6;
+    for (let i = 0; i < numPuffs; i++) {
+      const a = (i / numPuffs) * Math.PI * 2 + rand() * 0.5;
+      const dist = i === 0 ? 0 : (0.34 + rand() * 0.34);
+      const px = cx + Math.cos(a) * bush.rx * dist;
+      const pz = bush.z + Math.sin(a) * bush.rz * dist;
+      const r = (i === 0 ? 0.72 : 0.48 + rand() * 0.16) * Math.min(bush.rx, bush.rz);
+      const py = 0.02 + bush.ry * (i === 0 ? 0.50 : 0.34 + rand() * 0.18);
+
+      const puff = new THREE.IcosahedronGeometry(r, 1);
+      puff.scale(1.0 + rand() * 0.18, (bush.ry / Math.max(0.18, r)) * 0.74, 1.0 + rand() * 0.18);
+      puff.rotateY(rand() * Math.PI * 2);
+      puff.translate(px, py, pz);
+      shrubGeos.push(puff);
+    }
+
+    const addBlossoms = (count: number, target: THREE.BufferGeometry[], radiusScale: number) => {
+      for (let b = 0; b < count; b++) {
+        const theta = rand() * Math.PI * 2;
+        const phi = rand() * Math.PI * 0.44;
+        const bx = cx + Math.sin(phi) * Math.cos(theta) * bush.rx * 0.88;
+        const bz = bush.z + Math.sin(phi) * Math.sin(theta) * bush.rz * 0.88;
+        const by = 0.04 + Math.cos(phi) * bush.ry * 0.94;
+        const br = (0.045 + rand() * 0.035) * radiusScale;
+        const blossom = new THREE.IcosahedronGeometry(br, 1);
+        blossom.rotateY(rand() * Math.PI);
+        blossom.translate(bx, by, bz);
+        target.push(blossom);
+      }
+    };
+
+    addBlossoms(bush.yellowCount, yellowFlowerGeos, 1.0);
+    addBlossoms(bush.lavenderCount, lavenderFlowerGeos, 1.35);
+  }
+
+  const shrubMesh = new THREE.Mesh(mergeGeometries(shrubGeos, false), getMat('plot_hedge_beech'));
+  registerMesh(
+    shrubMesh,
+    'plot_hedge_beech',
+    {
+      id: 'driveway_edge_bushes',
+      label: 'Struiken & Hortensia’s langs Oprit (Linkererfgrens)',
+      dimensionsLabel: '0.85 × 7.90 m',
+      provenance: 'user_supplied',
+      source: 'Referentiefoto oprit: groene struiken en hortensia’s langs de linker beukenhaag',
+      floor: 'plot',
+    },
+    true,
+    true
+  );
+  group.add(shrubMesh);
+
+  if (yellowFlowerGeos.length > 0) {
+    const yellowMesh = new THREE.Mesh(mergeGeometries(yellowFlowerGeos, false), getMat('plot_tree_foliage_warm'));
+    yellowMesh.castShadow = true;
+    group.add(yellowMesh);
+  }
+
+  if (lavenderFlowerGeos.length > 0) {
+    const lavenderMesh = new THREE.Mesh(mergeGeometries(lavenderFlowerGeos, false), getMat('plot_flower_lavender'));
+    lavenderMesh.castShadow = true;
+    lavenderMesh.receiveShadow = true;
+    group.add(lavenderMesh);
   }
 }
 

@@ -1,4 +1,5 @@
 import { AssetPrefabDefinition, PlacedAssetSpec } from './assetTypes';
+import { m } from '../model/units';
 import { frontDoorArchPrefab } from './items/frontDoorArch';
 import { heatPumpOutdoorPrefab } from './items/heatPumpOutdoor';
 import { rainPipeHwaPrefab } from './items/rainPipeHwa';
@@ -42,5 +43,18 @@ export const PLACED_ASSETS: PlacedAssetSpec[] = [
     rotationDeg: 180,
     provenance: 'verified_drawing',
     source: 'Verkooptekening VK-06 achtergevel berging: HWA regenpijp met vergaderbak bij buitenhoek',
+  },
+  {
+    id: 'gf_linkerzijgevel_regenpijp_voor',
+    prefabId: 'rain_pipe_hwa',
+    label: 'Regenpijp / HWA (Linkerzijgevel Voorhoek)',
+    floor: 'ground',
+    positionXZ: [-0.07, -0.22],
+    rotationDeg: 270,
+    dimensionsOverride: {
+      height: m(6.13, 'verified_drawing', 'Verkooptekening VK-06 Linkerzijgevel: HWA regenpijp van peil tot goothoogte (+6.13 m)'),
+    },
+    provenance: 'verified_drawing',
+    source: 'Verkooptekening VK-06 linkerzijgevel: HWA regenpijp bij voorhoek',
   },
 ];

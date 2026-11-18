@@ -70,8 +70,11 @@ export const rainPipeHwaPrefab: AssetPrefabDefinition = {
     pipeMesh.position.set(0, pipeTopY / 2, pipeZ);
     group.add(pipeMesh);
 
-    // 3. Three zinc wall mounting brackets (beugels) anchoring pipe to brick wall
-    const bracketHeights = [0.55, 1.45, 2.30].filter((y) => y < pipeTopY - 0.08);
+    // 3. Zinc wall mounting brackets (beugels) every ~0.95 m anchoring pipe to brick wall
+    const bracketHeights: number[] = [];
+    for (let by = 0.55; by < pipeTopY - 0.12; by += 0.95) {
+      bracketHeights.push(by);
+    }
     for (const by of bracketHeights) {
       const collar = new THREE.Mesh(
         new THREE.CylinderGeometry(pipeRadius + 0.005, pipeRadius + 0.005, 0.022, 20),

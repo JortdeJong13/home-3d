@@ -42,6 +42,7 @@ export type MaterialId =
   | 'plot_tree_foliage_warm'
   | 'plot_tree_foliage_bolboom'
   | 'plot_tree_foliage_blossom'
+  | 'plot_flower_lavender'
   | 'plot_tree_trunk'
   | 'plot_tree_stake_wood'
   | 'plot_gate_timber'
@@ -316,6 +317,12 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     colorDay: '#f2f5f0',
     colorNight: '#7d827a',
     roughness: 0.9,
+    metalness: 0.0,
+  },
+  plot_flower_lavender: {
+    colorDay: '#a4a8dc',
+    colorNight: '#444766',
+    roughness: 0.90,
     metalness: 0.0,
   },
   plot_tree_trunk: {
