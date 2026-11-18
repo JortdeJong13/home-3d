@@ -129,6 +129,12 @@ export function applyDayNightState(
     tempNight.set(def.colorNight);
     mat.color.lerpColors(tempDay, tempNight, t);
 
+    if (def.opacity !== undefined) {
+      const opDay = def.opacity;
+      const opNight = def.opacityNight ?? opDay;
+      mat.opacity = THREE.MathUtils.lerp(opDay, opNight, interiorFactor);
+    }
+
     if (def.emissiveNight) {
       const emColor = new THREE.Color(def.emissiveNight);
       mat.emissive.lerpColors(ZeroColor, emColor, interiorFactor);

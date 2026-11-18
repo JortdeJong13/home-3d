@@ -187,6 +187,7 @@ export function buildHouseScene(): HouseSceneGroups {
       metalness: def.metalness,
       transparent: def.transparent ?? false,
       opacity: def.opacity ?? 1.0,
+      depthWrite: def.depthWrite ?? !(def.transparent ?? false),
       polygonOffset: true,
       polygonOffsetFactor: id.includes('floor') ? -1 : 0,
       polygonOffsetUnits: id.includes('floor') ? -1 : 0,
@@ -343,17 +344,19 @@ export function buildHouseScene(): HouseSceneGroups {
   // 9. WARM INTERIOR LIGHTS (For Night Mode)
   // ===========================================================================
   const lightPositions: Array<{ pos: [number, number, number]; group: THREE.Group; intensity: number }> = [
-    { pos: [2.98, 2.30, -2.10], group: groundGroup, intensity: 4.5 },  // Woonkamer front
-    { pos: [2.98, 2.30, -9.80], group: groundGroup, intensity: 5.0 },  // Woonkeuken / Eetkamer
-    { pos: [1.65, 2.30, -5.15], group: groundGroup, intensity: 2.5 },  // Hal
-    { pos: [2.98, 5.15, -2.10], group: firstGroup, intensity: 4.0 },   // Slaapkamer 2 front
-    { pos: [4.00, 5.15, -8.20], group: firstGroup, intensity: 4.0 },   // Kantoor / Slaapkamer 1 rear
-    { pos: [1.40, 5.15, -8.20], group: firstGroup, intensity: 2.8 },   // Badkamer
-    { pos: [3.25, 8.10, -5.00], group: secondGroup, intensity: 3.5 },  // Zolder
+    { pos: [2.98, 2.30, -2.10], group: groundGroup, intensity: 6.0 },  // Woonkamer front
+    { pos: [4.25, 2.30, -5.60], group: groundGroup, intensity: 3.6 },  // Woonkamer passage
+    { pos: [2.98, 2.30, -9.80], group: groundGroup, intensity: 6.5 },  // Woonkeuken / Eetkamer
+    { pos: [1.65, 2.30, -5.15], group: groundGroup, intensity: 3.4 },  // Hal
+    { pos: [2.98, 5.15, -2.10], group: firstGroup, intensity: 5.5 },   // Slaapkamer 2 front
+    { pos: [2.40, 5.15, -5.10], group: firstGroup, intensity: 3.2 },   // Overloop 1e verdieping
+    { pos: [4.00, 5.15, -8.20], group: firstGroup, intensity: 5.5 },   // Kantoor / Slaapkamer 1 rear
+    { pos: [1.40, 5.15, -8.20], group: firstGroup, intensity: 3.6 },   // Badkamer
+    { pos: [3.25, 8.10, -5.00], group: secondGroup, intensity: 4.5 },  // Zolder
   ];
 
   for (const lp of lightPositions) {
-    const pt = new THREE.PointLight('#ffbe73', 0, 9.5, 1.6);
+    const pt = new THREE.PointLight('#ffc780', 0, 11.5, 1.5);
     pt.position.set(lp.pos[0], lp.pos[1], lp.pos[2]);
     pt.userData = { maxNightIntensity: lp.intensity };
     lp.group.add(pt);

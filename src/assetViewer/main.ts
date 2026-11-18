@@ -46,6 +46,7 @@ const getMat = (id: MaterialId) => {
     mat = new THREE.MeshStandardMaterial({
       color: def.colorDay, roughness: def.roughness, metalness: def.metalness,
       transparent: def.transparent ?? false, opacity: def.opacity ?? 1,
+      depthWrite: def.depthWrite ?? !(def.transparent ?? false),
     });
     mat.name = id;
     matCache.set(id, mat);

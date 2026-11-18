@@ -1423,10 +1423,10 @@ export function instantiateOpeningPrefab3D(
       const leafMesh = new THREE.Mesh(mergedLeaf, getMat(op.panelMaterial));
       doorPivot.add(leafMesh);
 
-      // Upper glass pane
+      // Upper glass pane (unlit at night since the Berging is unlit)
       const glassPane = new THREE.Mesh(
         new THREE.BoxGeometry(glassW, glassH, 0.014),
-        getMat('window_glass_day')
+        getMat('window_glass_unlit')
       );
       glassPane.position.set(-innerW / 2, glassCenterY, 0);
       doorPivot.add(glassPane);

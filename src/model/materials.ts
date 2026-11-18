@@ -27,6 +27,7 @@ export type MaterialId =
   | 'window_frame_cream'
   | 'window_trim_terracotta'
   | 'window_glass_day'
+  | 'window_glass_unlit'
   | 'door_exterior_sage'
   | 'door_interior_wood'
   | 'stair_wood_oak'
@@ -67,7 +68,9 @@ export interface MaterialStyleDef {
   roughness: number;
   metalness: number;
   opacity?: number;
+  opacityNight?: number;
   transparent?: boolean;
+  depthWrite?: boolean;
   emissiveNight?: string;
   emissiveIntensityNight?: number;
   isNeighbourContext?: boolean;
@@ -118,7 +121,7 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     roughness: 0.94,
     metalness: 0.0,
     emissiveNight: '#ffcf96',
-    emissiveIntensityNight: 0.08,
+    emissiveIntensityNight: 0.14,
   },
 
   // Floors & Slabs
@@ -128,7 +131,7 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     roughness: 0.85,
     metalness: 0.0,
     emissiveNight: '#ffca85',
-    emissiveIntensityNight: 0.12,
+    emissiveIntensityNight: 0.16,
   },
   floor_hall_warm: {
     colorDay: '#e9d8b4',
@@ -136,7 +139,7 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     roughness: 0.86,
     metalness: 0.0,
     emissiveNight: '#ffca85',
-    emissiveIntensityNight: 0.1,
+    emissiveIntensityNight: 0.14,
   },
   floor_tile_beige: {
     colorDay: '#dfd9ce',
@@ -144,11 +147,11 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     roughness: 0.8,
     metalness: 0.02,
     emissiveNight: '#ffd6a1',
-    emissiveIntensityNight: 0.08,
+    emissiveIntensityNight: 0.12,
   },
   floor_berging_concrete: {
     colorDay: '#e3e1dc',
-    colorNight: '#8c8b88',
+    colorNight: '#585b63',
     roughness: 0.92,
     metalness: 0.0,
   },
@@ -158,7 +161,7 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     roughness: 0.88,
     metalness: 0.0,
     emissiveNight: '#ffcaa0',
-    emissiveIntensityNight: 0.1,
+    emissiveIntensityNight: 0.14,
   },
   floor_zolder_wood: {
     colorDay: '#e2cbb5',
@@ -166,7 +169,7 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     roughness: 0.88,
     metalness: 0.0,
     emissiveNight: '#ffc994',
-    emissiveIntensityNight: 0.07,
+    emissiveIntensityNight: 0.11,
   },
   slab_structural_edge: {
     colorDay: '#f2efe9',
@@ -219,13 +222,25 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
   },
   window_glass_day: {
     colorDay: '#8fbcd4',
-    colorNight: '#ffe29e',
-    roughness: 0.2,
-    metalness: 0.1,
-    opacity: 0.52,
+    colorNight: '#ffdba8',
+    roughness: 0.16,
+    metalness: 0.08,
+    opacity: 0.44,
+    opacityNight: 0.24,
     transparent: true,
+    depthWrite: false,
     emissiveNight: '#ffbe6b',
-    emissiveIntensityNight: 0.65,
+    emissiveIntensityNight: 0.18,
+  },
+  window_glass_unlit: {
+    colorDay: '#8fbcd4',
+    colorNight: '#384659',
+    roughness: 0.18,
+    metalness: 0.1,
+    opacity: 0.46,
+    opacityNight: 0.36,
+    transparent: true,
+    depthWrite: false,
   },
   door_exterior_sage: {
     colorDay: '#8ab393',
@@ -404,6 +419,7 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     metalness: 0.05,
     opacity: 0.65,
     transparent: true,
+    depthWrite: false,
     isNeighbourContext: true,
   },
   neighbour_ground_grey: {
