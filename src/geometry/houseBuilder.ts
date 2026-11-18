@@ -548,6 +548,11 @@ function buildPlotAndEnvironment(
   gravelShape.lineTo(0.33, -gravelRearZ);
   gravelShape.lineTo(0.33, 12.86);
   gravelShape.lineTo(0.00, 12.86);
+  // Trace around the Berging footprint (X: -3.27..0.00, Z: -7.73..-13.72) so gravel never clips inside it
+  gravelShape.lineTo(0.00, 13.72);
+  gravelShape.lineTo(-3.27, 13.72);
+  gravelShape.lineTo(-3.27, 7.73);
+  gravelShape.lineTo(0.00, 7.73);
   gravelShape.closePath();
 
   const gravelGeo = new THREE.ExtrudeGeometry(gravelShape, {
