@@ -66,6 +66,19 @@ export interface MaterialStyleDef {
 }
 
 /**
+ * Shared architectural accent definitions so updating a single color updates
+ * every matching element across the house and isolated 3D assets:
+ * - SHARED_TERRACOTTA_BRICK: Front entrance arch + all exterior window/door brick surrounds
+ * - door_exterior_sage: Front door + Berging garage/rear doors + 1st-floor French balcony railings
+ */
+const SHARED_TERRACOTTA_BRICK = {
+  colorDay: '#b5654d',
+  colorNight: '#64372b',
+  roughness: 0.91,
+  metalness: 0.0,
+};
+
+/**
  * Soft Architectural Diorama Palette
  * Inspired by Bruno Simon's "My Room in 3D" and the isometric reference renders,
  * combined with the architectural material cues of Wonen aan de Hulk (Woning.jpg).
@@ -85,10 +98,7 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     metalness: 0.0,
   },
   exterior_arch_brick: {
-    colorDay: '#9c5240',
-    colorNight: '#5a3025',
-    roughness: 0.92,
-    metalness: 0.0,
+    ...SHARED_TERRACOTTA_BRICK,
   },
 
   // Interior Walls (Warm powdery off-white plaster)
@@ -189,10 +199,7 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     metalness: 0.02,
   },
   window_trim_terracotta: {
-    colorDay: '#c47b5e',
-    colorNight: '#664030',
-    roughness: 0.88,
-    metalness: 0.0,
+    ...SHARED_TERRACOTTA_BRICK,
   },
   window_glass_day: {
     colorDay: '#8fbcd4',

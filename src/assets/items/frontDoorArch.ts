@@ -35,12 +35,12 @@ export function buildDecorativeBrickArchMeshes(
   const springY = 2.08; // Top of door frame
   const doorRightLocalX = 0.43; // Right edge of 1.05 m door opening in portal space
 
-  // Deeper warm terracotta tone for the slightly recessed tympanum & right brick infill
+  // Slightly deeper derivative of exterior_arch_brick for the recessed tympanum & right pier
   const archBrickMat = getMat('exterior_arch_brick');
   const infillMat = new THREE.MeshStandardMaterial({
-    color: '#884333',
-    roughness: 0.93,
-    metalness: 0.0,
+    color: archBrickMat.color.clone().multiplyScalar(0.88),
+    roughness: archBrickMat.roughness,
+    metalness: archBrickMat.metalness,
     name: 'arch_tympanum_brick',
   });
 
