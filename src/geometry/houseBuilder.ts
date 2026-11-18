@@ -3225,14 +3225,6 @@ function buildPitchedRoofSystem(
   addRoofVent(1.98, -6.95, 0.055, 0.42, false);
   addRoofVent(2.26, -8.95, 0.075, 0.56, true);
 
-  // 1c. Solar Panel (flush on left slope, clear of skylight & vents)
-  const panelGeo = new THREE.BoxGeometry(1.15, 0.05, 1.05);
-  const panelMesh = new THREE.Mesh(panelGeo, getMat('roof_solar_panel'));
-  panelMesh.position.set(1.55, getZolderRoofTopY(1.55) + 0.04, -4.20);
-  panelMesh.rotation.z = leftAngle;
-  panelMesh.castShadow = true;
-  roofGroup.add(panelMesh);
-
   // 2. Slim Outer Tile Layer — Right Dwarskap Wings of Bouwnummer 55
   addTileSlope(
     'roof_bnr55_right_slope',
