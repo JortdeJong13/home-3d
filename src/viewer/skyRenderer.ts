@@ -55,12 +55,16 @@ export class SkyRenderer {
     this.lowImg = this.lowCtx.createImageData(112, 64);
     let seed = 11;
     const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-    for (let i = 0; i < 700; i++) {
-      const y = rnd() * 2 - 1;
+    for (let i = 0; i < 850; i++) {
+      // Night zenith is initially along -Y (which rotates to +Y at night t=1).
+      // Bias elevation towards the top of the night dome (higher density near the zenith).
+      const u = rnd();
+      const elev = 0.05 + 0.95 * Math.sqrt(u); // elev in [0.05, 1.0], denser towards 1.0
       const phi = rnd() * Math.PI * 2;
-      const r = Math.sqrt(1 - y * y);
-      this.stars.push(new THREE.Vector3(r * Math.cos(phi), y, r * Math.sin(phi)));
-      this.starSize.push(0.6 + rnd() * 1.6);
+      const r = Math.sqrt(Math.max(0, 1 - elev * elev));
+      // In initial unrotated frame, night zenith is -Y, so y = -elev
+      this.stars.push(new THREE.Vector3(r * Math.cos(phi), -elev, r * Math.sin(phi)));
+      this.starSize.push(0.5 + rnd() * 1.5);
     }
   }
 
@@ -131,15 +135,27 @@ export class SkyRenderer {
       return [(x * 0.5 + 0.5) * W, (0.5 - y * 0.5) * Hh];
     };
 
-    // 2. Stars (only visible where the sky is dark)
+    // 2. Stars (only visible where the sky is dark, in the upper sky above the house)
     for (let i = 0; i < this.stars.length; i++) {
       rot(this.stars[i], this.v);
       const D = dayness(this.v);
       const a = THREE.MathUtils.smoothstep(-D, 0.15, 0.5);
       if (a <= 0.01) continue;
+
+      // Horizon fade: smoothly vanish as stars approach the astronomical horizon
+      const horizonFade = THREE.MathUtils.smoothstep(this.v.y, 0.02, 0.18);
+      if (horizonFade <= 0.01) continue;
+
       const pt = project(this.v);
       if (!pt) continue;
-      this.ctx.globalAlpha = a * (0.55 + 0.45 * ((i * 37) % 10) / 10);
+
+      // Screen vertical fade: keep stars concentrated in the upper sky above the house,
+      // softly fading as they approach the ground plane, and ensuring zero stars near the bottom / below the house.
+      const normY = pt[1] / Hh;
+      const screenFade = 1 - THREE.MathUtils.smoothstep(normY, 0.35, 0.58);
+      if (screenFade <= 0.01) continue;
+
+      this.ctx.globalAlpha = a * horizonFade * screenFade * (0.55 + 0.45 * ((i * 37) % 10) / 10);
       this.ctx.fillStyle = '#fff';
       this.ctx.beginPath();
       this.ctx.arc(pt[0], pt[1], this.starSize[i], 0, Math.PI * 2);
