@@ -489,7 +489,7 @@ export function getHouseWalls(): WallSpec[] {
         {
           id: 'gf_door_berging_rear',
           prefabId: 'door_berging_garden_rear',
-          offsetAlongWall: 1.50,
+          offsetAlongWall: 1.17,
         },
       ],
     },
