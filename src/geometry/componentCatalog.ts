@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { MaterialId } from '../model/materials';
 import { FloorLayerId, ProvenanceType } from '../model/houseData';
 import { InspectableMetadata, ElementCategory, RegisterMeshFn } from './houseBuilder';
+import { InteractiveDoor } from '../viewer/interactiveDoors';
 
 /**
  * Canonical Architectural Component Prefab IDs
@@ -275,7 +276,8 @@ export function instantiateOpeningPrefab3D(
     meta: Omit<InspectableMetadata, 'materialId' | 'category'> & { category?: ElementCategory },
     cast?: boolean,
     receive?: boolean
-  ) => THREE.Mesh
+  ) => THREE.Mesh,
+  onRegisterDoor?: (door: InteractiveDoor) => void
 ) {
   const group = new THREE.Group();
   group.position.set(op.offsetAlongWall, op.sillHeight + op.height / 2, 0);
@@ -430,14 +432,27 @@ export function instantiateOpeningPrefab3D(
   const innerW = Math.max(0.1, op.width - frameThick * 2);
   const innerH = Math.max(0.1, op.height - frameThick * (op.sillHeight > 0.05 ? 2 : 1));
 
+  const createTrigger = (depth = Math.max(0.40, wallThickness + 0.18)) => {
+    const trigger = new THREE.Mesh(
+      new THREE.BoxGeometry(op.width, op.height, depth),
+      new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
+    );
+    trigger.position.set(0, 0, frameCenterZ);
+    group.add(trigger);
+    return trigger;
+  };
+
   // 4. Prefab-Specific 3D Inner Assembly
   switch (op.prefabId) {
     case 'door_inner_standard_b77b': {
+      const pivot = new THREE.Group();
+      pivot.position.set(-innerW / 2, -frameThick / 2, frameCenterZ);
+
       const leaf = new THREE.Mesh(
         new THREE.BoxGeometry(innerW, innerH, 0.042),
         getMat(op.panelMaterial)
       );
-      leaf.position.set(0, -frameThick / 2, frameCenterZ);
+      leaf.position.set(innerW / 2, 0, 0);
       registerMesh(leaf, op.panelMaterial, {
         id: op.id,
         label: op.label,
@@ -446,30 +461,58 @@ export function instantiateOpeningPrefab3D(
         source: op.source,
         floor,
       });
-      group.add(leaf);
+      pivot.add(leaf);
 
       const handleGeo = new THREE.BoxGeometry(0.11, 0.02, 0.09);
       const handle = new THREE.Mesh(handleGeo, getMat('roof_tile_anthracite'));
-      handle.position.set(innerW * 0.34, -0.12, frameCenterZ);
-      group.add(handle);
+      handle.position.set(innerW - 0.08, -0.12 - (-frameThick / 2), 0);
+      pivot.add(handle);
+      group.add(pivot);
+
+      const trigger = createTrigger();
+      if (onRegisterDoor) {
+        const openAngle =
+          op.id === 'ff_door_badkamer' || op.id === 'ff_door_kantoor'
+            ? Math.PI * 0.44
+            : -Math.PI * 0.44;
+        onRegisterDoor({
+          id: op.id,
+          label: op.label,
+          floor,
+          pivots: [
+            {
+              group: pivot,
+              openAngle,
+              closedAngle: 0,
+              currentAngle: 0,
+            },
+          ],
+          triggerMeshes: [trigger, leaf],
+          isHovered: false,
+          isPinned: false,
+        });
+      }
       break;
     }
 
     case 'door_inner_living_glass_b72': {
       const stileW = 0.075;
+      const pivot = new THREE.Group();
+      pivot.position.set(-innerW / 2, -frameThick / 2, frameCenterZ);
+
       const leftStile = new THREE.Mesh(
         new THREE.BoxGeometry(stileW, innerH, 0.045),
         getMat('door_interior_wood')
       );
-      leftStile.position.set(-innerW / 2 + stileW / 2, -frameThick / 2, frameCenterZ);
-      group.add(leftStile);
+      leftStile.position.set(stileW / 2, 0, 0);
+      pivot.add(leftStile);
 
       const rightStile = new THREE.Mesh(
         new THREE.BoxGeometry(stileW, innerH, 0.045),
         getMat('door_interior_wood')
       );
-      rightStile.position.set(innerW / 2 - stileW / 2, -frameThick / 2, frameCenterZ);
-      group.add(rightStile);
+      rightStile.position.set(innerW - stileW / 2, 0, 0);
+      pivot.add(rightStile);
 
       const railHeights = [-innerH * 0.46, -innerH * 0.22, innerH * 0.04, innerH * 0.28, innerH * 0.47];
       for (const ry of railHeights) {
@@ -477,15 +520,15 @@ export function instantiateOpeningPrefab3D(
           new THREE.BoxGeometry(innerW - stileW * 2, 0.045, 0.045),
           getMat('door_interior_wood')
         );
-        rail.position.set(0, ry, frameCenterZ);
-        group.add(rail);
+        rail.position.set(innerW / 2, ry - (-frameThick / 2), 0);
+        pivot.add(rail);
       }
 
       const glassPane = new THREE.Mesh(
         new THREE.BoxGeometry(innerW - stileW * 2, innerH - 0.08, 0.02),
         getMat('window_glass_day')
       );
-      glassPane.position.z = frameCenterZ;
+      glassPane.position.set(innerW / 2, 0, 0);
       registerMesh(
         glassPane,
         'window_glass_day',
@@ -500,7 +543,33 @@ export function instantiateOpeningPrefab3D(
         false,
         false
       );
-      group.add(glassPane);
+      pivot.add(glassPane);
+
+      const handleGeo = new THREE.BoxGeometry(0.11, 0.02, 0.09);
+      const handle = new THREE.Mesh(handleGeo, getMat('roof_tile_anthracite'));
+      handle.position.set(innerW - 0.08, -0.12 - (-frameThick / 2), 0);
+      pivot.add(handle);
+      group.add(pivot);
+
+      const trigger = createTrigger();
+      if (onRegisterDoor) {
+        onRegisterDoor({
+          id: op.id,
+          label: op.label,
+          floor,
+          pivots: [
+            {
+              group: pivot,
+              openAngle: -Math.PI * 0.45,
+              closedAngle: 0,
+              currentAngle: 0,
+            },
+          ],
+          triggerMeshes: [trigger, glassPane, leftStile, rightStile],
+          isHovered: false,
+          isPinned: false,
+        });
+      }
       break;
     }
 
@@ -568,7 +637,24 @@ export function instantiateOpeningPrefab3D(
     }
 
     case 'door_garden_double_b13': {
-      const mullionPositions = [-innerW * 0.28, 0, innerW * 0.28];
+      // Fixed sidelights on outer edges
+      const sidelightW = innerW * 0.22;
+      const leftSidelight = new THREE.Mesh(
+        new THREE.BoxGeometry(sidelightW, innerH, 0.025),
+        getMat(op.panelMaterial)
+      );
+      leftSidelight.position.set(-innerW * 0.39, 0, frameCenterZ);
+      group.add(leftSidelight);
+
+      const rightSidelight = new THREE.Mesh(
+        new THREE.BoxGeometry(sidelightW, innerH, 0.025),
+        getMat(op.panelMaterial)
+      );
+      rightSidelight.position.set(innerW * 0.39, 0, frameCenterZ);
+      group.add(rightSidelight);
+
+      // Mullion bars separating sidelights from center French doors
+      const mullionPositions = [-innerW * 0.28, innerW * 0.28];
       for (const mx of mullionPositions) {
         const mBar = new THREE.Mesh(
           new THREE.BoxGeometry(0.055, innerH, frameDepth * 0.9),
@@ -577,13 +663,48 @@ export function instantiateOpeningPrefab3D(
         mBar.position.set(mx, 0, frameCenterZ);
         group.add(mBar);
       }
-      const glass = new THREE.Mesh(
-        new THREE.BoxGeometry(innerW, innerH, 0.025),
+
+      // Center French double doors (each width innerW * 0.28)
+      const doorW = innerW * 0.28;
+
+      // Left leaf (hinged at x = -innerW * 0.28)
+      const leftPivot = new THREE.Group();
+      leftPivot.position.set(-innerW * 0.28, 0, frameCenterZ);
+      const leftGlass = new THREE.Mesh(
+        new THREE.BoxGeometry(doorW - 0.01, innerH, 0.025),
         getMat(op.panelMaterial)
       );
-      glass.position.z = frameCenterZ;
+      leftGlass.position.set(doorW / 2, 0, 0);
+      leftPivot.add(leftGlass);
+
+      const leftHandle = new THREE.Mesh(
+        new THREE.BoxGeometry(0.08, 0.02, 0.06),
+        getMat('roof_tile_anthracite')
+      );
+      leftHandle.position.set(doorW - 0.04, -0.12, 0);
+      leftPivot.add(leftHandle);
+      group.add(leftPivot);
+
+      // Right leaf (hinged at x = +innerW * 0.28)
+      const rightPivot = new THREE.Group();
+      rightPivot.position.set(innerW * 0.28, 0, frameCenterZ);
+      const rightGlass = new THREE.Mesh(
+        new THREE.BoxGeometry(doorW - 0.01, innerH, 0.025),
+        getMat(op.panelMaterial)
+      );
+      rightGlass.position.set(-doorW / 2, 0, 0);
+      rightPivot.add(rightGlass);
+
+      const rightHandle = new THREE.Mesh(
+        new THREE.BoxGeometry(0.08, 0.02, 0.06),
+        getMat('roof_tile_anthracite')
+      );
+      rightHandle.position.set(-doorW + 0.04, -0.12, 0);
+      rightPivot.add(rightHandle);
+      group.add(rightPivot);
+
       registerMesh(
-        glass,
+        leftGlass,
         op.panelMaterial,
         {
           id: op.id,
@@ -596,23 +717,75 @@ export function instantiateOpeningPrefab3D(
         false,
         false
       );
-      group.add(glass);
+
+      const trigger = createTrigger();
+      if (onRegisterDoor) {
+        onRegisterDoor({
+          id: op.id,
+          label: op.label,
+          floor,
+          pivots: [
+            {
+              group: leftPivot,
+              openAngle: Math.PI * 0.45, // swings outward to garden
+              closedAngle: 0,
+              currentAngle: 0,
+            },
+            {
+              group: rightPivot,
+              openAngle: -Math.PI * 0.45, // swings outward to garden
+              closedAngle: 0,
+              currentAngle: 0,
+            },
+          ],
+          triggerMeshes: [trigger, leftGlass, rightGlass],
+          isHovered: false,
+          isPinned: false,
+        });
+      }
       break;
     }
 
     case 'door_berging_garage_double': {
-      const panel = new THREE.Mesh(
-        new THREE.BoxGeometry(innerW, innerH, 0.06),
+      const leafW = innerW / 2;
+
+      // Left garage door leaf (hinged at -innerW / 2)
+      const leftPivot = new THREE.Group();
+      leftPivot.position.set(-innerW / 2, 0, frameCenterZ);
+      const leftPanel = new THREE.Mesh(
+        new THREE.BoxGeometry(leafW - 0.005, innerH, 0.06),
         getMat(op.panelMaterial)
       );
-      panel.position.z = frameCenterZ;
-      const centerSeam = new THREE.Mesh(
-        new THREE.BoxGeometry(0.025, innerH, 0.075),
-        getMat('window_frame_cream')
+      leftPanel.position.set(leafW / 2, 0, 0);
+      leftPivot.add(leftPanel);
+
+      const leftHandle = new THREE.Mesh(
+        new THREE.BoxGeometry(0.12, 0.025, 0.06),
+        getMat('roof_tile_anthracite')
       );
-      centerSeam.position.z = frameCenterZ;
-      group.add(centerSeam);
-      registerMesh(panel, op.panelMaterial, {
+      leftHandle.position.set(leafW - 0.08, -0.12, 0.035);
+      leftPivot.add(leftHandle);
+      group.add(leftPivot);
+
+      // Right garage door leaf (hinged at +innerW / 2)
+      const rightPivot = new THREE.Group();
+      rightPivot.position.set(innerW / 2, 0, frameCenterZ);
+      const rightPanel = new THREE.Mesh(
+        new THREE.BoxGeometry(leafW - 0.005, innerH, 0.06),
+        getMat(op.panelMaterial)
+      );
+      rightPanel.position.set(-leafW / 2, 0, 0);
+      rightPivot.add(rightPanel);
+
+      const rightHandle = new THREE.Mesh(
+        new THREE.BoxGeometry(0.12, 0.025, 0.06),
+        getMat('roof_tile_anthracite')
+      );
+      rightHandle.position.set(-leafW + 0.08, -0.12, 0.035);
+      rightPivot.add(rightHandle);
+      group.add(rightPivot);
+
+      registerMesh(leftPanel, op.panelMaterial, {
         id: op.id,
         label: op.label,
         dimensionsLabel: `${op.width.toFixed(2)} × ${op.height.toFixed(2)} m`,
@@ -620,17 +793,45 @@ export function instantiateOpeningPrefab3D(
         source: op.source,
         floor,
       });
-      group.add(panel);
+
+      const trigger = createTrigger();
+      if (onRegisterDoor) {
+        onRegisterDoor({
+          id: op.id,
+          label: op.label,
+          floor,
+          pivots: [
+            {
+              group: leftPivot,
+              openAngle: Math.PI * 0.45, // swings outward to driveway
+              closedAngle: 0,
+              currentAngle: 0,
+            },
+            {
+              group: rightPivot,
+              openAngle: -Math.PI * 0.45, // swings outward to driveway
+              closedAngle: 0,
+              currentAngle: 0,
+            },
+          ],
+          triggerMeshes: [trigger, leftPanel, rightPanel],
+          isHovered: false,
+          isPinned: false,
+        });
+      }
       break;
     }
 
     case 'door_entrance_front': {
-      // Sage-green front entrance door with vertical glass vision panel (as seen in user's photo!)
+      // Sage-green front entrance door with vertical glass vision panel
+      const pivot = new THREE.Group();
+      pivot.position.set(-innerW / 2, -frameThick / 2, frameCenterZ);
+
       const panel = new THREE.Mesh(
         new THREE.BoxGeometry(innerW, innerH, 0.055),
         getMat(op.panelMaterial)
       );
-      panel.position.set(0, -frameThick / 2, frameCenterZ);
+      panel.position.set(innerW / 2, 0, 0);
       registerMesh(panel, op.panelMaterial, {
         id: op.id,
         label: op.label,
@@ -639,15 +840,87 @@ export function instantiateOpeningPrefab3D(
         source: op.source,
         floor,
       });
-      group.add(panel);
+      pivot.add(panel);
 
-      // Vertical glass strip in the front door leaf
       const visionGlass = new THREE.Mesh(
         new THREE.BoxGeometry(0.14, innerH * 0.68, 0.062),
         getMat('window_glass_day')
       );
-      visionGlass.position.set(0.08, -0.05, frameCenterZ);
-      group.add(visionGlass);
+      visionGlass.position.set(innerW / 2 + 0.08, -0.05 - (-frameThick / 2), 0);
+      pivot.add(visionGlass);
+
+      const handleGeo = new THREE.BoxGeometry(0.11, 0.02, 0.09);
+      const handle = new THREE.Mesh(handleGeo, getMat('roof_tile_anthracite'));
+      handle.position.set(innerW - 0.08, -0.12 - (-frameThick / 2), 0);
+      pivot.add(handle);
+      group.add(pivot);
+
+      const trigger = createTrigger();
+      if (onRegisterDoor) {
+        onRegisterDoor({
+          id: op.id,
+          label: op.label,
+          floor,
+          pivots: [
+            {
+              group: pivot,
+              openAngle: Math.PI * 0.45, // swings inward into Hal
+              closedAngle: 0,
+              currentAngle: 0,
+            },
+          ],
+          triggerMeshes: [trigger, panel],
+          isHovered: false,
+          isPinned: false,
+        });
+      }
+      break;
+    }
+
+    case 'door_berging_garden_rear': {
+      const pivot = new THREE.Group();
+      pivot.position.set(-innerW / 2, -frameThick / 2, frameCenterZ);
+
+      const panel = new THREE.Mesh(
+        new THREE.BoxGeometry(innerW, innerH, 0.055),
+        getMat(op.panelMaterial)
+      );
+      panel.position.set(innerW / 2, 0, 0);
+      registerMesh(panel, op.panelMaterial, {
+        id: op.id,
+        label: op.label,
+        dimensionsLabel: `${op.width.toFixed(2)} × ${op.height.toFixed(2)} m`,
+        provenance: op.provenance,
+        source: op.source,
+        floor,
+      });
+      pivot.add(panel);
+
+      const handleGeo = new THREE.BoxGeometry(0.11, 0.02, 0.09);
+      const handle = new THREE.Mesh(handleGeo, getMat('roof_tile_anthracite'));
+      handle.position.set(innerW - 0.08, -0.12 - (-frameThick / 2), 0);
+      pivot.add(handle);
+      group.add(pivot);
+
+      const trigger = createTrigger();
+      if (onRegisterDoor) {
+        onRegisterDoor({
+          id: op.id,
+          label: op.label,
+          floor,
+          pivots: [
+            {
+              group: pivot,
+              openAngle: Math.PI * 0.45, // swings outward to garden
+              closedAngle: 0,
+              currentAngle: 0,
+            },
+          ],
+          triggerMeshes: [trigger, panel],
+          isHovered: false,
+          isPinned: false,
+        });
+      }
       break;
     }
 

@@ -173,6 +173,11 @@ function inspectAtPointer(clientX: number, clientY: number) {
   pointer.y = -(clientY / window.innerHeight) * 2 + 1;
 
   raycaster.setFromCamera(pointer, cameraController.camera);
+
+  // Interactive doors: update hover state & cursor feedback
+  const hasDoorHover = houseGroups.doorManager.handlePointerMove(raycaster);
+  canvas.style.cursor = hasDoorHover ? 'pointer' : 'default';
+
   const visibleMeshes = houseGroups.meshRegistry
     .filter((entry) => {
       let obj: THREE.Object3D | null = entry.mesh;
@@ -207,7 +212,18 @@ canvas.addEventListener('pointermove', (e) => {
   }
 });
 
+canvas.addEventListener('pointerleave', () => {
+  raycaster.set(new THREE.Vector3(9999, 9999, 9999), new THREE.Vector3(0, 1, 0));
+  houseGroups.doorManager.handlePointerMove(raycaster);
+  canvas.style.cursor = 'default';
+});
+
 canvas.addEventListener('click', (e) => {
+  pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+  pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(pointer, cameraController.camera);
+  houseGroups.doorManager.handleClick(raycaster);
+
   inspectAtPointer(e.clientX, e.clientY);
 });
 
@@ -238,6 +254,9 @@ function animate(now: number) {
   }
 
   const activeStop = applyScrollProgressToScene(houseGroups, smoothedScrollProgress);
+
+  // 2. Smoothly animate interactive doors & assets
+  houseGroups.doorManager.update(dt);
 
   // Sync Floor Selector UI
   if (selectorFillEl) {

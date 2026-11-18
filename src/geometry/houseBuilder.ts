@@ -16,6 +16,7 @@ import {
   instantiateWhiteDoubleTurnStaircase3D,
 } from './componentCatalog';
 import { ASSET_PREFABS, PLACED_ASSETS } from '../assets/assetRegistry';
+import { InteractiveDoorManager } from '../viewer/interactiveDoors';
 
 export type ElementCategory = 'construction' | 'furniture' | 'site';
 
@@ -67,6 +68,7 @@ export interface HouseSceneGroups {
     category: ElementCategory;
   }>;
   backdropFadeMaterial: THREE.ShaderMaterial | null;
+  doorManager: InteractiveDoorManager;
 }
 
 /**
@@ -193,6 +195,7 @@ export function buildHouseScene(): HouseSceneGroups {
   const meshRegistry: HouseSceneGroups['meshRegistry'] = [];
   const staggeredAssets: StaggeredAssetEntry[] = [];
   const interiorLights: THREE.PointLight[] = [];
+  const doorManager = new InteractiveDoorManager();
 
   const registerStaggered = (id: string, object: THREE.Object3D, floor: FloorLayerId, baseY: number) => {
     staggeredAssets.push({
@@ -235,7 +238,8 @@ export function buildHouseScene(): HouseSceneGroups {
     groundGroup,
     getMat,
     registerMesh,
-    registerStaggered
+    registerStaggered,
+    doorManager
   );
 
   // ===========================================================================
@@ -268,7 +272,7 @@ export function buildHouseScene(): HouseSceneGroups {
         ? firstGroup
         : secondGroup;
 
-    buildWallWithOpenings(wall, targetGroup, getMat, registerMesh);
+    buildWallWithOpenings(wall, targetGroup, getMat, registerMesh, doorManager);
   }
 
   // ===========================================================================
@@ -359,6 +363,7 @@ export function buildHouseScene(): HouseSceneGroups {
     materialMap,
     meshRegistry,
     backdropFadeMaterial: null,
+    doorManager,
   };
 }
 
@@ -371,7 +376,8 @@ function buildPlotAndEnvironment(
   groundGroup: THREE.Group,
   getMat: (id: MaterialId) => THREE.MeshStandardMaterial,
   registerMesh: RegisterMeshFn,
-  registerStaggered: (id: string, object: THREE.Object3D, floor: FloorLayerId, baseY: number) => void
+  registerStaggered: (id: string, object: THREE.Object3D, floor: FloorLayerId, baseY: number) => void,
+  doorManager?: InteractiveDoorManager
 ): void {
   // Trapezoidal Owned Plot (User Supplied Measurements):
   // - Right boundary (inline with shared wall): straight at X = +5.87 m
@@ -555,9 +561,15 @@ function buildPlotAndEnvironment(
   // Garden Gate ("Tuinpoort" at Z = -13.72 m between Berging X = -3.27 m and Left Hedge) -> Staggered drop on Ground Floor!
   const gateLeftX = leftBoundaryXAtZ(-13.72) + 0.32;
   const gateW = Math.abs(-3.27 - gateLeftX);
+
+  const gatePivot = new THREE.Group();
+  gatePivot.position.set(-3.27, 0.725, -13.72);
+
   const gateGeo = new THREE.BoxGeometry(gateW, 1.45, 0.08);
   const gateMesh = new THREE.Mesh(gateGeo, getMat('plot_gate_timber'));
-  gateMesh.position.set((gateLeftX + -3.27) / 2, 0.725, -13.72);
+  gateMesh.position.set(-gateW / 2, 0, 0);
+  gatePivot.add(gateMesh);
+
   registerMesh(gateMesh, 'plot_gate_timber', {
     id: 'garden_gate',
     label: `Tuinpoort naast Berging (${gateW.toFixed(2)} × 1.45 m)`,
@@ -567,8 +579,35 @@ function buildPlotAndEnvironment(
     floor: 'ground',
     category: 'furniture',
   });
-  groundGroup.add(gateMesh);
-  registerStaggered('garden_gate', gateMesh, 'ground', 0.725);
+
+  const gateTrigger = new THREE.Mesh(
+    new THREE.BoxGeometry(gateW + 0.15, 1.55, 0.45),
+    new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
+  );
+  gateTrigger.position.set(-gateW / 2, 0, 0);
+  gatePivot.add(gateTrigger);
+
+  if (doorManager) {
+    doorManager.register({
+      id: 'garden_gate',
+      label: `Tuinpoort naast Berging (${gateW.toFixed(2)} × 1.45 m)`,
+      floor: 'ground',
+      pivots: [
+        {
+          group: gatePivot,
+          openAngle: -Math.PI * 0.45,
+          closedAngle: 0,
+          currentAngle: 0,
+        },
+      ],
+      triggerMeshes: [gateTrigger, gateMesh],
+      isHovered: false,
+      isPinned: false,
+    });
+  }
+
+  groundGroup.add(gatePivot);
+  registerStaggered('garden_gate', gatePivot, 'ground', 0.725);
 
   // Square Driveway Paver Tiles ("Oprit tegels") -> Staggered drop on Ground Floor!
   for (let row = 0; row < 7; row++) {
@@ -922,7 +961,8 @@ function buildWallWithOpenings(
   wall: WallSpec,
   targetGroup: THREE.Group,
   getMat: (id: MaterialId) => THREE.MeshStandardMaterial,
-  registerMesh: RegisterMeshFn
+  registerMesh: RegisterMeshFn,
+  doorManager?: InteractiveDoorManager
 ) {
   const dx = wall.end[0] - wall.start[0];
   const dz = wall.end[1] - wall.start[1];
@@ -994,7 +1034,15 @@ function buildWallWithOpenings(
       hole.closePath();
       shape.holes.push(hole);
 
-      instantiateOpeningPrefab3D(wallContainer, resolved, wall.thickness, wall.floor, getMat, registerMesh);
+      instantiateOpeningPrefab3D(
+        wallContainer,
+        resolved,
+        wall.thickness,
+        wall.floor,
+        getMat,
+        registerMesh,
+        (door) => doorManager?.register(door)
+      );
     }
   }
 
