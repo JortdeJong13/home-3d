@@ -698,11 +698,11 @@ function buildPlotAndEnvironment(
     }
   }
 
-  // Limestone stepping stones along the curvy garden path (tidy uniform 38 × 26 cm stones centered on the curve)
-  const steppingStoneCount = 9;
-  const stoneW = 0.38;
-  const stoneD = 0.26;
-  const rCorner = 0.05;
+  // Limestone stepping stones along the curvy garden path (14 tidy 42 × 23 cm stones closely spaced along the curve)
+  const steppingStoneCount = 14;
+  const stoneW = 0.42;
+  const stoneD = 0.23;
+  const rCorner = 0.06;
   const hw = stoneW / 2;
   const hd = stoneD / 2;
   const sShape = new THREE.Shape();
@@ -1590,7 +1590,7 @@ function buildBackGardenFlowerBorders(
     return s / 4294967296;
   };
 
-  // 1. Left hedge border soil bed (Z: -14.85 -> -20.45 m)
+  // 1. Left hedge border soil bed (Z: -14.85 -> -20.45 m, slim border)
   const leftSteps = 18;
   const leftZ0 = -14.85;
   const leftZ1 = -20.45;
@@ -1606,29 +1606,29 @@ function buildBackGardenFlowerBorders(
     const t = i / leftSteps;
     const z = leftZ0 + (leftZ1 - leftZ0) * t;
     const endTaper = Math.sin(t * Math.PI);
-    const width = 0.25 + (0.68 + 0.18 * Math.sin(t * Math.PI * 3.0)) * Math.pow(endTaper, 0.35);
+    const width = 0.16 + (0.38 + 0.08 * Math.sin(t * Math.PI * 3.0)) * Math.pow(endTaper, 0.35);
     const x = leftBoundaryXAtZ(z) + 0.36 + width;
     leftBedShape.lineTo(x, -z);
   }
   leftBedShape.closePath();
 
-  // 2. Rear-center kidney soil bed (X: -2.05 -> +1.35 m, Z: -20.52 -> -19.25 m)
+  // 2. Rear-center kidney soil bed (X: -1.65 -> +1.15 m, Z: -20.52 -> -19.68 m)
   const rearBedShape = new THREE.Shape();
   const rearSteps = 18;
-  const rearX0 = -2.05;
-  const rearX1 = 1.35;
+  const rearX0 = -1.65;
+  const rearX1 = 1.15;
   rearBedShape.moveTo(rearX0, 20.52);
   rearBedShape.lineTo(rearX1, 20.52);
   for (let i = rearSteps; i >= 0; i--) {
     const t = i / rearSteps;
     const x = rearX0 + (rearX1 - rearX0) * t;
     const lobe = Math.sin(t * Math.PI);
-    const depth = 0.18 + 1.06 * Math.pow(lobe, 0.65);
+    const depth = 0.12 + 0.72 * Math.pow(lobe, 0.65);
     rearBedShape.lineTo(x, 20.52 - depth);
   }
   rearBedShape.closePath();
 
-  // 3. Right fence wavy soil bed (Z: -14.00 -> -17.55 m, X: 4.68..5.80 m)
+  // 3. Right fence wavy soil bed (Z: -14.00 -> -17.55 m, slim border)
   const rightBedShape = new THREE.Shape();
   const rightSteps = 18;
   const rightZ0 = -14.00;
@@ -1639,8 +1639,8 @@ function buildBackGardenFlowerBorders(
     const t = i / rightSteps;
     const z = rightZ0 + (rightZ1 - rightZ0) * t;
     const endTaper = Math.pow(Math.sin(t * Math.PI), 0.35);
-    const wave = 0.78 + 0.32 * Math.abs(Math.sin(t * Math.PI * 2.0));
-    const x = 5.80 - (0.20 + wave * endTaper);
+    const wave = 0.46 + 0.18 * Math.abs(Math.sin(t * Math.PI * 2.0));
+    const x = 5.80 - (0.14 + wave * endTaper);
     rightBedShape.lineTo(x, -z);
   }
   rightBedShape.closePath();
@@ -1752,22 +1752,22 @@ function buildBackGardenFlowerBorders(
     { z: -20.05, rx: 0.30, ry: 0.46, rz: 0.32, type: 'grass', count: 0 },
   ];
   for (const p of leftPlants) {
-    const cx = leftBoundaryXAtZ(p.z) + 0.78;
+    const cx = leftBoundaryXAtZ(p.z) + 0.62;
     addPlantCluster(cx, p.z, p.rx, p.ry, p.rz, p.type, p.count);
   }
 
   // Rear-center kidney border plantings
-  addPlantCluster(-1.35, -20.05, 0.34, 0.46, 0.32, 'lavender', 14);
-  addPlantCluster(-0.45, -19.85, 0.36, 0.50, 0.34, 'grass', 0);
-  addPlantCluster(0.32, -19.95, 0.34, 0.50, 0.34, 'white', 15);
-  addPlantCluster(0.95, -20.12, 0.30, 0.42, 0.30, 'yellow', 11);
+  addPlantCluster(-1.05, -20.15, 0.32, 0.46, 0.30, 'lavender', 14);
+  addPlantCluster(-0.32, -20.02, 0.34, 0.50, 0.32, 'grass', 0);
+  addPlantCluster(0.32, -20.05, 0.32, 0.50, 0.32, 'white', 15);
+  addPlantCluster(0.85, -20.18, 0.28, 0.42, 0.28, 'yellow', 11);
 
   // Right fence wavy border plantings (Z: -14.35 -> -17.20 m)
-  addPlantCluster(5.32, -14.40, 0.34, 0.48, 0.36, 'white', 14);
-  addPlantCluster(5.18, -15.05, 0.34, 0.48, 0.34, 'grass', 0);
-  addPlantCluster(5.36, -15.75, 0.32, 0.46, 0.34, 'lavender', 14);
-  addPlantCluster(5.22, -16.45, 0.35, 0.52, 0.36, 'white', 15);
-  addPlantCluster(5.35, -17.12, 0.30, 0.44, 0.32, 'grass', 0);
+  addPlantCluster(5.48, -14.40, 0.30, 0.48, 0.34, 'white', 14);
+  addPlantCluster(5.42, -15.05, 0.30, 0.48, 0.32, 'grass', 0);
+  addPlantCluster(5.50, -15.75, 0.30, 0.46, 0.32, 'lavender', 14);
+  addPlantCluster(5.44, -16.45, 0.32, 0.52, 0.34, 'white', 15);
+  addPlantCluster(5.50, -17.12, 0.28, 0.44, 0.30, 'grass', 0);
 
   const shrubMesh = new THREE.Mesh(mergeGeometries(shrubGeos, false), getMat('plot_hedge_beech'));
   registerMesh(
