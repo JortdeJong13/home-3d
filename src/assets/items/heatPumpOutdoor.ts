@@ -41,9 +41,8 @@ export const heatPumpOutdoorPrefab: AssetPrefabDefinition = {
     const zincMat = getMat('roof_daktrim_zinc');
 
     const footH = Math.min(0.06, height * 0.09);
-    const wallGap = Math.min(0.05, depth * 0.15);
-    const bodyD = depth - wallGap;
-    const bodyZ = wallGap / 2; // Back of body at -depth/2 + wallGap, front at +depth/2
+    const bodyD = depth;
+    const bodyZ = 0;
     const bodyH = height - footH;
     const bodyCenterY = footH + bodyH / 2;
 
@@ -56,20 +55,14 @@ export const heatPumpOutdoorPrefab: AssetPrefabDefinition = {
       group.add(foot);
     }
 
-    // Rear wall mounting brackets & insulated conduit stub
-    const bracketW = 0.04;
-    const bracketH = 0.04;
-    for (const side of [-1, 1]) {
-      const bracket = new THREE.Mesh(new THREE.BoxGeometry(bracketW, bracketH, wallGap), zincMat);
-      bracket.position.set(side * width * 0.34, footH + bodyH * 0.72, -depth / 2 + wallGap / 2);
-      group.add(bracket);
-    }
+    // Insulated conduit stub extending 8 cm from rear of unit to the wall
+    const conduitLen = 0.08;
     const conduit = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.024, 0.024, wallGap + 0.01, 12),
+      new THREE.CylinderGeometry(0.024, 0.024, conduitLen, 12),
       feetMat
     );
     conduit.rotation.x = Math.PI / 2;
-    conduit.position.set(width * 0.32, footH + bodyH * 0.22, -depth / 2 + wallGap / 2);
+    conduit.position.set(width * 0.32, footH + bodyH * 0.22, -depth / 2 - conduitLen / 2);
     group.add(conduit);
 
     // 2. Main casing core & subtle grey perimeter frame
