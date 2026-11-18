@@ -1,7 +1,5 @@
 import * as THREE from 'three';
-import { buildHouseScene, HouseSceneGroups, InspectableMetadata } from './geometry/houseBuilder';
-import { PROVENANCE_COLORS } from './model/materials';
-import { PROVENANCE_LABELS } from './model/units';
+import { buildHouseScene, HouseSceneGroups } from './geometry/houseBuilder';
 import { IsometricCameraController, CameraPreset } from './viewer/cameraController';
 import { EdgeBlurPass } from './viewer/edgeBlur';
 import { SkyRenderer } from './viewer/skyRenderer';
@@ -53,11 +51,6 @@ const floorDotBtns = Array.from(document.querySelectorAll<HTMLButtonElement>('.f
 const btnDayNight = document.getElementById('btn-day-night');
 const dayNightIcon = document.getElementById('day-night-icon');
 const dayNightLabel = document.getElementById('day-night-label');
-
-const inspectorTitleEl = document.getElementById('inspector-title');
-const inspectorDimsEl = document.getElementById('inspector-dims');
-const inspectorProvDotEl = document.getElementById('inspector-prov-dot');
-const inspectorProvTextEl = document.getElementById('inspector-prov-text');
 
 function getMaxScrollPx(): number {
   return Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
@@ -206,47 +199,15 @@ document.getElementById('btn-cam-reset')?.addEventListener('click', () => {
 });
 
 // =============================================================================
-// 3. RAYCASTING ELEMENT INSPECTOR (Hover / Click to inspect exact dimensions)
+// 3. INTERACTIVE DOOR & GATE POINTER RAYCASTING (Hover-to-open / Click-to-pin)
 // =============================================================================
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
-function inspectAtPointer(clientX: number, clientY: number) {
+function updatePointerRay(clientX: number, clientY: number) {
   pointer.x = (clientX / window.innerWidth) * 2 - 1;
   pointer.y = -(clientY / window.innerHeight) * 2 + 1;
-
   raycaster.setFromCamera(pointer, cameraController.camera);
-
-  // Interactive doors: update hover state & cursor feedback
-  const hasDoorHover = houseGroups.doorManager.handlePointerMove(raycaster);
-  canvas.style.cursor = hasDoorHover ? 'pointer' : 'default';
-
-  const visibleMeshes = houseGroups.meshRegistry
-    .filter((entry) => {
-      let obj: THREE.Object3D | null = entry.mesh;
-      while (obj) {
-        if (!obj.visible) return false;
-        obj = obj.parent;
-      }
-      return true;
-    })
-    .map((entry) => entry.mesh);
-
-  const hits = raycaster.intersectObjects(visibleMeshes, false);
-  if (hits.length > 0) {
-    const hitMesh = hits[0].object as THREE.Mesh;
-    const meta = hitMesh.userData as InspectableMetadata | undefined;
-    if (meta && meta.label) {
-      if (inspectorTitleEl) inspectorTitleEl.textContent = meta.label;
-      if (inspectorDimsEl) inspectorDimsEl.textContent = meta.dimensionsLabel;
-      if (inspectorProvDotEl) {
-        inspectorProvDotEl.style.background = PROVENANCE_COLORS[meta.provenance] ?? '#52b788';
-      }
-      if (inspectorProvTextEl) {
-        inspectorProvTextEl.textContent = `${PROVENANCE_LABELS[meta.provenance]} · ${meta.source}`;
-      }
-    }
-  }
 }
 
 let pointerDownX = 0;
@@ -259,7 +220,9 @@ canvas.addEventListener('pointerdown', (e) => {
 
 canvas.addEventListener('pointermove', (e) => {
   if (e.buttons === 0) {
-    inspectAtPointer(e.clientX, e.clientY);
+    updatePointerRay(e.clientX, e.clientY);
+    const hasDoorHover = houseGroups.doorManager.handlePointerMove(raycaster);
+    canvas.style.cursor = hasDoorHover ? 'pointer' : 'default';
   }
 });
 
@@ -272,12 +235,8 @@ canvas.addEventListener('click', (e) => {
   const dragDist = Math.hypot(e.clientX - pointerDownX, e.clientY - pointerDownY);
   if (dragDist > 5) return;
 
-  pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
-  pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
-  raycaster.setFromCamera(pointer, cameraController.camera);
+  updatePointerRay(e.clientX, e.clientY);
   houseGroups.doorManager.handleClick(raycaster);
-
-  inspectAtPointer(e.clientX, e.clientY);
 });
 
 window.addEventListener('resize', () => {

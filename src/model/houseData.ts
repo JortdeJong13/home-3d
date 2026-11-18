@@ -809,8 +809,8 @@ export function getHouseWalls(): WallSpec[] {
       openings: [
         {
           id: 'sf_win_front_slot',
-          prefabId: 'window_gable_slot',
-          label: 'Topgevelraam Voorzijde Zolder (42 × 145 cm)',
+          prefabId: 'window_slim_1st',
+          label: 'Topgevelraam Voorzijde Zolder (35 × 160 cm)',
           offsetAlongWall: 2.985,
           sillHeightOverride: 1.35,
         },
@@ -841,8 +841,8 @@ export function getHouseWalls(): WallSpec[] {
       openings: [
         {
           id: 'sf_win_rear_slot',
-          prefabId: 'window_gable_slot',
-          label: 'Topgevelraam Achterzijde Zolder (42 × 145 cm)',
+          prefabId: 'window_slim_1st',
+          label: 'Topgevelraam Achterzijde Zolder (35 × 160 cm)',
           offsetAlongWall: 2.885,
           sillHeightOverride: 1.35,
         },

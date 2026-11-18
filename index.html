@@ -262,7 +262,7 @@
         transform: translateX(0);
       }
 
-      /* Bottom Camera Controls & Element Inspector Bar */
+      /* Bottom Camera Controls Bar */
       #bottom-bar {
         position: absolute;
         bottom: 24px;
@@ -320,49 +320,6 @@
         background: var(--panel-border);
       }
 
-      /* Live Dimensional Inspector Card (Bottom-Right) */
-      #inspector-card {
-        max-width: 420px;
-        min-width: 290px;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 4px;
-        padding: 12px 16px;
-      }
-
-      .inspector-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        width: 100%;
-        gap: 10px;
-      }
-
-      #inspector-title {
-        font-size: 13px;
-        font-weight: 650;
-      }
-
-      #inspector-dims {
-        font-size: 12px;
-        font-weight: 650;
-        font-variant-numeric: tabular-nums;
-        color: var(--accent);
-      }
-
-      #inspector-source {
-        font-size: 11px;
-        color: var(--text-secondary);
-      }
-
-      .provenance-dot {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        margin-right: 5px;
-      }
-
       /* Scroll Prompt Pill at Center Bottom when at Plot stage */
       #scroll-hint {
         position: absolute;
@@ -398,9 +355,6 @@
         }
         #floor-selector {
           right: 14px;
-        }
-        #inspector-card {
-          display: none;
         }
       }
     </style>
@@ -463,7 +417,7 @@
       <!-- Subtle Scroll Hint -->
       <div id="scroll-hint">Scroll om de woning op te bouwen ↓</div>
 
-      <!-- Bottom Camera Bar & Live Dimensional Inspector -->
+      <!-- Bottom Camera Bar -->
       <div id="bottom-bar">
         <div class="interactive-panel" id="camera-toolbar">
           <button class="cam-btn active" data-cam-preset="default_iso">Voorzijde</button>
@@ -473,17 +427,6 @@
           <button class="cam-btn" id="btn-zoom-in" title="Zoom in">+</button>
           <button class="cam-btn" id="btn-zoom-out" title="Zoom uit">−</button>
           <button class="cam-btn" id="btn-cam-reset" title="Herstel standaard camerapositie">Reset</button>
-        </div>
-
-        <div class="interactive-panel" id="inspector-card">
-          <div class="inspector-header">
-            <span id="inspector-title">Woonkamer & Woonkeuken (Bnr. 55)</span>
-            <span id="inspector-dims">5.17 × 12.07 m</span>
-          </div>
-          <div id="inspector-source">
-            <span class="provenance-dot" id="inspector-prov-dot" style="background: #52b788"></span>
-            <span id="inspector-prov-text">Klik of zweef over een onderdeel voor exacte maat & bron</span>
-          </div>
         </div>
       </div>
     </div>
