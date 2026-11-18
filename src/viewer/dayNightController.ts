@@ -11,16 +11,16 @@ export interface SceneLightingRig {
 
 export function createLightingRig(scene: THREE.Scene): SceneLightingRig {
   // Soft warm-to-cool architectural diorama hemisphere light (inspired by Bruno Simon's My Room in 3D)
-  const hemiLight = new THREE.HemisphereLight('#eef7fa', '#f3e5d0', 1.45);
+  const hemiLight = new THREE.HemisphereLight('#eef7fa', '#f3e5d0', 1.20);
   hemiLight.position.set(0, 25, 0);
   scene.add(hemiLight);
 
   // Subtle ambient fill to keep shadows powdery and readable, never harsh black
-  const ambientLight = new THREE.AmbientLight('#fff8ee', 0.55);
+  const ambientLight = new THREE.AmbientLight('#fff8ee', 0.42);
   scene.add(ambientLight);
 
   // Primary Directional Sun / Moon light with high-resolution soft shadow map
-  const sunLight = new THREE.DirectionalLight('#fff5e4', 2.15);
+  const sunLight = new THREE.DirectionalLight('#fff5e4', 1.85);
   sunLight.position.set(-14, 24, 15);
   sunLight.target.position.set(1.2, 1.5, -6.5);
   sunLight.castShadow = true;
@@ -40,7 +40,7 @@ export function createLightingRig(scene: THREE.Scene): SceneLightingRig {
   scene.add(sunLight.target);
 
   // Secondary soft bounce/rim light from opposite diagonal for clay/diorama softness
-  const rimLight = new THREE.DirectionalLight('#d8ecf5', 0.65);
+  const rimLight = new THREE.DirectionalLight('#d8ecf5', 0.52);
   rimLight.position.set(18, 14, -18);
   scene.add(rimLight);
 
@@ -86,7 +86,7 @@ export function applyDayNightState(
     currentSunColor.lerpColors(duskSunColor, nightMoonColor, (t - 0.5) * 2);
   }
   rig.sunLight.color.copy(currentSunColor);
-  rig.sunLight.intensity = THREE.MathUtils.lerp(2.15, 1.0, t) * (1 - dip * 0.35);
+  rig.sunLight.intensity = THREE.MathUtils.lerp(1.85, 1.0, t) * (1 - dip * 0.35);
 
   const dayHemiSky = new THREE.Color('#eef7fa');
   const nightHemiSky = new THREE.Color('#7b8fc4');
@@ -94,14 +94,14 @@ export function applyDayNightState(
   const nightHemiGround = new THREE.Color('#3b3f5c');
   rig.hemiLight.color.lerpColors(dayHemiSky, nightHemiSky, t);
   rig.hemiLight.groundColor.lerpColors(dayHemiGround, nightHemiGround, t);
-  rig.hemiLight.intensity = THREE.MathUtils.lerp(1.45, 1.05, t);
+  rig.hemiLight.intensity = THREE.MathUtils.lerp(1.20, 1.05, t);
 
   const dayAmb = new THREE.Color('#fff8ee');
   const nightAmb = new THREE.Color('#7d86b0');
   rig.ambientLight.color.lerpColors(dayAmb, nightAmb, t);
-  rig.ambientLight.intensity = THREE.MathUtils.lerp(0.55, 0.75, t);
+  rig.ambientLight.intensity = THREE.MathUtils.lerp(0.42, 0.75, t);
 
-  rig.rimLight.intensity = THREE.MathUtils.lerp(0.65, 0.25, t);
+  rig.rimLight.intensity = THREE.MathUtils.lerp(0.52, 0.25, t);
 
   // 4. Interior Warm Point Lights (smoothly turn on as dusk/night arrives)
   const interiorFactor = THREE.MathUtils.smoothstep(t, 0.25, 0.85);
