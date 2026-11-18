@@ -685,7 +685,10 @@ export function instantiateOpeningPrefab3D(
 
     const mergedSurround = mergeGeometries(surroundGeos, false);
     for (const g of surroundGeos) g.dispose();
-    const surroundMesh = new THREE.Mesh(mergedSurround, getMat('window_trim_terracotta'));
+    const surroundMatId: MaterialId = op.prefabId.startsWith('neighbour_')
+      ? 'neighbour_trim_grey'
+      : 'window_trim_terracotta';
+    const surroundMesh = new THREE.Mesh(mergedSurround, getMat(surroundMatId));
     surroundMesh.castShadow = true;
     surroundMesh.receiveShadow = true;
     group.add(surroundMesh);

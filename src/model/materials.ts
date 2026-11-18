@@ -51,6 +51,7 @@ export type MaterialId =
   | 'neighbour_wall_grey'
   | 'neighbour_roof_grey'
   | 'neighbour_window_grey'
+  | 'neighbour_trim_grey'
   | 'neighbour_glass_grey'
   | 'neighbour_ground_grey'
   | 'neighbour_hedge_grey'
@@ -377,6 +378,13 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     colorDay: '#bfc3c7',
     colorNight: '#484c54',
     roughness: 0.9,
+    metalness: 0.0,
+    isNeighbourContext: true,
+  },
+  neighbour_trim_grey: {
+    colorDay: '#747678',
+    colorNight: '#3f4247',
+    roughness: 0.91,
     metalness: 0.0,
     isNeighbourContext: true,
   },
