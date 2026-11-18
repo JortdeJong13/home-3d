@@ -31,25 +31,25 @@ interface BrickTone {
  */
 const BRICK_TONES: BrickTone[] = [
   // Soft warm cream-sand (~20%)
-  { r: 222, g: 202, b: 165, weight: 10 },
-  { r: 217, g: 196, b: 158, weight: 10 },
-  // Core warm sand-ochre (~50%)
-  { r: 212, g: 188, b: 146, weight: 18 },
-  { r: 207, g: 182, b: 139, weight: 16 },
-  { r: 214, g: 192, b: 152, weight: 16 },
+  { r: 219, g: 198, b: 160, weight: 10 },
+  { r: 215, g: 194, b: 155, weight: 10 },
+  // Core warm sand-ochre (~52%)
+  { r: 211, g: 188, b: 148, weight: 18 },
+  { r: 208, g: 184, b: 143, weight: 18 },
+  { r: 213, g: 191, b: 152, weight: 16 },
   // Gentle muted tan / biscuit (~20%)
-  { r: 198, g: 173, b: 132, weight: 12 },
-  { r: 192, g: 167, b: 127, weight: 8 },
-  // Subtle warm taupe-ochre accent (~10%)
-  { r: 181, g: 156, b: 118, weight: 10 },
+  { r: 202, g: 178, b: 139, weight: 12 },
+  { r: 198, g: 174, b: 135, weight: 8 },
+  // Subtle warm taupe-ochre accent (~8%)
+  { r: 193, g: 169, b: 131, weight: 8 },
 ];
 
 const TOTAL_WEIGHT = BRICK_TONES.reduce((sum, t) => sum + t.weight, 0);
 
-// Soft warm buff mortar close in value to the bricks for a gentle, painterly joint
-const MORTAR_R = 209;
-const MORTAR_G = 197;
-const MORTAR_B = 176;
+// Very soft warm buff mortar close in value to the bricks
+const MORTAR_R = 211;
+const MORTAR_G = 195;
+const MORTAR_B = 166;
 
 /** Deterministic integer hash in [0, 1) for seamless brick-grid variation. */
 function hash2D(ix: number, iy: number, seed = 0): number {
@@ -90,9 +90,9 @@ export function getExteriorBrickTextures(): {
   const albedoData = new Uint8Array(TEX_SIZE * TEX_SIZE * 4);
   const bumpData = new Uint8Array(TEX_SIZE * TEX_SIZE * 4);
 
-  // Soft feathered edge width in brick-cell UV space (~2.8 pixels)
-  const edgeSmoothU = (2.8 / TEX_SIZE) * BRICK_COLS;
-  const edgeSmoothV = (2.8 / TEX_SIZE) * BRICK_ROWS;
+  // Soft feathered edge width in brick-cell UV space (~3.6 pixels)
+  const edgeSmoothU = (3.6 / TEX_SIZE) * BRICK_COLS;
+  const edgeSmoothV = (3.6 / TEX_SIZE) * BRICK_ROWS;
 
   for (let py = 0; py < TEX_SIZE; py++) {
     // Flip Y so row 0 is at the bottom when mapped with standard UVs
