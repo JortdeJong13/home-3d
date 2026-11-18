@@ -3,6 +3,9 @@ import { m } from '../model/units';
 import { frontDoorArchPrefab } from './items/frontDoorArch';
 import { heatPumpOutdoorPrefab } from './items/heatPumpOutdoor';
 import { rainPipeHwaPrefab, rainPipeHwaSectionPrefab } from './items/rainPipeHwa';
+import { loungeCornerSofaPrefab } from './items/loungeCornerSofa';
+import { loungeCoffeeTablePrefab } from './items/loungeCoffeeTable';
+import { gardenPlanterClusterPrefab } from './items/gardenPlanterCluster';
 
 /**
  * CENTRAL ASSET PREFAB CATALOG
@@ -17,6 +20,9 @@ export const ASSET_PREFABS: Record<string, AssetPrefabDefinition> = {
   heat_pump_outdoor: heatPumpOutdoorPrefab,
   rain_pipe_hwa: rainPipeHwaPrefab,
   rain_pipe_hwa_section: rainPipeHwaSectionPrefab,
+  lounge_corner_sofa: loungeCornerSofaPrefab,
+  lounge_coffee_table: loungeCoffeeTablePrefab,
+  garden_planter_cluster: gardenPlanterClusterPrefab,
 };
 
 /**
@@ -113,5 +119,38 @@ export const PLACED_ASSETS: PlacedAssetSpec[] = [
     },
     provenance: 'verified_drawing',
     source: 'Verkooptekening VK-06 linkerzijgevel: HWA regenpijp bij achterhoek (zolder tot goot +6.13 m)',
+  },
+  {
+    id: 'back_garden_lounge_sofa',
+    prefabId: 'lounge_corner_sofa',
+    label: 'Loungeset Hoekbank (Achtertuin Terras)',
+    floor: 'ground',
+    positionXZ: [4.275, -19.355],
+    elevationOffsetY: 0.0325,
+    rotationDeg: 0,
+    provenance: 'user_supplied',
+    source: 'Garden layout: L-shaped lounge corner in rear-right of back garden on limestone terrace',
+  },
+  {
+    id: 'back_garden_lounge_table',
+    prefabId: 'lounge_coffee_table',
+    label: 'Loungetafel Hout (Achtertuin Terras)',
+    floor: 'ground',
+    positionXZ: [3.85, -18.95],
+    elevationOffsetY: 0.0325,
+    rotationDeg: 0,
+    provenance: 'user_supplied',
+    source: 'Garden layout: wooden coffee table in front of lounge corner sofa',
+  },
+  {
+    id: 'back_garden_terrace_planters',
+    prefabId: 'garden_planter_cluster',
+    label: 'Bloempotten Lounge Terras (Set van 3)',
+    floor: 'ground',
+    positionXZ: [2.42, -19.75],
+    elevationOffsetY: 0.0325,
+    rotationDeg: 25,
+    provenance: 'user_supplied',
+    source: 'Garden layout: potted plants on left side of rear lounge terrace',
   },
 ];

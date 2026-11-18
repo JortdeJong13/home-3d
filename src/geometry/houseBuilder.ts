@@ -554,6 +554,38 @@ function buildPlotAndEnvironment(
     gravelCurveEndX, -gravelCurveEndZ
   );
   gravelShape.lineTo(leftBoundaryXAtZ(gravelRearZ) + 0.32, -gravelRearZ);
+
+  // Curvy garden path branching from the gravel behind the berging (Z = -14.70) to the rear lounge terrace (Z = -17.73)
+  const pathP0 = { x: -0.12, y: -gravelRearZ };
+  const pathP1 = { x: -0.55, y: 15.65 };
+  const pathP2 = { x: 1.55, y: 16.85 };
+  const pathP3 = { x: 2.46, y: 17.73 };
+  const evalPath = (t: number) => {
+    const u = 1 - t;
+    const x = u * u * u * pathP0.x + 3 * u * u * t * pathP1.x + 3 * u * t * t * pathP2.x + t * t * t * pathP3.x;
+    const y = u * u * u * pathP0.y + 3 * u * u * t * pathP1.y + 3 * u * t * t * pathP2.y + t * t * t * pathP3.y;
+    const dx = 3 * u * u * (pathP1.x - pathP0.x) + 6 * u * t * (pathP2.x - pathP1.x) + 3 * t * t * (pathP3.x - pathP2.x);
+    const dy = 3 * u * u * (pathP1.y - pathP0.y) + 6 * u * t * (pathP2.y - pathP1.y) + 3 * t * t * (pathP3.y - pathP2.y);
+    const len = Math.hypot(dx, dy) || 1;
+    // Normal pointing to the right (+X when moving toward +Y / rear)
+    return { x, y, nx: dy / len, ny: -dx / len, angle: Math.atan2(dx, dy) };
+  };
+  const pathHalfW = 0.45;
+  const pathSteps = 20;
+  gravelShape.lineTo(pathP0.x - pathHalfW, pathP0.y);
+  for (let i = 1; i <= pathSteps; i++) {
+    const t = i / pathSteps;
+    const pt = evalPath(t);
+    const ex = i === pathSteps ? pathP3.x - pathHalfW : pt.x - pt.nx * pathHalfW;
+    const ey = i === pathSteps ? pathP3.y : pt.y - pt.ny * pathHalfW;
+    gravelShape.lineTo(ex, ey);
+  }
+  gravelShape.lineTo(pathP3.x + pathHalfW, pathP3.y);
+  for (let i = pathSteps - 1; i >= 1; i--) {
+    const t = i / pathSteps;
+    const pt = evalPath(t);
+    gravelShape.lineTo(pt.x + pt.nx * pathHalfW, pt.y + pt.ny * pathHalfW);
+  }
   gravelShape.lineTo(0.33, -gravelRearZ);
   gravelShape.lineTo(0.33, 12.86);
   gravelShape.lineTo(0.00, 12.86);
@@ -631,6 +663,90 @@ function buildPlotAndEnvironment(
       groundGroup.add(tile);
       registerStaggered(id, tile, 'ground', 0.01);
     }
+  }
+
+  // Lounge Corner Terrace (5 × 6 tiles of 77 × 47 cm = 3.85 × 2.82 m in rear-right corner: X: 1.87..5.72, Z: -17.73..-20.55)
+  const LOUNGE_X0 = 1.87;
+  const LOUNGE_Z0 = -17.73;
+  for (let row = 0; row < 6; row++) {
+    for (let col = 0; col < 5; col++) {
+      const id = `lounge_terrace_tile_${row}_${col}`;
+      const tileGeo = new THREE.BoxGeometry(PATIO_TILE_X - PATIO_JOINT, 0.045, PATIO_TILE_Z - PATIO_JOINT);
+      const tile = new THREE.Mesh(tileGeo, getMat('plot_patio_limestone'));
+      tile.position.set(
+        LOUNGE_X0 + (col + 0.5) * PATIO_TILE_X,
+        0.01,
+        LOUNGE_Z0 - (row + 0.5) * PATIO_TILE_Z
+      );
+      registerMesh(
+        tile,
+        'plot_patio_limestone',
+        {
+          id,
+          label: 'Terrastegel Loungehoek Achtertuin (77 × 47 cm)',
+          dimensionsLabel: '0.77 × 0.47 m',
+          provenance: 'user_supplied',
+          source: 'Garden layout: lounge corner terrace using matching limestone patio tiles',
+          floor: 'ground',
+          category: 'furniture',
+        },
+        false,
+        true
+      );
+      groundGroup.add(tile);
+      registerStaggered(id, tile, 'ground', 0.01);
+    }
+  }
+
+  // Limestone stepping stones along the curvy garden path (matching patio limestone material & top elevation)
+  const steppingStoneCount = 10;
+  for (let i = 0; i < steppingStoneCount; i++) {
+    const t = (i + 0.48) / steppingStoneCount;
+    const pt = evalPath(t);
+    const id = `garden_path_stone_${i}`;
+    const stoneW = 0.48 + (i % 3) * 0.05;
+    const stoneD = 0.30 + ((i + 1) % 2) * 0.04;
+    const rCorner = 0.08;
+    const hw = stoneW / 2;
+    const hd = stoneD / 2;
+    const sShape = new THREE.Shape();
+    sShape.moveTo(-hw + rCorner, -hd);
+    sShape.lineTo(hw - rCorner, -hd);
+    sShape.quadraticCurveTo(hw, -hd, hw, -hd + rCorner);
+    sShape.lineTo(hw, hd - rCorner);
+    sShape.quadraticCurveTo(hw, hd, hw - rCorner, hd);
+    sShape.lineTo(-hw + rCorner, hd);
+    sShape.quadraticCurveTo(-hw, hd, -hw, hd - rCorner);
+    sShape.lineTo(-hw, -hd + rCorner);
+    sShape.quadraticCurveTo(-hw, -hd, -hw + rCorner, -hd);
+    sShape.closePath();
+
+    const stoneGeo = new THREE.ExtrudeGeometry(sShape, {
+      depth: 0.045,
+      bevelEnabled: false,
+    });
+    stoneGeo.rotateX(-Math.PI / 2);
+    const stone = new THREE.Mesh(stoneGeo, getMat('plot_patio_limestone'));
+    const lateralOffset = ((i % 2 === 0 ? 1 : -1) * 0.04);
+    stone.position.set(pt.x + pt.nx * lateralOffset, -0.0125, -(pt.y + pt.ny * lateralOffset));
+    stone.rotation.y = -pt.angle + (i % 2 === 0 ? 0.08 : -0.08);
+    registerMesh(
+      stone,
+      'plot_patio_limestone',
+      {
+        id,
+        label: 'Stapsteen Tuinpad naar Loungehoek',
+        dimensionsLabel: `${stoneW.toFixed(2)} × ${stoneD.toFixed(2)} m`,
+        provenance: 'user_supplied',
+        source: 'Garden layout: curvy stepping-stone path connecting berging gravel path to lounge terrace',
+        floor: 'ground',
+        category: 'furniture',
+      },
+      false,
+      true
+    );
+    groundGroup.add(stone);
+    registerStaggered(id, stone, 'ground', -0.0125);
   }
 
   // Garden Gate ("Tuinpoort" at Z = -13.72 m between Berging X = -3.27 m and Left Hedge) -> Staggered drop on Ground Floor!
@@ -873,6 +989,9 @@ function buildPlotAndEnvironment(
 
   // Flowering bushes along the left driveway grass strip next to the 90 cm beech hedge
   buildDrivewayEdgeBushes(plotGroup, getMat, registerMesh, leftBoundaryXAtZ);
+
+  // Back garden curved soil borders with low-polygon bushes, flowers & ornamental grasses
+  buildBackGardenFlowerBorders(plotGroup, getMat, registerMesh, leftBoundaryXAtZ);
 
   // 6. SURROUNDINGS (outside the owned plot, neutral grey): pavement strip & garden fences (schuttingen)
   const ctxRightX = rightX + CONTEXT_MARGIN;
@@ -1452,6 +1571,244 @@ function buildDrivewayEdgeBushes(
     lavenderMesh.castShadow = true;
     lavenderMesh.receiveShadow = true;
     group.add(lavenderMesh);
+  }
+}
+
+/**
+ * Build three curved brown-soil flower borders in the back garden (left beech-hedge border,
+ * rear-center kidney bed, and right schutting wavy border), matching the front garden's
+ * low-polygon shrubs, flowers, and ornamental grass plumes.
+ */
+function buildBackGardenFlowerBorders(
+  group: THREE.Group,
+  getMat: (id: MaterialId) => THREE.MeshStandardMaterial,
+  registerMesh: RegisterMeshFn,
+  leftBoundaryXAtZ: (z: number) => number
+) {
+  let s = (1213 * 1664525 + 1013904223) >>> 0;
+  const rand = () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+
+  // 1. Left hedge border soil bed (Z: -14.85 -> -20.45 m)
+  const leftSteps = 18;
+  const leftZ0 = -14.85;
+  const leftZ1 = -20.45;
+  const leftBedShape = new THREE.Shape();
+  for (let i = 0; i <= leftSteps; i++) {
+    const t = i / leftSteps;
+    const z = leftZ0 + (leftZ1 - leftZ0) * t;
+    const x = leftBoundaryXAtZ(z) + 0.36;
+    if (i === 0) leftBedShape.moveTo(x, -z);
+    else leftBedShape.lineTo(x, -z);
+  }
+  for (let i = leftSteps; i >= 0; i--) {
+    const t = i / leftSteps;
+    const z = leftZ0 + (leftZ1 - leftZ0) * t;
+    const endTaper = Math.sin(t * Math.PI);
+    const width = 0.25 + (0.68 + 0.18 * Math.sin(t * Math.PI * 3.0)) * Math.pow(endTaper, 0.35);
+    const x = leftBoundaryXAtZ(z) + 0.36 + width;
+    leftBedShape.lineTo(x, -z);
+  }
+  leftBedShape.closePath();
+
+  // 2. Rear-center kidney soil bed (X: -2.05 -> +1.35 m, Z: -20.52 -> -19.25 m)
+  const rearBedShape = new THREE.Shape();
+  const rearSteps = 18;
+  const rearX0 = -2.05;
+  const rearX1 = 1.35;
+  rearBedShape.moveTo(rearX0, 20.52);
+  rearBedShape.lineTo(rearX1, 20.52);
+  for (let i = rearSteps; i >= 0; i--) {
+    const t = i / rearSteps;
+    const x = rearX0 + (rearX1 - rearX0) * t;
+    const lobe = Math.sin(t * Math.PI);
+    const depth = 0.18 + 1.06 * Math.pow(lobe, 0.65);
+    rearBedShape.lineTo(x, 20.52 - depth);
+  }
+  rearBedShape.closePath();
+
+  // 3. Right fence wavy soil bed (Z: -14.00 -> -17.55 m, X: 4.68..5.80 m)
+  const rightBedShape = new THREE.Shape();
+  const rightSteps = 18;
+  const rightZ0 = -14.00;
+  const rightZ1 = -17.55;
+  rightBedShape.moveTo(5.80, -rightZ0);
+  rightBedShape.lineTo(5.80, -rightZ1);
+  for (let i = rightSteps; i >= 0; i--) {
+    const t = i / rightSteps;
+    const z = rightZ0 + (rightZ1 - rightZ0) * t;
+    const endTaper = Math.pow(Math.sin(t * Math.PI), 0.35);
+    const wave = 0.78 + 0.32 * Math.abs(Math.sin(t * Math.PI * 2.0));
+    const x = 5.80 - (0.20 + wave * endTaper);
+    rightBedShape.lineTo(x, -z);
+  }
+  rightBedShape.closePath();
+
+  const soilGeos = [leftBedShape, rearBedShape, rightBedShape].map((shape) => {
+    const g = new THREE.ExtrudeGeometry(shape, { depth: 0.045, bevelEnabled: false });
+    g.rotateX(-Math.PI / 2);
+    return g;
+  });
+  const soilMesh = new THREE.Mesh(mergeGeometries(soilGeos, false), getMat('plot_soil_border'));
+  registerMesh(
+    soilMesh,
+    'plot_soil_border',
+    {
+      id: 'back_garden_soil_borders',
+      label: 'Bloemperken Achtertuin (Bruine Teelaarde)',
+      dimensionsLabel: '3 borders (links, achter, rechts)',
+      provenance: 'user_supplied',
+      source: 'Garden layout: organic brown-soil flower borders matching front garden style',
+      floor: 'plot',
+    },
+    false,
+    true
+  );
+  group.add(soilMesh);
+
+  const shrubGeos: THREE.BufferGeometry[] = [];
+  const yellowFlowerGeos: THREE.BufferGeometry[] = [];
+  const lavenderFlowerGeos: THREE.BufferGeometry[] = [];
+  const whiteFlowerGeos: THREE.BufferGeometry[] = [];
+  const grassPlumeGeos: THREE.BufferGeometry[] = [];
+
+  const addPlantCluster = (
+    cx: number,
+    cz: number,
+    rx: number,
+    ry: number,
+    rz: number,
+    flowerType: 'white' | 'lavender' | 'yellow' | 'grass' | 'none',
+    flowerCount: number
+  ) => {
+    const numPuffs = 5;
+    for (let i = 0; i < numPuffs; i++) {
+      const a = (i / numPuffs) * Math.PI * 2 + rand() * 0.6;
+      const dist = i === 0 ? 0 : 0.34 + rand() * 0.34;
+      const px = cx + Math.cos(a) * rx * dist;
+      const pz = cz + Math.sin(a) * rz * dist;
+      const r = (i === 0 ? 0.68 : 0.48 + rand() * 0.16) * Math.min(rx, rz);
+      const py = 0.04 + ry * (i === 0 ? 0.48 : 0.32 + rand() * 0.18);
+
+      const puff = new THREE.IcosahedronGeometry(r, 1);
+      puff.scale(1.0 + rand() * 0.18, (ry / Math.max(0.15, r)) * 0.72, 1.0 + rand() * 0.18);
+      puff.rotateY(rand() * Math.PI * 2);
+      puff.translate(px, py, pz);
+      shrubGeos.push(puff);
+    }
+
+    if (flowerType === 'grass') {
+      const numPlumes = 10;
+      const gh = ry * 2.1;
+      for (let p = 0; p < numPlumes; p++) {
+        const ang = (p / numPlumes) * Math.PI * 2 + rand() * 0.4;
+        const spread = 0.07 + rand() * 0.2;
+        const px = cx + Math.cos(ang) * spread;
+        const pz = cz + Math.sin(ang) * spread;
+        const py = gh * (0.52 + rand() * 0.4);
+        const pr = 0.06 + rand() * 0.04;
+        const plume = new THREE.IcosahedronGeometry(pr, 1);
+        plume.scale(0.85, 1.6 + rand() * 0.4, 0.85);
+        plume.rotateZ((rand() - 0.5) * 0.35);
+        plume.rotateX((rand() - 0.5) * 0.35);
+        plume.translate(px, py, pz);
+        grassPlumeGeos.push(plume);
+      }
+      return;
+    }
+
+    if (flowerType === 'none' || flowerCount <= 0) return;
+    const target =
+      flowerType === 'lavender'
+        ? lavenderFlowerGeos
+        : flowerType === 'white'
+          ? whiteFlowerGeos
+          : yellowFlowerGeos;
+    const radiusScale = flowerType === 'yellow' ? 1.0 : 1.3;
+
+    for (let b = 0; b < flowerCount; b++) {
+      const theta = rand() * Math.PI * 2;
+      const phi = rand() * Math.PI * 0.44;
+      const bx = cx + Math.sin(phi) * Math.cos(theta) * rx * 0.86;
+      const bz = cz + Math.sin(phi) * Math.sin(theta) * rz * 0.86;
+      const by = 0.05 + Math.cos(phi) * ry * 0.94;
+      const br = (0.044 + rand() * 0.032) * radiusScale;
+      const blossom = new THREE.IcosahedronGeometry(br, 1);
+      blossom.rotateY(rand() * Math.PI);
+      blossom.translate(bx, by, bz);
+      target.push(blossom);
+    }
+  };
+
+  // Left border plantings (along Z: -15.20 -> -20.15 m)
+  const leftPlants: Array<{ z: number; rx: number; ry: number; rz: number; type: 'white' | 'lavender' | 'yellow' | 'grass'; count: number }> = [
+    { z: -15.25, rx: 0.32, ry: 0.48, rz: 0.36, type: 'white', count: 14 },
+    { z: -16.05, rx: 0.34, ry: 0.52, rz: 0.38, type: 'lavender', count: 16 },
+    { z: -16.85, rx: 0.30, ry: 0.42, rz: 0.34, type: 'yellow', count: 12 },
+    { z: -17.65, rx: 0.35, ry: 0.54, rz: 0.38, type: 'white', count: 15 },
+    { z: -18.50, rx: 0.34, ry: 0.50, rz: 0.38, type: 'lavender', count: 16 },
+    { z: -19.35, rx: 0.32, ry: 0.46, rz: 0.36, type: 'white', count: 13 },
+    { z: -20.05, rx: 0.30, ry: 0.46, rz: 0.32, type: 'grass', count: 0 },
+  ];
+  for (const p of leftPlants) {
+    const cx = leftBoundaryXAtZ(p.z) + 0.78;
+    addPlantCluster(cx, p.z, p.rx, p.ry, p.rz, p.type, p.count);
+  }
+
+  // Rear-center kidney border plantings
+  addPlantCluster(-1.35, -20.05, 0.34, 0.46, 0.32, 'lavender', 14);
+  addPlantCluster(-0.45, -19.85, 0.36, 0.50, 0.34, 'grass', 0);
+  addPlantCluster(0.32, -19.95, 0.34, 0.50, 0.34, 'white', 15);
+  addPlantCluster(0.95, -20.12, 0.30, 0.42, 0.30, 'yellow', 11);
+
+  // Right fence wavy border plantings (Z: -14.35 -> -17.20 m)
+  addPlantCluster(5.32, -14.40, 0.34, 0.48, 0.36, 'white', 14);
+  addPlantCluster(5.18, -15.05, 0.34, 0.48, 0.34, 'grass', 0);
+  addPlantCluster(5.36, -15.75, 0.32, 0.46, 0.34, 'lavender', 14);
+  addPlantCluster(5.22, -16.45, 0.35, 0.52, 0.36, 'white', 15);
+  addPlantCluster(5.35, -17.12, 0.30, 0.44, 0.32, 'grass', 0);
+
+  const shrubMesh = new THREE.Mesh(mergeGeometries(shrubGeos, false), getMat('plot_hedge_beech'));
+  registerMesh(
+    shrubMesh,
+    'plot_hedge_beech',
+    {
+      id: 'back_garden_flower_borders',
+      label: 'Beplanting Achtertuin (Struiken, Bloemen & Siergras)',
+      dimensionsLabel: '3 bloemperken',
+      provenance: 'user_supplied',
+      source: 'Garden layout: low-polygon bushes, hydrangeas, yellow flowers & ornamental grasses',
+      floor: 'plot',
+    },
+    true,
+    true
+  );
+  group.add(shrubMesh);
+
+  if (yellowFlowerGeos.length > 0) {
+    const yellowMesh = new THREE.Mesh(mergeGeometries(yellowFlowerGeos, false), getMat('plot_tree_foliage_warm'));
+    yellowMesh.castShadow = true;
+    group.add(yellowMesh);
+  }
+  if (lavenderFlowerGeos.length > 0) {
+    const lavenderMesh = new THREE.Mesh(mergeGeometries(lavenderFlowerGeos, false), getMat('plot_flower_lavender'));
+    lavenderMesh.castShadow = true;
+    lavenderMesh.receiveShadow = true;
+    group.add(lavenderMesh);
+  }
+  if (whiteFlowerGeos.length > 0) {
+    const whiteMesh = new THREE.Mesh(mergeGeometries(whiteFlowerGeos, false), getMat('plot_tree_foliage_blossom'));
+    whiteMesh.castShadow = true;
+    whiteMesh.receiveShadow = true;
+    group.add(whiteMesh);
+  }
+  if (grassPlumeGeos.length > 0) {
+    const grassMesh = new THREE.Mesh(mergeGeometries(grassPlumeGeos, false), getMat('plot_tree_stake_wood'));
+    grassMesh.castShadow = true;
+    grassMesh.receiveShadow = true;
+    group.add(grassMesh);
   }
 }
 
