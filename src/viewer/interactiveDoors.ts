@@ -110,7 +110,7 @@ export class InteractiveDoorManager {
    * frame-rate-independent exponential damping.
    */
   public update(dt: number): void {
-    const lambda = 1 - Math.exp(-dt * 9.5);
+    const lambda = 1 - Math.exp(-dt * 5.7);
 
     for (const door of this.doors) {
       const wantOpen = door.isHovered || door.isPinned;
