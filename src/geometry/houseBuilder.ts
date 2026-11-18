@@ -1305,10 +1305,10 @@ function buildFrontGardenFlowerBorder(
   addShrubMound(4.78, 0.48, 0.44, 0.56, 0.40, 14);
   addShrubMound(5.42, 0.55, 0.40, 0.50, 0.38, 12);
 
-  const shrubMesh = new THREE.Mesh(mergeGeometries(shrubGeos, false), getMat('plot_tree_foliage_bolboom'));
+  const shrubMesh = new THREE.Mesh(mergeGeometries(shrubGeos, false), getMat('plot_hedge_beech'));
   registerMesh(
     shrubMesh,
-    'plot_tree_foliage_bolboom',
+    'plot_hedge_beech',
     {
       id: 'front_garden_flower_border',
       label: 'Beplanting Voorgevel (Bloemstruiken & Siergras)',

@@ -302,6 +302,8 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     colorNight: '#2c3d24',
     roughness: 0.92,
     metalness: 0.0,
+    opacity: 0.68,
+    transparent: true,
   },
   plot_tree_foliage_blossom: {
     colorDay: '#f2f5f0',
