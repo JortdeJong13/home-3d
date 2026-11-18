@@ -737,7 +737,10 @@ export function instantiateOpeningPrefab3D(
    * Fill the doorway threshold across the full exterior wall thickness so the wall's
    * cut brick bottom is never visible under floor-level exterior doors.
    */
-  const addExteriorDoorThreshold = (interiorFloorMat: MaterialId) => {
+  const addExteriorDoorThreshold = (
+    interiorFloorMat: MaterialId,
+    outerSillMat: MaterialId = 'roof_tile_anthracite'
+  ) => {
     const floorHeight = 0.03;
     const centerY = -op.height / 2 - 0.01; // Top surface at Y = +0.005 m, flush with interior room slabs
     const zInnerStart = -wallThickness / 2;
@@ -759,7 +762,7 @@ export function instantiateOpeningPrefab3D(
     if (sillDepth > 0.005) {
       const outerSill = new THREE.Mesh(
         new THREE.BoxGeometry(op.width, floorHeight, sillDepth),
-        getMat('roof_tile_anthracite')
+        getMat(outerSillMat)
       );
       outerSill.position.set(0, centerY, (zFrameInner + zOuterEnd) / 2);
       outerSill.receiveShadow = true;
@@ -921,6 +924,11 @@ export function instantiateOpeningPrefab3D(
 
     case 'window_french_balcony_1st':
     case 'neighbour_french_balcony': {
+      if (op.prefabId === 'window_french_balcony_1st') {
+        addExteriorDoorThreshold('floor_bedroom_soft');
+      } else {
+        addExteriorDoorThreshold('neighbour_wall_grey', 'neighbour_window_grey');
+      }
       const railMat = op.prefabId === 'neighbour_french_balcony' ? 'neighbour_window_grey' : 'door_exterior_sage';
       const railZ = wallThickness / 2 - 0.015;
       const topRailY = -0.05;
