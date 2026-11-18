@@ -841,20 +841,41 @@ export function instantiateOpeningPrefab3D(
       const doorPanel = new THREE.Mesh(mergedDoorGeo, getMat(op.panelMaterial));
       doorPivot.add(doorPanel);
 
-      // Centered rounded brushed-steel kanteldeur handle (matching front & back door handles)
+      // Centered simple horizontal brushed-steel grab handle (matching front door steel color)
       const garageHandleMat = new THREE.MeshStandardMaterial({
         color: '#a8aeb5',
         roughness: 0.35,
         metalness: 0.75,
         name: 'door_handle_steel',
       });
-      const garageHandleGroup = createBrushedSteelLeverHandle({
-        leafThickness: plateDepth + slatDepth * 2,
-        handleMat: garageHandleMat,
-        leverDirection: -1,
-        exteriorOnly: true,
-      });
-      garageHandleGroup.position.set(0, -doorH / 2 + 0.80, 0);
+      const garageHandleGroup = new THREE.Group();
+      const handleBaseZ = plateDepth / 2 + slatDepth;
+      garageHandleGroup.position.set(0, -doorH / 2 + 0.72, handleBaseZ);
+
+      const grabLen = 0.15;
+      const barRadius = 0.0085;
+      const barOffsetZ = 0.028;
+
+      const grabGeo = new THREE.CylinderGeometry(barRadius, barRadius, grabLen, 14);
+      grabGeo.rotateZ(Math.PI / 2);
+      const grabMesh = new THREE.Mesh(grabGeo, garageHandleMat);
+      grabMesh.position.set(0, 0, barOffsetZ);
+      garageHandleGroup.add(grabMesh);
+
+      const postGeo = new THREE.CylinderGeometry(barRadius * 0.85, barRadius * 0.85, barOffsetZ + 0.004, 12);
+      postGeo.rotateX(Math.PI / 2);
+      const capGeo = new THREE.SphereGeometry(barRadius, 12, 10);
+      for (const side of [-1, 1]) {
+        const px = side * (grabLen / 2 - 0.015);
+        const post = new THREE.Mesh(postGeo, garageHandleMat);
+        post.position.set(px, 0, barOffsetZ / 2);
+        garageHandleGroup.add(post);
+
+        const cap = new THREE.Mesh(capGeo, garageHandleMat);
+        cap.position.set(side * (grabLen / 2), 0, barOffsetZ);
+        garageHandleGroup.add(cap);
+      }
+
       doorPivot.add(garageHandleGroup);
 
       group.add(doorPivot);

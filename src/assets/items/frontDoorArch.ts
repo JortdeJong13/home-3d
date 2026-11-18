@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { AssetPrefabDefinition, AssetBuilderContext } from '../assetTypes';
 import { MaterialId } from '../../model/materials';
 import { m, cm } from '../../model/units';
@@ -44,7 +45,7 @@ export function buildDecorativeBrickArchMeshes(
     name: 'arch_tympanum_brick',
   });
 
-  // 1. Continuous Outer U-Shaped Arch Border (Left leg + Semicircular Arch + Right leg)
+  // 1. Continuous Outer U-Shaped Arch Border: Horizontal bricks on legs + radial voussoirs on arch
   const borderShape = new THREE.Shape();
   borderShape.moveTo(-rOuter, 0);
   borderShape.lineTo(-rInner, 0);
@@ -56,17 +57,54 @@ export function buildDecorativeBrickArchMeshes(
   borderShape.absarc(0, springY, rOuter, 0, Math.PI, false);
   borderShape.closePath();
 
-  const borderGeo = new THREE.ExtrudeGeometry(borderShape, {
-    depth: outerReliefDepth,
+  const borderGeos: THREE.BufferGeometry[] = [];
+  const mortarDepthOuter = outerReliefDepth * 0.62;
+  const borderBacking = new THREE.ExtrudeGeometry(borderShape, {
+    depth: mortarDepthOuter,
     bevelEnabled: false,
     curveSegments: 36,
   });
-  const outerBorderMesh = new THREE.Mesh(borderGeo, archBrickMat);
+  borderGeos.push(borderBacking);
+
+  const legWidth = rOuter - rInner; // 0.13 m
+  const legCenterX = (rInner + rOuter) / 2;
+  const legRows = Math.round(springY / 0.058);
+  const legPitchY = springY / legRows;
+  const legBrickH = legPitchY - 0.009;
+  const brickReliefOuter = outerReliefDepth - mortarDepthOuter;
+  const brickZOuter = mortarDepthOuter + brickReliefOuter / 2;
+
+  for (const side of [-1, 1]) {
+    for (let r = 0; r < legRows; r++) {
+      const by = (r + 0.5) * legPitchY;
+      const bGeo = new THREE.BoxGeometry(legWidth - 0.004, legBrickH, brickReliefOuter).toNonIndexed();
+      bGeo.translate(side * legCenterX, by, brickZOuter);
+      borderGeos.push(bGeo);
+    }
+  }
+
+  // Radial arch voussoirs (0 -> PI)
+  const rMid = (rInner + rOuter) / 2;
+  const archArcLen = Math.PI * rMid;
+  const archBricks = Math.round(archArcLen / 0.058);
+  const dTheta = Math.PI / archBricks;
+  const archBrickThick = (archArcLen / archBricks) - 0.009;
+  for (let i = 0; i < archBricks; i++) {
+    const theta = (i + 0.5) * dTheta;
+    const bGeo = new THREE.BoxGeometry(legWidth - 0.004, archBrickThick, brickReliefOuter).toNonIndexed();
+    bGeo.rotateZ(theta);
+    bGeo.translate(Math.cos(theta) * rMid, springY + Math.sin(theta) * rMid, brickZOuter);
+    borderGeos.push(bGeo);
+  }
+
+  const mergedBorder = mergeGeometries(borderGeos, false);
+  for (const g of borderGeos) g.dispose();
+  const outerBorderMesh = new THREE.Mesh(mergedBorder, archBrickMat);
   outerBorderMesh.castShadow = true;
   outerBorderMesh.receiveShadow = true;
   group.add(outerBorderMesh);
 
-  // 2. Slightly Recessed Red-Brick Infill (Tympanum above door + Right brick pier)
+  // 2. Slightly Recessed Red-Brick Infill: Vertical soldier courses (staande rollagen)
   const infillShape = new THREE.Shape();
   infillShape.moveTo(doorRightLocalX, 0);
   infillShape.lineTo(rInner, 0);
@@ -75,12 +113,46 @@ export function buildDecorativeBrickArchMeshes(
   infillShape.lineTo(doorRightLocalX, springY);
   infillShape.closePath();
 
-  const infillGeo = new THREE.ExtrudeGeometry(infillShape, {
-    depth: infillReliefDepth,
+  const infillGeos: THREE.BufferGeometry[] = [];
+  const mortarDepthInfill = infillReliefDepth * 0.62;
+  const infillBacking = new THREE.ExtrudeGeometry(infillShape, {
+    depth: mortarDepthInfill,
     bevelEnabled: false,
     curveSegments: 36,
   });
-  const recessedInfillMesh = new THREE.Mesh(infillGeo, infillMat);
+  infillGeos.push(infillBacking);
+
+  const colSpan = rInner * 2;
+  const numCols = Math.round(colSpan / 0.058);
+  const colPitch = colSpan / numCols;
+  const colBrickW = colPitch - 0.008;
+  const rowPitchV = 0.21;
+  const brickReliefInfill = infillReliefDepth - mortarDepthInfill;
+  const brickZInfill = mortarDepthInfill + brickReliefInfill / 2;
+
+  for (let c = 0; c < numCols; c++) {
+    const cx = -rInner + (c + 0.5) * colPitch;
+    const edgeX = Math.abs(cx) + colBrickW * 0.45;
+    if (edgeX >= rInner) continue;
+    const archTopY = springY + Math.sqrt(Math.max(0, rInner * rInner - edgeX * edgeX));
+    const isRightPier = cx - colBrickW * 0.45 >= doorRightLocalX;
+    const yBottom = isRightPier ? 0 : springY;
+    const stagger = (c % 2) * (rowPitchV * 0.5);
+
+    for (let y0 = yBottom - stagger; y0 < archTopY; y0 += rowPitchV) {
+      const clamped0 = Math.max(yBottom, y0 + 0.004);
+      const clamped1 = Math.min(archTopY - 0.004, y0 + rowPitchV - 0.004);
+      const bh = clamped1 - clamped0;
+      if (bh < 0.035) continue;
+      const bGeo = new THREE.BoxGeometry(colBrickW, bh, brickReliefInfill).toNonIndexed();
+      bGeo.translate(cx, (clamped0 + clamped1) / 2, brickZInfill);
+      infillGeos.push(bGeo);
+    }
+  }
+
+  const mergedInfill = mergeGeometries(infillGeos, false);
+  for (const g of infillGeos) g.dispose();
+  const recessedInfillMesh = new THREE.Mesh(mergedInfill, infillMat);
   recessedInfillMesh.castShadow = true;
   recessedInfillMesh.receiveShadow = true;
   group.add(recessedInfillMesh);
@@ -239,9 +311,9 @@ export function buildDoorLeafWithVisionCutout(params: {
   const beadMesh = new THREE.Mesh(beadGeo, frameMat);
   container.add(beadMesh);
 
-  // Transparent vision glass pane
+  // Transparent vision glass pane (inset 3 mm on all sides so it never z-fights with the white glazing bead)
   const glassPane = new THREE.Mesh(
-    new THREE.BoxGeometry(visionW, visionH, 0.014),
+    new THREE.BoxGeometry(visionW - 0.006, visionH - 0.006, 0.014),
     glassMat
   );
   glassPane.position.set(visionCenterX, visionCenterY, 0);
