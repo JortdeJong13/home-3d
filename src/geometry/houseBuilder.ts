@@ -564,7 +564,7 @@ function buildPlotAndEnvironment(
   const gateW = Math.abs(-3.27 - gateLeftX);
 
   const gatePivot = new THREE.Group();
-  gatePivot.position.set(-3.27, 0.725, -13.72);
+  gatePivot.position.set(gateLeftX, 0.725, -13.72);
 
   // Simple Dutch wooden-plank garden door ("Tuindeur" with vertical planks, backing ledges, diagonal brace & hardware)
   const plankCount = Math.max(6, Math.round(gateW / 0.13));
@@ -576,7 +576,7 @@ function buildPlotAndEnvironment(
   const plankGeos: THREE.BufferGeometry[] = [];
   for (let i = 0; i < plankCount; i++) {
     const pGeo = new THREE.BoxGeometry(plankW, plankH, plankD);
-    pGeo.translate(-((i + 0.5) * plankPitch), 0, plankD / 2);
+    pGeo.translate((i + 0.5) * plankPitch, 0, plankD / 2);
     plankGeos.push(pGeo);
   }
   const gateGeo = mergeGeometries(plankGeos, false);
@@ -590,17 +590,17 @@ function buildPlotAndEnvironment(
   const ledgeZ = -ledgeD / 2;
   for (const ly of [0.46, -0.46]) {
     const ledge = new THREE.BoxGeometry(gateW - 0.04, ledgeH, ledgeD);
-    ledge.translate(-gateW / 2, ly, ledgeZ);
+    ledge.translate(gateW / 2, ly, ledgeZ);
     frameGeos.push(ledge);
   }
-  // Diagonal brace from bottom hinge side to top latch side
-  const braceDx = -(gateW - 0.12);
+  // Diagonal brace from bottom hinge side (hedge) to top latch side (berging)
+  const braceDx = gateW - 0.12;
   const braceDy = 0.92 - ledgeH;
   const braceLen = Math.hypot(braceDx, braceDy);
   const braceAngle = Math.atan2(braceDy, braceDx);
   const braceGeo = new THREE.BoxGeometry(braceLen, 0.07, ledgeD);
   braceGeo.rotateZ(braceAngle);
-  braceGeo.translate(-gateW / 2, 0, ledgeZ);
+  braceGeo.translate(gateW / 2, 0, ledgeZ);
   frameGeos.push(braceGeo);
 
   const gateFrameMesh = new THREE.Mesh(mergeGeometries(frameGeos, false), getMat('plot_fence_post'));
@@ -608,21 +608,21 @@ function buildPlotAndEnvironment(
   gateFrameMesh.receiveShadow = true;
   gatePivot.add(gateFrameMesh);
 
-  // Dark metal strap hinges ("hengsels") and simple latch ("klink")
+  // Dark metal strap hinges ("hengsels") near the hedge and simple latch ("klink") near the berging
   const hardwareGeos: THREE.BufferGeometry[] = [];
   for (const hy of [0.46, -0.46]) {
     const strap = new THREE.BoxGeometry(0.32, 0.032, 0.008);
-    strap.translate(-0.17, hy, -ledgeD - 0.004);
+    strap.translate(0.17, hy, -ledgeD - 0.004);
     hardwareGeos.push(strap);
   }
   const latchPlate = new THREE.BoxGeometry(0.035, 0.12, 0.01);
-  latchPlate.translate(-gateW + 0.07, 0.06, plankD + 0.005);
+  latchPlate.translate(gateW - 0.07, 0.06, plankD + 0.005);
   hardwareGeos.push(latchPlate);
   const latchHandleFront = new THREE.BoxGeometry(0.09, 0.022, 0.032);
-  latchHandleFront.translate(-gateW + 0.10, 0.06, plankD + 0.02);
+  latchHandleFront.translate(gateW - 0.10, 0.06, plankD + 0.02);
   hardwareGeos.push(latchHandleFront);
   const latchHandleBack = new THREE.BoxGeometry(0.09, 0.022, 0.032);
-  latchHandleBack.translate(-gateW + 0.10, 0.06, -0.02);
+  latchHandleBack.translate(gateW - 0.10, 0.06, -0.02);
   hardwareGeos.push(latchHandleBack);
 
   const gateHardwareMesh = new THREE.Mesh(mergeGeometries(hardwareGeos, false), getMat('roof_tile_anthracite'));
@@ -643,7 +643,7 @@ function buildPlotAndEnvironment(
     new THREE.BoxGeometry(gateW + 0.15, 1.55, 0.45),
     new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
   );
-  gateTrigger.position.set(-gateW / 2, 0, 0);
+  gateTrigger.position.set(gateW / 2, 0, 0);
   gatePivot.add(gateTrigger);
 
   if (doorManager) {
@@ -654,7 +654,7 @@ function buildPlotAndEnvironment(
       pivots: [
         {
           group: gatePivot,
-          openAngle: -Math.PI * 0.45,
+          openAngle: Math.PI * 0.45,
           closedAngle: 0,
           currentAngle: 0,
         },

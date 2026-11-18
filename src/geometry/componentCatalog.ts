@@ -210,9 +210,9 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
     sillHeight: 0.00,
     frameMaterial: 'window_frame_cream',
     panelMaterial: 'door_exterior_sage',
-    hasTerracottaSurround: true,
+    hasTerracottaSurround: false, // Top red brick rollaag is built directly into the door asset
     provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 achtergevel & HomeByMe',
+    source: 'Verkooptekening VK-06 achtergevel & technische tekening achterdeur berging',
   },
 
   // 13. Neighbour Context Ground Window
@@ -269,6 +269,67 @@ export interface ResolvedOpeningInstance {
  * decorative entrance arch (`hasArchTrim`) are applied EXCLUSIVELY onto the exterior surface
  * (`z = +wallThickness / 2`), leaving the wall itself and the interior room completely regular!
  */
+/**
+ * Build a red-brown facade brick soldier course ("rollaag") exclusively across the top
+ * of an exterior opening, matching the front entrance arch's 4.4 cm relief depth.
+ */
+function buildTopBrickRollaag(
+  group: THREE.Group,
+  getMat: (id: MaterialId) => THREE.MeshStandardMaterial,
+  registerMesh: RegisterMeshFn,
+  opts: {
+    id: string;
+    label: string;
+    lintelWidth: number;
+    lintelHeight: number;
+    openingHeight: number;
+    wallThickness: number;
+    reliefDepth?: number;
+    provenance: ProvenanceType;
+    source: string;
+    floor: FloorLayerId;
+  }
+) {
+  const {
+    id,
+    label,
+    lintelWidth,
+    lintelHeight,
+    openingHeight,
+    wallThickness,
+    reliefDepth = 0.044,
+    provenance,
+    source,
+    floor,
+  } = opts;
+  const exteriorFaceZ = wallThickness / 2 + reliefDepth / 2 - 0.002;
+  const numBricks = Math.max(4, Math.round(lintelWidth / 0.068));
+  const brickPitch = lintelWidth / numBricks;
+  const brickGeos: THREE.BufferGeometry[] = [];
+  for (let b = 0; b < numBricks; b++) {
+    const bx = -lintelWidth / 2 + (b + 0.5) * brickPitch;
+    const brick = new THREE.BoxGeometry(brickPitch - 0.008, lintelHeight, reliefDepth);
+    brick.translate(bx, openingHeight / 2 + lintelHeight / 2, exteriorFaceZ);
+    brickGeos.push(brick);
+  }
+  const mortarBack = new THREE.BoxGeometry(lintelWidth, lintelHeight - 0.01, reliefDepth * 0.55);
+  mortarBack.translate(0, openingHeight / 2 + lintelHeight / 2, exteriorFaceZ - reliefDepth * 0.22);
+  brickGeos.push(mortarBack);
+
+  const mergedLintel = mergeGeometries(brickGeos, false);
+  for (const g of brickGeos) g.dispose();
+  const lintelMesh = new THREE.Mesh(mergedLintel, getMat('window_trim_terracotta'));
+  registerMesh(lintelMesh, 'window_trim_terracotta', {
+    id,
+    label,
+    dimensionsLabel: `${lintelWidth.toFixed(2)} × ${lintelHeight.toFixed(2)} m`,
+    provenance,
+    source,
+    floor,
+  });
+  group.add(lintelMesh);
+}
+
 export function instantiateOpeningPrefab3D(
   wallContainer: THREE.Group,
   op: ResolvedOpeningInstance,
@@ -740,36 +801,17 @@ export function instantiateOpeningPrefab3D(
 
     case 'door_berging_garage_double': {
       // 1. Red-brown facade brick soldier course (rollaag) ONLY across the top, matching front door arch relief (0.044 m)
-      const lintelHeight = 0.19;
-      const reliefDepth = 0.044;
-      const exteriorFaceZ = wallThickness / 2 + reliefDepth / 2 - 0.002;
-      const lintelWidth = op.width + 0.06;
-      const numBricks = Math.round(lintelWidth / 0.068);
-      const brickPitch = lintelWidth / numBricks;
-      const brickGeos: THREE.BufferGeometry[] = [];
-      for (let b = 0; b < numBricks; b++) {
-        const bx = -lintelWidth / 2 + (b + 0.5) * brickPitch;
-        const brick = new THREE.BoxGeometry(brickPitch - 0.008, lintelHeight, reliefDepth);
-        brick.translate(bx, op.height / 2 + lintelHeight / 2, exteriorFaceZ);
-        brickGeos.push(brick);
-      }
-      // Thin recessed mortar backing behind the soldier bricks
-      const mortarBack = new THREE.BoxGeometry(lintelWidth, lintelHeight - 0.01, reliefDepth * 0.55);
-      mortarBack.translate(0, op.height / 2 + lintelHeight / 2, exteriorFaceZ - reliefDepth * 0.22);
-      brickGeos.push(mortarBack);
-
-      const mergedLintel = mergeGeometries(brickGeos, false);
-      for (const g of brickGeos) g.dispose();
-      const lintelMesh = new THREE.Mesh(mergedLintel, getMat('window_trim_terracotta'));
-      registerMesh(lintelMesh, 'window_trim_terracotta', {
+      buildTopBrickRollaag(group, getMat, registerMesh, {
         id: `${op.id}_top_rollaag`,
         label: 'Gemetselde Rollaag boven Garagedeur',
-        dimensionsLabel: `${lintelWidth.toFixed(2)} × ${lintelHeight.toFixed(2)} m`,
+        lintelWidth: op.width + 0.06,
+        lintelHeight: 0.19,
+        openingHeight: op.height,
+        wallThickness,
         provenance: op.provenance,
         source: op.source,
         floor,
       });
-      group.add(lintelMesh);
 
       // 2. Frameless single-piece sage-green kanteldeur (up-and-over tilt door) with crisp vertical ribs
       const doorW = op.width;
@@ -853,8 +895,125 @@ export function instantiateOpeningPrefab3D(
     }
 
     case 'door_berging_garden_rear': {
-      // Single rear Berging door, swings outward (+Z) into the garden
-      buildSingleSwingingDoor(0.055, -Math.PI * 0.45, false);
+      // 1. Red-brown facade brick soldier course (rollaag) ONLY across the top, flush with opening width
+      buildTopBrickRollaag(group, getMat, registerMesh, {
+        id: `${op.id}_top_rollaag`,
+        label: 'Gemetselde Rollaag boven Achterdeur Berging',
+        lintelWidth: op.width,
+        lintelHeight: 0.19,
+        openingHeight: op.height,
+        wallThickness,
+        provenance: op.provenance,
+        source: op.source,
+        floor,
+      });
+
+      // Dark bottom threshold (onderdorpel)
+      const sill = new THREE.Mesh(
+        new THREE.BoxGeometry(op.width, 0.035, frameDepth + 0.02),
+        getMat('roof_tile_anthracite')
+      );
+      sill.position.set(0, -op.height / 2 + 0.0175, frameCenterZ + 0.006);
+      group.add(sill);
+
+      // 2. Sage-green rear berging door leaf: upper glass (~60%), lower horizontal-grooved panel (~40%)
+      // Hinged on the right (+X) in exterior view, swinging outward (+Z) into the garden
+      const doorPivot = new THREE.Group();
+      doorPivot.position.set(innerW / 2, -frameThick / 2, frameCenterZ);
+
+      const leafThick = 0.054;
+      const stileW = 0.115;
+      const topRailH = 0.115;
+      const bottomRailH = 0.11;
+      const midRailH = 0.075;
+      const lowerZoneH = innerH * 0.38; // lower horizontal-slat panel + bottom rail
+      const glassW = Math.max(0.10, innerW - stileW * 2);
+      const glassH = Math.max(0.20, innerH - topRailH - lowerZoneH - midRailH);
+      const glassCenterY = innerH / 2 - topRailH - glassH / 2;
+      const midRailCenterY = glassCenterY - glassH / 2 - midRailH / 2;
+      const slatAreaH = Math.max(0.10, lowerZoneH - bottomRailH);
+      const slatAreaBottomY = -innerH / 2 + bottomRailH;
+
+      const leafGeos: THREE.BufferGeometry[] = [];
+      const addPart = (w: number, h: number, d: number, x: number, y: number, z = 0) => {
+        const g = new THREE.BoxGeometry(w, h, d);
+        g.translate(x, y, z);
+        leafGeos.push(g);
+      };
+
+      // Left & right stiles, top, middle, and bottom rails (centered at x = -innerW / 2)
+      addPart(stileW, innerH, leafThick, -innerW + stileW / 2, 0);
+      addPart(stileW, innerH, leafThick, -stileW / 2, 0);
+      addPart(glassW, topRailH, leafThick, -innerW / 2, innerH / 2 - topRailH / 2);
+      addPart(glassW, midRailH, leafThick, -innerW / 2, midRailCenterY);
+      addPart(glassW, bottomRailH, leafThick, -innerW / 2, -innerH / 2 + bottomRailH / 2);
+
+      // Recessed backing behind the lower horizontal slats
+      const backingD = 0.028;
+      addPart(glassW, slatAreaH, backingD, -innerW / 2, slatAreaBottomY + slatAreaH / 2);
+
+      // 6 horizontal tongue-and-groove slats with crisp shadow grooves on exterior & interior faces
+      const numSlats = 6;
+      const slatPitch = slatAreaH / numSlats;
+      const slatH = slatPitch - 0.008;
+      const slatRelief = 0.011;
+      for (let s = 0; s < numSlats; s++) {
+        const sy = slatAreaBottomY + (s + 0.5) * slatPitch;
+        addPart(glassW, slatH, slatRelief, -innerW / 2, sy, backingD / 2 + slatRelief / 2);
+        addPart(glassW, slatH, slatRelief, -innerW / 2, sy, -backingD / 2 - slatRelief / 2);
+      }
+
+      const mergedLeaf = mergeGeometries(leafGeos, false);
+      for (const g of leafGeos) g.dispose();
+      const leafMesh = new THREE.Mesh(mergedLeaf, getMat(op.panelMaterial));
+      doorPivot.add(leafMesh);
+
+      // Upper glass pane
+      const glassPane = new THREE.Mesh(
+        new THREE.BoxGeometry(glassW, glassH, 0.014),
+        getMat('window_glass_day')
+      );
+      glassPane.position.set(-innerW / 2, glassCenterY, 0);
+      doorPivot.add(glassPane);
+
+      // Door handle on left stile
+      const handle = new THREE.Mesh(
+        new THREE.BoxGeometry(0.11, 0.02, 0.09),
+        getMat('roof_tile_anthracite')
+      );
+      handle.position.set(-innerW + 0.075, -0.10, 0);
+      doorPivot.add(handle);
+
+      group.add(doorPivot);
+
+      registerMesh(leafMesh, op.panelMaterial, {
+        id: op.id,
+        label: op.label,
+        dimensionsLabel: `${op.width.toFixed(2)} × ${op.height.toFixed(2)} m`,
+        provenance: op.provenance,
+        source: op.source,
+        floor,
+      });
+
+      const trigger = createTrigger();
+      if (onRegisterDoor) {
+        onRegisterDoor({
+          id: op.id,
+          label: op.label,
+          floor,
+          pivots: [
+            {
+              group: doorPivot,
+              openAngle: Math.PI * 0.45, // swings outward (+Z) into the garden
+              closedAngle: 0,
+              currentAngle: 0,
+            },
+          ],
+          triggerMeshes: [trigger, leafMesh, glassPane],
+          isHovered: false,
+          isPinned: false,
+        });
+      }
       break;
     }
 
