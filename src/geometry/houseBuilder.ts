@@ -538,8 +538,8 @@ function buildPlotAndEnvironment(
     -7.73,
     0.00,
     5.00,
-    0.042,
-    0.00,
+    0.048,
+    0.008,
     'plot_driveway_gravel',
     'user_supplied',
     'Reference photo: crushed grey gravel bed beneath and around the oprit pavers (Kavel layer)'
