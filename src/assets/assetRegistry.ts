@@ -8,6 +8,7 @@ import { loungeCoffeeTablePrefab } from './items/loungeCoffeeTable';
 import { gardenPlanterClusterPrefab } from './items/gardenPlanterCluster';
 import { gardenBollardLightPrefab } from './items/gardenBollardLight';
 import { loungeLanternPrefab } from './items/loungeLantern';
+import { diningTableOakPrefab } from './items/diningTableOak';
 
 /**
  * CENTRAL ASSET PREFAB CATALOG
@@ -27,6 +28,7 @@ export const ASSET_PREFABS: Record<string, AssetPrefabDefinition> = {
   garden_planter_cluster: gardenPlanterClusterPrefab,
   garden_bollard_light: gardenBollardLightPrefab,
   lounge_lantern: loungeLanternPrefab,
+  dining_table_oak: diningTableOakPrefab,
 };
 
 /**
@@ -221,5 +223,15 @@ export const PLACED_ASSETS: PlacedAssetSpec[] = [
     positionXZ: [5.15, -14.18],
     provenance: 'user_supplied',
     source: 'Back garden bollard light near patio & right flower border',
+  },
+  {
+    id: 'gf_eetkamer_eettafel',
+    prefabId: 'dining_table_oak',
+    label: 'Eiken Eettafel (220 × 105 cm)',
+    floor: 'ground',
+    positionXZ: [4.215, -10.18],
+    rotationDeg: 270,
+    provenance: 'user_supplied',
+    source: 'User specification: 220 × 105 × 77 cm oak table, 118 cm from rear wall (-12.46 m) and 83 cm from shared party wall (+5.57 m)',
   },
 ];
