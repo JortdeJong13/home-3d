@@ -216,8 +216,8 @@ export function buildHouseScene(): HouseSceneGroups {
       ...(id === 'floor_ground_tile'
         ? {
             map: groundTileTextures.map,
-            bumpMap: groundTileTextures.bumpMap,
-            bumpScale: 0.018,
+            normalMap: groundTileTextures.normalMap,
+            normalScale: new THREE.Vector2(0.55, 0.55),
             roughnessMap: groundTileTextures.roughnessMap,
           }
         : {}),

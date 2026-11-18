@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 /**
- * Large-format textured limestone / travertine floor tiles (150 × 75 cm)
+ * Large-format honed limestone / travertine floor tiles (150 × 75 cm)
  * laid in a 1/3 staggered running bond (half-metre step per strip)
  * aligned lengthwise front-to-back along the Z axis.
  *
@@ -27,10 +27,10 @@ const TEX_SIZE = 1024;
 // Subtle ~5.6 mm rectified joint width (world metres)
 const JOINT_HALF_M = 0.0028;
 
-// Warm taupe-sand mortar recessed cleanly against the textured stone
-const GROUT_R = 160;
-const GROUT_G = 149;
-const GROUT_B = 130;
+// Warm taupe-sand mortar close in value to the smooth limestone body
+const GROUT_R = 178;
+const GROUT_G = 167;
+const GROUT_B = 148;
 
 function clamp(v: number, min: number, max: number): number {
   return v < min ? min : v > max ? max : v;
@@ -70,7 +70,7 @@ function valueNoise2D(x: number, y: number, seed: number): number {
   return lerp(lerp(a, b, ux), lerp(c, d, ux), uy);
 }
 
-/** Multi-octave fractional Brownian motion for organic stone variation. */
+/** Multi-octave fractional Brownian motion. */
 function fbm2D(x: number, y: number, octaves: number, seed: number): number {
   let value = 0;
   let amplitude = 0.5;
@@ -80,14 +80,14 @@ function fbm2D(x: number, y: number, octaves: number, seed: number): number {
   for (let i = 0; i < octaves; i++) {
     value += amplitude * valueNoise2D(x * frequency, y * frequency, seed + i * 37);
     norm += amplitude;
-    frequency *= 2.07;
+    frequency *= 2.05;
     amplitude *= 0.5;
   }
 
   return value / norm;
 }
 
-/** Ridged/creased noise in [0, 1] for natural split-limestone strata & mineral edges. */
+/** Ridged noise in [0, 1] for tactile limestone surface relief. */
 function ridgedFbm2D(x: number, y: number, octaves: number, seed: number): number {
   let value = 0;
   let amplitude = 0.5;
@@ -108,7 +108,7 @@ function ridgedFbm2D(x: number, y: number, octaves: number, seed: number): numbe
 
 export interface GroundFloorTileTextureSet {
   map: THREE.DataTexture;
-  bumpMap: THREE.DataTexture;
+  normalMap: THREE.DataTexture;
   roughnessMap: THREE.DataTexture;
 }
 
@@ -131,22 +131,26 @@ function createDataTexture(
 }
 
 /**
- * Generates (and caches) a seamless procedural 1024×1024 150×75 cm textured
- * limestone/travertine floor tile set (albedo with cavity shading + crisp stone
- * relief bump map + matte-satin roughness map).
+ * Generates (and caches) a seamless procedural 1024×1024 150×75 cm limestone
+ * floor tile texture set:
+ * - Smooth, soft warm cream-limestone albedo (`map`) with gentle mineral clouding
+ * - Rich tactile stone surface relief (`normalMap`) + matte-satin `roughnessMap`
+ *   so grazing light catches natural limestone pitting, grain, and bevels without
+ *   making the color blotchy.
  * Uses THREE.DataTexture so it runs identically in both the browser and Node.js.
  */
 export function getGroundFloorTileTextures(): GroundFloorTileTextureSet {
   if (cachedTileTextures) return cachedTileTextures;
 
   const albedoData = new Uint8Array(TEX_SIZE * TEX_SIZE * 4);
-  const bumpData = new Uint8Array(TEX_SIZE * TEX_SIZE * 4);
+  const normalData = new Uint8Array(TEX_SIZE * TEX_SIZE * 4);
   const roughnessData = new Uint8Array(TEX_SIZE * TEX_SIZE * 4);
+  const heightField = new Float32Array(TEX_SIZE * TEX_SIZE);
 
   const jointFracU = JOINT_HALF_M / GROUND_TILE_WIDTH_M;
   const jointFracV = JOINT_HALF_M / GROUND_TILE_LENGTH_M;
-  const featherU = (1.5 / TEX_SIZE) * GROUND_TILE_COLS;
-  const featherV = (1.5 / TEX_SIZE) * GROUND_TILE_ROWS;
+  const featherU = (1.6 / TEX_SIZE) * GROUND_TILE_COLS;
+  const featherV = (1.6 / TEX_SIZE) * GROUND_TILE_ROWS;
 
   for (let py = 0; py < TEX_SIZE; py++) {
     const vNorm = (py + 0.5) / TEX_SIZE;
@@ -164,88 +168,59 @@ export function getGroundFloorTileTextures(): GroundFloorTileTextureSet {
       const row = ((Math.floor(rowFloat) % GROUND_TILE_ROWS) + GROUND_TILE_ROWS) % GROUND_TILE_ROWS;
       const rowFrac = rowFloat - Math.floor(rowFloat);
 
+      // Grout & soft rectified edge mask
+      const maskU =
+        smoothstep(jointFracU, jointFracU + featherU, colFrac) *
+        smoothstep(jointFracU, jointFracU + featherU, 1.0 - colFrac);
+      const maskV =
+        smoothstep(jointFracV, jointFracV + featherV, rowFrac) *
+        smoothstep(jointFracV, jointFracV + featherV, 1.0 - rowFrac);
+      const tileMask = maskU * maskV;
+
       // Tile-local coordinates in metres with unique per-tile noise offset
       const lx = colFrac * GROUND_TILE_WIDTH_M;
       const ly = rowFrac * GROUND_TILE_LENGTH_M;
       const seedOffsetX = hash2D(col, row, 13) * 47.0;
       const seedOffsetY = hash2D(col, row, 29) * 47.0;
 
-      // Subtle organic chiseled edge micro-undulation (~1.5 mm) along tile borders
-      const edgeWobbleU = (valueNoise2D(ly * 14.0 + seedOffsetY, col * 7.1, 61) - 0.5) * 0.0022;
-      const edgeWobbleV = (valueNoise2D(lx * 14.0 + seedOffsetX, row * 7.1, 67) - 0.5) * 0.0011;
+      // -----------------------------------------------------------------------
+      // 1. SMOOTH, SOFT LIMESTONE COLOR (subtle warm mineral clouding)
+      // -----------------------------------------------------------------------
+      const warpX = fbm2D(lx * 1.5 + seedOffsetX, ly * 1.5 + seedOffsetY, 3, 101);
+      const warpY = fbm2D(lx * 1.5 + seedOffsetX + 11.3, ly * 1.5 + seedOffsetY + 6.7, 3, 202);
+      const qx = lx + (warpX - 0.5) * 0.40;
+      const qy = ly + (warpY - 0.5) * 0.40;
 
-      const maskU =
-        smoothstep(jointFracU, jointFracU + featherU, colFrac + edgeWobbleU) *
-        smoothstep(jointFracU, jointFracU + featherU, 1.0 - colFrac - edgeWobbleU);
-      const maskV =
-        smoothstep(jointFracV, jointFracV + featherV, rowFrac + edgeWobbleV) *
-        smoothstep(jointFracV, jointFracV + featherV, 1.0 - rowFrac - edgeWobbleV);
-      const tileMask = maskU * maskV;
+      const macroCloud = fbm2D(qx * 2.1 + seedOffsetX, qy * 1.8 + seedOffsetY, 4, 303);
+      const sedWisp = fbm2D(qx * 4.8 + seedOffsetX + 4.9, qy * 2.0 + seedOffsetY + 8.3, 3, 404);
+      const softGrainColor = fbm2D(lx * 18.0 + seedOffsetX, ly * 18.0 + seedOffsetY, 2, 505);
 
-      // Domain-warped multi-scale limestone / travertine relief
-      const warpX = fbm2D(lx * 2.1 + seedOffsetX, ly * 2.1 + seedOffsetY, 3, 101);
-      const warpY = fbm2D(lx * 2.1 + seedOffsetX + 11.3, ly * 2.1 + seedOffsetY + 6.7, 3, 202);
-      const qx = lx + (warpX - 0.5) * 0.36;
-      const qy = ly + (warpY - 0.5) * 0.36;
-
-      // 1. Macro mineral clouds & sedimentary stratification
-      const macroCloud = fbm2D(qx * 2.6 + seedOffsetX, qy * 2.1 + seedOffsetY, 4, 303);
-      const sedStrata = ridgedFbm2D(qx * 4.5 + seedOffsetX + 4.9, qy * 2.2 + seedOffsetY + 8.3, 3, 404);
-
-      // 2. Natural weathered limestone pockets & shallow pitting (clearly visible in raking light)
-      const pocketNoise = fbm2D(qx * 11.0 + seedOffsetX + 19.1, qy * 11.0 + seedOffsetY + 3.7, 3, 505);
-      const pitRaw = valueNoise2D(qx * 30.0 + seedOffsetX, qy * 30.0 + seedOffsetY, 606);
-      const pitMask = smoothstep(0.24, 0.42, pocketNoise) * (1.0 - smoothstep(0.62, 0.78, pitRaw));
-
-      // 3. Crisp stone micro-grain (1.5–4 cm granular sandstone/limestone texture)
-      const mediumGrain = fbm2D(lx * 22.0 + seedOffsetX, ly * 22.0 + seedOffsetY, 3, 707);
-      const crispGrain = valueNoise2D(lx * 54.0 + seedOffsetX, ly * 54.0 + seedOffsetY, 808);
-
-      // Combined surface height in [0, 1] (0 = recessed pit/depression, 1 = raised stone crest)
-      const surfaceHeight = clamp(
-        0.52 +
-          (macroCloud - 0.5) * 0.36 +
-          (sedStrata - 0.5) * 0.24 +
-          (mediumGrain - 0.5) * 0.28 +
-          (crispGrain - 0.5) * 0.16 -
-          pitMask * 0.30,
+      const colorVal = clamp(
+        0.5 + (macroCloud - 0.5) * 0.72 + (sedWisp - 0.5) * 0.30 + (softGrainColor - 0.5) * 0.10,
         0,
         1
       );
 
-      // Tone value with cavity darkening in depressed pockets + bright mineral ridges
-      const stoneTone = clamp(
-        0.50 +
-          (macroCloud - 0.5) * 0.88 +
-          (sedStrata - 0.5) * 0.44 +
-          (mediumGrain - 0.5) * 0.34 +
-          (crispGrain - 0.5) * 0.16 -
-          pitMask * 0.28,
-        0,
-        1
-      );
-
-      // Calibrated warm travertine / limestone palette (richer contrast than smooth porcelain)
       let baseR: number;
       let baseG: number;
       let baseB: number;
-      if (stoneTone < 0.5) {
-        const k = stoneTone * 2.0;
-        baseR = lerp(181, 215, k);
-        baseG = lerp(169, 204, k);
-        baseB = lerp(146, 181, k);
+      if (colorVal < 0.5) {
+        const k = colorVal * 2.0;
+        baseR = lerp(201, 218, k);
+        baseG = lerp(189, 207, k);
+        baseB = lerp(167, 186, k);
       } else {
-        const k = (stoneTone - 0.5) * 2.0;
-        baseR = lerp(215, 234, k);
-        baseG = lerp(204, 226, k);
-        baseB = lerp(181, 206, k);
+        const k = (colorVal - 0.5) * 2.0;
+        baseR = lerp(218, 231, k);
+        baseG = lerp(207, 223, k);
+        baseB = lerp(186, 205, k);
       }
 
-      // Per-tile tonal variation so adjacent tiles read distinctly
-      const tileBrightness = 0.955 + hash2D(col, row, 71) * 0.085;
-      const tileWarmth = (hash2D(col, row, 89) - 0.5) * 5.0;
+      // Gentle per-tile tonal variation
+      const tileBrightness = 0.97 + hash2D(col, row, 71) * 0.06;
+      const tileWarmth = (hash2D(col, row, 89) - 0.5) * 4.0;
 
-      // Subtle light-catching chiseled edge highlight
+      // Subtle light-catching rectified edge highlight (0.5..1.8 cm inside tile edge)
       const distEdgeM = Math.min(
         lx,
         GROUND_TILE_WIDTH_M - lx,
@@ -253,32 +228,46 @@ export function getGroundFloorTileTextures(): GroundFloorTileTextureSet {
         GROUND_TILE_LENGTH_M - ly
       );
       const edgeHighlight =
-        smoothstep(0.0025, 0.006, distEdgeM) *
-        (1.0 - smoothstep(0.006, 0.018, distEdgeM)) *
-        0.028;
+        smoothstep(0.003, 0.007, distEdgeM) *
+        (1.0 - smoothstep(0.007, 0.022, distEdgeM)) *
+        0.024;
 
       const shade = tileBrightness + edgeHighlight;
       const tileR = clamp(baseR * shade + tileWarmth, 0, 255);
       const tileG = clamp(baseG * shade, 0, 255);
       const tileB = clamp(baseB * shade - tileWarmth * 0.7, 0, 255);
 
-      const idx = (py * TEX_SIZE + px) * 4;
+      const pIdx = py * TEX_SIZE + px;
+      const idx = pIdx * 4;
       albedoData[idx] = Math.round(lerp(GROUT_R, tileR, tileMask));
       albedoData[idx + 1] = Math.round(lerp(GROUT_G, tileG, tileMask));
       albedoData[idx + 2] = Math.round(lerp(GROUT_B, tileB, tileMask));
       albedoData[idx + 3] = 255;
 
-      // Full-range tactile bump map (deep grout = 20, stone pits = 95..145, crests = 215..255)
-      const tileBump = lerp(95, 252, surfaceHeight);
-      const groutBump = 20;
-      const bumpVal = Math.round(clamp(lerp(groutBump, tileBump, tileMask), 0, 255));
-      bumpData[idx] = bumpVal;
-      bumpData[idx + 1] = bumpVal;
-      bumpData[idx + 2] = bumpVal;
-      bumpData[idx + 3] = 255;
+      // -----------------------------------------------------------------------
+      // 2. TACTILE PHYSICAL STONE RELIEF (drives normalMap & roughnessMap only)
+      // -----------------------------------------------------------------------
+      const reliefStrata = ridgedFbm2D(qx * 5.2 + seedOffsetX + 4.9, qy * 2.6 + seedOffsetY + 8.3, 3, 601);
+      const pocketNoise = fbm2D(qx * 11.5 + seedOffsetX + 19.1, qy * 11.5 + seedOffsetY + 3.7, 3, 613);
+      const pitDetail = valueNoise2D(qx * 28.0 + seedOffsetX, qy * 28.0 + seedOffsetY, 631);
+      const pitMask = smoothstep(0.25, 0.44, pocketNoise) * (1.0 - smoothstep(0.58, 0.76, pitDetail));
+      const mediumRelief = fbm2D(lx * 24.0 + seedOffsetX, ly * 24.0 + seedOffsetY, 3, 707);
+      const crispStoneGrain = valueNoise2D(lx * 58.0 + seedOffsetX, ly * 58.0 + seedOffsetY, 809);
 
-      // Roughness map: chalky matte inside recessed stone pockets & grout, subtle satin on high ridges
-      const tileRough = lerp(246, 194, surfaceHeight);
+      const tileHeight = clamp(
+        0.58 +
+          (macroCloud - 0.5) * 0.24 +
+          (reliefStrata - 0.5) * 0.26 +
+          (mediumRelief - 0.5) * 0.30 +
+          (crispStoneGrain - 0.5) * 0.20 -
+          pitMask * 0.34,
+        0.12,
+        1.0
+      );
+      heightField[pIdx] = lerp(0.0, tileHeight, tileMask);
+
+      // Roughness map: chalky matte inside stone depressions & grout, softer satin on smooth high spots
+      const tileRough = lerp(246, 196, tileHeight);
       const groutRough = 252;
       const roughVal = Math.round(clamp(lerp(groutRough, tileRough, tileMask), 0, 255));
       roughnessData[idx] = roughVal;
@@ -288,9 +277,37 @@ export function getGroundFloorTileTextures(): GroundFloorTileTextureSet {
     }
   }
 
+  // Convert periodic heightField into a crisp tangent-space normalMap
+  const normalStrength = 2.6;
+  for (let py = 0; py < TEX_SIZE; py++) {
+    const pyUp = (py - 1 + TEX_SIZE) % TEX_SIZE;
+    const pyDown = (py + 1) % TEX_SIZE;
+
+    for (let px = 0; px < TEX_SIZE; px++) {
+      const pxLeft = (px - 1 + TEX_SIZE) % TEX_SIZE;
+      const pxRight = (px + 1) % TEX_SIZE;
+
+      const hL = heightField[py * TEX_SIZE + pxLeft];
+      const hR = heightField[py * TEX_SIZE + pxRight];
+      const hU = heightField[pyUp * TEX_SIZE + px];
+      const hD = heightField[pyDown * TEX_SIZE + px];
+
+      const dx = (hL - hR) * normalStrength;
+      const dy = (hU - hD) * normalStrength;
+      const dz = 1.0;
+      const invLen = 1.0 / Math.hypot(dx, dy, dz);
+
+      const idx = (py * TEX_SIZE + px) * 4;
+      normalData[idx] = Math.round((dx * invLen * 0.5 + 0.5) * 255);
+      normalData[idx + 1] = Math.round((dy * invLen * 0.5 + 0.5) * 255);
+      normalData[idx + 2] = Math.round((dz * invLen * 0.5 + 0.5) * 255);
+      normalData[idx + 3] = 255;
+    }
+  }
+
   cachedTileTextures = {
     map: createDataTexture(albedoData, THREE.SRGBColorSpace),
-    bumpMap: createDataTexture(bumpData, THREE.NoColorSpace),
+    normalMap: createDataTexture(normalData, THREE.NoColorSpace),
     roughnessMap: createDataTexture(roughnessData, THREE.NoColorSpace),
   };
   return cachedTileTextures;
