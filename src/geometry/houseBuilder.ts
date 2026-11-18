@@ -566,10 +566,68 @@ function buildPlotAndEnvironment(
   const gatePivot = new THREE.Group();
   gatePivot.position.set(-3.27, 0.725, -13.72);
 
-  const gateGeo = new THREE.BoxGeometry(gateW, 1.45, 0.08);
+  // Simple Dutch wooden-plank garden door ("Tuindeur" with vertical planks, backing ledges, diagonal brace & hardware)
+  const plankCount = Math.max(6, Math.round(gateW / 0.13));
+  const plankPitch = gateW / plankCount;
+  const plankW = plankPitch - 0.006;
+  const plankH = 1.45;
+  const plankD = 0.024;
+
+  const plankGeos: THREE.BufferGeometry[] = [];
+  for (let i = 0; i < plankCount; i++) {
+    const pGeo = new THREE.BoxGeometry(plankW, plankH, plankD);
+    pGeo.translate(-((i + 0.5) * plankPitch), 0, plankD / 2);
+    plankGeos.push(pGeo);
+  }
+  const gateGeo = mergeGeometries(plankGeos, false);
   const gateMesh = new THREE.Mesh(gateGeo, getMat('plot_gate_timber'));
-  gateMesh.position.set(-gateW / 2, 0, 0);
   gatePivot.add(gateMesh);
+
+  // Two horizontal backing ledges ("klampen") + diagonal brace ("schoor") on the garden side (-Z)
+  const frameGeos: THREE.BufferGeometry[] = [];
+  const ledgeH = 0.085;
+  const ledgeD = 0.024;
+  const ledgeZ = -ledgeD / 2;
+  for (const ly of [0.46, -0.46]) {
+    const ledge = new THREE.BoxGeometry(gateW - 0.04, ledgeH, ledgeD);
+    ledge.translate(-gateW / 2, ly, ledgeZ);
+    frameGeos.push(ledge);
+  }
+  // Diagonal brace from bottom hinge side to top latch side
+  const braceDx = -(gateW - 0.12);
+  const braceDy = 0.92 - ledgeH;
+  const braceLen = Math.hypot(braceDx, braceDy);
+  const braceAngle = Math.atan2(braceDy, braceDx);
+  const braceGeo = new THREE.BoxGeometry(braceLen, 0.07, ledgeD);
+  braceGeo.rotateZ(braceAngle);
+  braceGeo.translate(-gateW / 2, 0, ledgeZ);
+  frameGeos.push(braceGeo);
+
+  const gateFrameMesh = new THREE.Mesh(mergeGeometries(frameGeos, false), getMat('plot_fence_post'));
+  gateFrameMesh.castShadow = true;
+  gateFrameMesh.receiveShadow = true;
+  gatePivot.add(gateFrameMesh);
+
+  // Dark metal strap hinges ("hengsels") and simple latch ("klink")
+  const hardwareGeos: THREE.BufferGeometry[] = [];
+  for (const hy of [0.46, -0.46]) {
+    const strap = new THREE.BoxGeometry(0.32, 0.032, 0.008);
+    strap.translate(-0.17, hy, -ledgeD - 0.004);
+    hardwareGeos.push(strap);
+  }
+  const latchPlate = new THREE.BoxGeometry(0.035, 0.12, 0.01);
+  latchPlate.translate(-gateW + 0.07, 0.06, plankD + 0.005);
+  hardwareGeos.push(latchPlate);
+  const latchHandleFront = new THREE.BoxGeometry(0.09, 0.022, 0.032);
+  latchHandleFront.translate(-gateW + 0.10, 0.06, plankD + 0.02);
+  hardwareGeos.push(latchHandleFront);
+  const latchHandleBack = new THREE.BoxGeometry(0.09, 0.022, 0.032);
+  latchHandleBack.translate(-gateW + 0.10, 0.06, -0.02);
+  hardwareGeos.push(latchHandleBack);
+
+  const gateHardwareMesh = new THREE.Mesh(mergeGeometries(hardwareGeos, false), getMat('roof_tile_anthracite'));
+  gateHardwareMesh.castShadow = true;
+  gatePivot.add(gateHardwareMesh);
 
   registerMesh(gateMesh, 'plot_gate_timber', {
     id: 'garden_gate',
