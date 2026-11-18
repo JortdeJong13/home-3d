@@ -28,9 +28,9 @@ const TEX_SIZE = 1024;
 const JOINT_HALF_M = 0.0008;
 
 // Tone-on-tone warm limestone mortar so seams stay whisper-thin and subtle
-const GROUT_R = 198;
-const GROUT_G = 188;
-const GROUT_B = 169;
+const GROUT_R = 186;
+const GROUT_G = 176;
+const GROUT_B = 157;
 
 function clamp(v: number, min: number, max: number): number {
   return v < min ? min : v > max ? max : v;
@@ -206,14 +206,14 @@ export function getGroundFloorTileTextures(): GroundFloorTileTextureSet {
       let baseB: number;
       if (colorVal < 0.5) {
         const k = colorVal * 2.0;
-        baseR = lerp(201, 218, k);
-        baseG = lerp(189, 207, k);
-        baseB = lerp(167, 186, k);
+        baseR = lerp(189, 205, k);
+        baseG = lerp(177, 194, k);
+        baseB = lerp(156, 173, k);
       } else {
         const k = (colorVal - 0.5) * 2.0;
-        baseR = lerp(218, 231, k);
-        baseG = lerp(207, 223, k);
-        baseB = lerp(186, 205, k);
+        baseR = lerp(205, 218, k);
+        baseG = lerp(194, 209, k);
+        baseB = lerp(173, 191, k);
       }
 
       // Gentle per-tile tonal variation
