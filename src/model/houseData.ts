@@ -173,6 +173,9 @@ export interface WallSpec {
   clipToRoof?: boolean;
   exteriorMaterial: MaterialId;
   interiorMaterial: MaterialId;
+  /** Optional trim (in metres) at wall start/end for the interior plaster lining to avoid overlapping perpendicular walls */
+  interiorStartTrim?: number;
+  interiorEndTrim?: number;
   isExterior?: boolean;
   isNeighbour?: boolean;
   openings?: WallOpeningPlacement[];
@@ -248,6 +251,8 @@ export function getHouseWalls(): WallSpec[] {
       height: H0,
       exteriorMaterial: 'exterior_brick_main',
       interiorMaterial: 'interior_wall_plaster',
+      interiorStartTrim: 0.40,
+      interiorEndTrim: 0.30,
       isExterior: true,
       provenance: 'user_supplied',
       source: 'User specification (40 cm outer wall) + VK-06 (5.17 m interior)',
@@ -302,6 +307,8 @@ export function getHouseWalls(): WallSpec[] {
       height: H0,
       exteriorMaterial: 'exterior_brick_main',
       interiorMaterial: 'interior_wall_plaster',
+      interiorStartTrim: 0.30,
+      interiorEndTrim: 0.40,
       isExterior: true,
       provenance: 'user_supplied',
       source: 'User specification (40 cm outer wall) + Tekening 55.1 (B11a + B13)',
@@ -533,6 +540,8 @@ export function getHouseWalls(): WallSpec[] {
       height: H1,
       exteriorMaterial: 'exterior_brick_main',
       interiorMaterial: 'interior_wall_plaster',
+      interiorStartTrim: 0.40,
+      interiorEndTrim: 0.30,
       isExterior: true,
       provenance: 'user_supplied',
       source: 'User specification (40 cm outer wall) + VK-06 (5.17 m interior)',
@@ -589,6 +598,8 @@ export function getHouseWalls(): WallSpec[] {
       height: H1,
       exteriorMaterial: 'exterior_brick_main',
       interiorMaterial: 'interior_wall_plaster',
+      interiorStartTrim: 0.30,
+      interiorEndTrim: 0.40,
       isExterior: true,
       provenance: 'user_supplied',
       source: 'User specification (40 cm outer wall) + VK-06 achtergevel',
@@ -789,6 +800,8 @@ export function getHouseWalls(): WallSpec[] {
       },
       exteriorMaterial: 'exterior_brick_main',
       interiorMaterial: 'interior_wall_plaster',
+      interiorStartTrim: 0.40,
+      interiorEndTrim: 0.30,
       isExterior: true,
       provenance: 'user_supplied',
       source: 'User specification (40 cm outer wall) + VK-06 voorgevel',
@@ -819,6 +832,8 @@ export function getHouseWalls(): WallSpec[] {
       },
       exteriorMaterial: 'exterior_brick_main',
       interiorMaterial: 'interior_wall_plaster',
+      interiorStartTrim: 0.30,
+      interiorEndTrim: 0.40,
       isExterior: true,
       provenance: 'user_supplied',
       source: 'User specification (40 cm outer wall) + VK-06 achtergevel',

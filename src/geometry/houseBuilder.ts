@@ -1833,18 +1833,18 @@ function buildWallWithOpenings(
   wallContainer.add(wallMesh);
 
   if (wall.isExterior && !wall.isNeighbour && wall.interiorMaterial === 'interior_wall_plaster') {
-    // Inset the interior plaster lining by 0.41 m at the corners so it never overlaps the 40 cm left wall or 30 cm shared party wall
-    const trimMargin = length > 5.5 ? 0.41 : 0.02;
+    const startTrim = wall.interiorStartTrim ?? 0;
+    const endTrim = wall.interiorEndTrim ?? 0;
     const innerShape = new THREE.Shape();
-    innerShape.moveTo(trimMargin, 0);
-    innerShape.lineTo(length - trimMargin, 0);
+    innerShape.moveTo(startTrim, 0);
+    innerShape.lineTo(length - endTrim, 0);
     if (wall.gablePeak) {
-      innerShape.lineTo(length - trimMargin, wall.height);
+      innerShape.lineTo(length - endTrim, wall.height);
       innerShape.lineTo(wall.gablePeak.offsetAlongWall, wall.gablePeak.peakHeight - 0.05);
-      innerShape.lineTo(trimMargin, wall.height);
+      innerShape.lineTo(startTrim, wall.height);
     } else {
-      innerShape.lineTo(length - trimMargin, wall.height);
-      innerShape.lineTo(trimMargin, wall.height);
+      innerShape.lineTo(length - endTrim, wall.height);
+      innerShape.lineTo(startTrim, wall.height);
     }
     innerShape.closePath();
     for (const h of shape.holes) {

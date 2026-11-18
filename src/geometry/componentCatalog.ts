@@ -331,6 +331,63 @@ function buildTopBrickRollaag(
   group.add(lintelMesh);
 }
 
+/**
+ * Build a white/cream vertical downward-pointing window-style handle ("raamkruk")
+ * with a compact rounded escutcheon plate.
+ */
+function createVerticalWindowHandle(
+  leafThick: number,
+  handleMat: THREE.Material,
+  interiorOnly = false
+): THREE.Group {
+  const hGroup = new THREE.Group();
+  const plateW = 0.026;
+  const plateR = plateW / 2;
+  const plateStraightH = 0.048;
+  const plateShape = new THREE.Shape();
+  plateShape.absarc(0, plateStraightH / 2, plateR, 0, Math.PI, false);
+  plateShape.absarc(0, -plateStraightH / 2, plateR, Math.PI, Math.PI * 2, false);
+  plateShape.closePath();
+
+  const plateDepth = interiorOnly ? 0.01 : leafThick + 0.012;
+  const plateGeo = new THREE.ExtrudeGeometry(plateShape, {
+    depth: plateDepth,
+    bevelEnabled: false,
+    curveSegments: 14,
+  });
+  plateGeo.translate(0, 0, interiorOnly ? -leafThick / 2 - plateDepth + 0.002 : -plateDepth / 2);
+  hGroup.add(new THREE.Mesh(plateGeo, handleMat));
+
+  const neckOffsetZ = leafThick / 2 + 0.028;
+  const neckR = 0.0075;
+  const neckLen = interiorOnly ? 0.032 : neckOffsetZ * 2;
+  const neckGeo = new THREE.CylinderGeometry(neckR, neckR, neckLen, 14);
+  neckGeo.rotateX(Math.PI / 2);
+  const neck = new THREE.Mesh(neckGeo, handleMat);
+  neck.position.set(0, 0.016, interiorOnly ? -(leafThick / 2 + 0.014) : 0);
+  hGroup.add(neck);
+
+  const gripLen = 0.105;
+  const gripGeo = new THREE.CylinderGeometry(neckR, neckR, gripLen, 14);
+  const jointGeo = new THREE.SphereGeometry(neckR, 12, 10);
+  const zSides = interiorOnly ? [-1] : [1, -1];
+  for (const zSide of zSides) {
+    const zPos = zSide * neckOffsetZ;
+    const elbow = new THREE.Mesh(jointGeo, handleMat);
+    elbow.position.set(0, 0.016, zPos);
+    hGroup.add(elbow);
+
+    const grip = new THREE.Mesh(gripGeo, handleMat);
+    grip.position.set(0, 0.016 - gripLen / 2, zPos);
+    hGroup.add(grip);
+
+    const tip = new THREE.Mesh(jointGeo, handleMat);
+    tip.position.set(0, 0.016 - gripLen, zPos);
+    hGroup.add(tip);
+  }
+  return hGroup;
+}
+
 export function instantiateOpeningPrefab3D(
   wallContainer: THREE.Group,
   op: ResolvedOpeningInstance,
@@ -392,52 +449,66 @@ export function instantiateOpeningPrefab3D(
   }
 
   // 2. Decorative Red-Brown Brick Surround (ONLY on the exterior facade surface, z = +wallThickness / 2!)
+  // Top & bottom bands use vertical soldier bricks ("staande rollaag"); left & right jambs use horizontal brick courses.
   if (op.hasTerracottaSurround) {
-    const bandWidth = 0.105; // 10.5 cm brick border width around window opening
-    const reliefDepth = 0.032; // 3.2 cm decorative relief applied onto the outside face of the brick wall
-    const exteriorFaceZ = wallThickness / 2 + reliefDepth / 2 - 0.002;
+    const bandWidth = 0.115; // 11.5 cm brick border width around window opening
+    const reliefDepth = 0.044; // 4.4 cm relief matching front door brick arch
+    const mortarDepth = reliefDepth * 0.62;
+    const brickRelief = reliefDepth - mortarDepth;
+    const baseZ = wallThickness / 2 - 0.002;
+    const mortarZ = baseZ + mortarDepth / 2;
+    const brickZ = baseZ + mortarDepth + brickRelief / 2;
 
-    // Top horizontal brick lintel band (rollaag)
-    const surroundTop = new THREE.Mesh(
-      new THREE.BoxGeometry(op.width + bandWidth * 2, bandWidth * 1.15, reliefDepth),
-      getMat('window_trim_terracotta')
-    );
-    surroundTop.position.set(0, op.height / 2 + (bandWidth * 1.15) / 2, exteriorFaceZ);
-    surroundTop.castShadow = true;
-    group.add(surroundTop);
-
-    // Left vertical brick jamb band
+    const topH = bandWidth * 1.15;
     const hasBottomBand = op.sillHeight > 0.05;
-    const sideHeight = op.height + (hasBottomBand ? bandWidth * 0.9 : 0);
-    const sideCenterY = hasBottomBand ? -(bandWidth * 0.9) / 2 : 0;
+    const bottomH = hasBottomBand ? bandWidth * 1.05 : 0;
+    const fullW = op.width + bandWidth * 2;
 
-    const surroundL = new THREE.Mesh(
-      new THREE.BoxGeometry(bandWidth, sideHeight, reliefDepth),
-      getMat('window_trim_terracotta')
-    );
-    surroundL.position.set(-op.width / 2 - bandWidth / 2, sideCenterY, exteriorFaceZ);
-    surroundL.castShadow = true;
-    group.add(surroundL);
+    const surroundGeos: THREE.BufferGeometry[] = [];
+    const addBox = (w: number, h: number, d: number, x: number, y: number, z: number) => {
+      const g = new THREE.BoxGeometry(w, h, d);
+      g.translate(x, y, z);
+      surroundGeos.push(g);
+    };
 
-    // Right vertical brick jamb band
-    const surroundR = new THREE.Mesh(
-      new THREE.BoxGeometry(bandWidth, sideHeight, reliefDepth),
-      getMat('window_trim_terracotta')
-    );
-    surroundR.position.set(op.width / 2 + bandWidth / 2, sideCenterY, exteriorFaceZ);
-    surroundR.castShadow = true;
-    group.add(surroundR);
-
-    // Bottom horizontal brick sill (onderdorpel/waterslag) for all windows above ground level
-    if (hasBottomBand) {
-      const surroundBottom = new THREE.Mesh(
-        new THREE.BoxGeometry(op.width, bandWidth * 0.9, reliefDepth + 0.012),
-        getMat('window_trim_terracotta')
-      );
-      surroundBottom.position.set(0, -op.height / 2 - (bandWidth * 0.9) / 2, exteriorFaceZ + 0.004);
-      surroundBottom.castShadow = true;
-      group.add(surroundBottom);
+    // Top horizontal lintel: mortar backing + vertical soldier bricks across full outer width
+    const topCenterY = op.height / 2 + topH / 2;
+    addBox(fullW, topH, mortarDepth, 0, topCenterY, mortarZ);
+    const numTopBricks = Math.max(6, Math.round(fullW / 0.058));
+    const topPitch = fullW / numTopBricks;
+    for (let i = 0; i < numTopBricks; i++) {
+      const bx = -fullW / 2 + (i + 0.5) * topPitch;
+      addBox(topPitch - 0.008, topH - 0.004, brickRelief, bx, topCenterY, brickZ);
     }
+
+    // Bottom horizontal sill: mortar backing + vertical soldier bricks across full outer width
+    if (hasBottomBand) {
+      const botCenterY = -op.height / 2 - bottomH / 2;
+      addBox(fullW, bottomH, mortarDepth, 0, botCenterY, mortarZ);
+      for (let i = 0; i < numTopBricks; i++) {
+        const bx = -fullW / 2 + (i + 0.5) * topPitch;
+        addBox(topPitch - 0.008, bottomH - 0.004, brickRelief, bx, botCenterY, brickZ);
+      }
+    }
+
+    // Left & right vertical jambs: mortar backing + horizontal brick courses between top and bottom bands
+    const numSideRows = Math.max(4, Math.round(op.height / 0.058));
+    const rowPitch = op.height / numSideRows;
+    for (const side of [-1, 1]) {
+      const sx = side * (op.width / 2 + bandWidth / 2);
+      addBox(bandWidth, op.height, mortarDepth, sx, 0, mortarZ);
+      for (let r = 0; r < numSideRows; r++) {
+        const ry = -op.height / 2 + (r + 0.5) * rowPitch;
+        addBox(bandWidth - 0.004, rowPitch - 0.008, brickRelief, sx, ry, brickZ);
+      }
+    }
+
+    const mergedSurround = mergeGeometries(surroundGeos, false);
+    for (const g of surroundGeos) g.dispose();
+    const surroundMesh = new THREE.Mesh(mergedSurround, getMat('window_trim_terracotta'));
+    surroundMesh.castShadow = true;
+    surroundMesh.receiveShadow = true;
+    group.add(surroundMesh);
   }
 
   // 3. Decorative Red-Brown Brick Portal & Arch around Front Entrance Door (ONLY on the exterior facade surface!)
@@ -742,55 +813,6 @@ export function instantiateOpeningPrefab3D(
 
       const whiteHandleMat = getMat(op.frameMaterial);
 
-      const createVerticalWindowHandle = () => {
-        const hGroup = new THREE.Group();
-        // Compact rounded vertical escutcheon plate
-        const plateW = 0.026;
-        const plateR = plateW / 2;
-        const plateStraightH = 0.048;
-        const plateShape = new THREE.Shape();
-        plateShape.absarc(0, plateStraightH / 2, plateR, 0, Math.PI, false);
-        plateShape.absarc(0, -plateStraightH / 2, plateR, Math.PI, Math.PI * 2, false);
-        plateShape.closePath();
-        const plateDepth = leafThick + 0.012;
-        const plateGeo = new THREE.ExtrudeGeometry(plateShape, {
-          depth: plateDepth,
-          bevelEnabled: false,
-          curveSegments: 14,
-        });
-        plateGeo.translate(0, 0, -plateDepth / 2);
-        hGroup.add(new THREE.Mesh(plateGeo, whiteHandleMat));
-
-        // Cylindrical neck through both sides
-        const neckOffsetZ = leafThick / 2 + 0.028;
-        const neckR = 0.0075;
-        const neckGeo = new THREE.CylinderGeometry(neckR, neckR, neckOffsetZ * 2, 14);
-        neckGeo.rotateX(Math.PI / 2);
-        const neck = new THREE.Mesh(neckGeo, whiteHandleMat);
-        neck.position.set(0, 0.016, 0);
-        hGroup.add(neck);
-
-        // Vertical downward-pointing grip on both sides
-        const gripLen = 0.105;
-        const gripGeo = new THREE.CylinderGeometry(neckR, neckR, gripLen, 14);
-        const jointGeo = new THREE.SphereGeometry(neckR, 12, 10);
-        for (const zSide of [1, -1]) {
-          const zPos = zSide * neckOffsetZ;
-          const elbow = new THREE.Mesh(jointGeo, whiteHandleMat);
-          elbow.position.set(0, 0.016, zPos);
-          hGroup.add(elbow);
-
-          const grip = new THREE.Mesh(gripGeo, whiteHandleMat);
-          grip.position.set(0, 0.016 - gripLen / 2, zPos);
-          hGroup.add(grip);
-
-          const tip = new THREE.Mesh(jointGeo, whiteHandleMat);
-          tip.position.set(0, 0.016 - gripLen, zPos);
-          hGroup.add(tip);
-        }
-        return hGroup;
-      };
-
       const buildFrenchDoorLeaf = (side: -1 | 1) => {
         // side = -1: left leaf hinged at -doorOpeningHalfW, extends +X to 0
         // side = +1: right leaf hinged at +doorOpeningHalfW, extends -X to 0
@@ -829,7 +851,7 @@ export function instantiateOpeningPrefab3D(
         pivot.add(glassMesh);
 
         // White vertical window-style handle pointing down on the meeting stile
-        const handleGroup = createVerticalWindowHandle();
+        const handleGroup = createVerticalWindowHandle(leafThick, whiteHandleMat);
         handleGroup.position.set(dir * (doorW - stileW / 2), -0.02, 0);
         pivot.add(handleGroup);
 
@@ -1126,6 +1148,126 @@ export function instantiateOpeningPrefab3D(
             },
           ],
           triggerMeshes: [trigger, leafMesh, glassPane],
+          isHovered: false,
+          isPinned: false,
+        });
+      }
+      break;
+    }
+
+    case 'window_living_front':
+    case 'window_living_side': {
+      // Wide fixed pane + smaller inward-opening casement window ("draairaam") with white downward-pointing handle
+      const isSide = op.prefabId === 'window_living_side';
+      const mullionW = 0.055;
+      // Front window: smaller casement on right (+X); Side window: smaller casement on left/rear (-X)
+      const mullionX = isSide ? -op.width * 0.14 : op.width * 0.17;
+
+      const mullion = new THREE.Mesh(
+        new THREE.BoxGeometry(mullionW, innerH, frameDepth * 0.9),
+        getMat(op.frameMaterial)
+      );
+      mullion.position.set(mullionX, 0, frameCenterZ);
+      group.add(mullion);
+
+      // Fixed pane bounds vs casement pane bounds
+      const fixedW = isSide
+        ? (innerW / 2 - (mullionX + mullionW / 2))
+        : ((mullionX - mullionW / 2) - (-innerW / 2));
+      const fixedCenterX = isSide
+        ? (mullionX + mullionW / 2 + fixedW / 2)
+        : (-innerW / 2 + fixedW / 2);
+
+      const fixedGlass = new THREE.Mesh(
+        new THREE.BoxGeometry(fixedW, innerH, 0.022),
+        getMat(op.panelMaterial)
+      );
+      fixedGlass.position.set(fixedCenterX, 0, frameCenterZ);
+      registerMesh(
+        fixedGlass,
+        op.panelMaterial,
+        {
+          id: op.id,
+          label: op.label,
+          dimensionsLabel: `${op.width.toFixed(2)} × ${op.height.toFixed(2)} m`,
+          provenance: op.provenance,
+          source: op.source,
+          floor,
+        },
+        false,
+        false
+      );
+      group.add(fixedGlass);
+
+      // Smaller inward-opening casement sash
+      const casementW = isSide
+        ? ((mullionX - mullionW / 2) - (-innerW / 2))
+        : (innerW / 2 - (mullionX + mullionW / 2));
+      const hingeX = isSide ? -innerW / 2 : innerW / 2;
+      const dir = isSide ? 1 : -1; // +1 extends +X from left hinge; -1 extends -X from right hinge
+
+      const sashPivot = new THREE.Group();
+      sashPivot.position.set(hingeX, 0, frameCenterZ);
+
+      const sashThick = 0.05;
+      const sashBarW = 0.056;
+      const sashGlassW = Math.max(0.10, casementW - sashBarW * 2);
+      const sashGlassH = Math.max(0.20, innerH - sashBarW * 2);
+      const sashCenterX = dir * (casementW / 2);
+
+      const sashGeos: THREE.BufferGeometry[] = [];
+      const addSashBar = (w: number, h: number, d: number, x: number, y: number) => {
+        const g = new THREE.BoxGeometry(w, h, d);
+        g.translate(x, y, 0);
+        sashGeos.push(g);
+      };
+      addSashBar(sashBarW, innerH, sashThick, dir * (sashBarW / 2), 0);
+      addSashBar(sashBarW, innerH, sashThick, dir * (casementW - sashBarW / 2), 0);
+      addSashBar(sashGlassW, sashBarW, sashThick, sashCenterX, innerH / 2 - sashBarW / 2);
+      addSashBar(sashGlassW, sashBarW, sashThick, sashCenterX, -innerH / 2 + sashBarW / 2);
+
+      const mergedSash = mergeGeometries(sashGeos, false);
+      for (const g of sashGeos) g.dispose();
+      const sashFrameMesh = new THREE.Mesh(mergedSash, getMat(op.frameMaterial));
+      sashFrameMesh.castShadow = true;
+      sashFrameMesh.receiveShadow = true;
+      sashPivot.add(sashFrameMesh);
+
+      const casementGlass = new THREE.Mesh(
+        new THREE.BoxGeometry(sashGlassW + 0.008, sashGlassH + 0.008, 0.014),
+        getMat(op.panelMaterial)
+      );
+      casementGlass.position.set(sashCenterX, 0, 0);
+      sashPivot.add(casementGlass);
+
+      // White downward-pointing window handle on the inside of the latch stile
+      const casementHandle = createVerticalWindowHandle(sashThick, getMat(op.frameMaterial), true);
+      casementHandle.position.set(dir * (casementW - sashBarW / 2), -0.05, 0);
+      sashPivot.add(casementHandle);
+
+      group.add(sashPivot);
+
+      const casementTrigger = new THREE.Mesh(
+        new THREE.BoxGeometry(casementW + 0.08, innerH, Math.max(0.40, wallThickness + 0.18)),
+        new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
+      );
+      casementTrigger.position.set(hingeX + sashCenterX, 0, frameCenterZ);
+      group.add(casementTrigger);
+
+      if (onRegisterDoor) {
+        onRegisterDoor({
+          id: `${op.id}_casement`,
+          label: `${op.label} (Draairaam)`,
+          floor,
+          pivots: [
+            {
+              group: sashPivot,
+              openAngle: isSide ? Math.PI * 0.42 : -Math.PI * 0.42, // swings inward (-Z)
+              closedAngle: 0,
+              currentAngle: 0,
+            },
+          ],
+          triggerMeshes: [casementTrigger, sashFrameMesh, casementGlass],
           isHovered: false,
           isPinned: false,
         });
