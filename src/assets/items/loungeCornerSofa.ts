@@ -218,10 +218,29 @@ export const loungeCornerSofaPrefab: AssetPrefabDefinition = {
       );
     }
 
-    // 6. Soft Rounded Throw Pillows
-    addRoundedBox(0.36, 0.34, 0.12, 0.042, -width / 2 + 0.48, seatY + seatCushionH + 0.17, -depth / 2 + backThick + 0.22, pillowSageMat, -0.22, 0.35, 0);
-    addRoundedBox(0.34, 0.32, 0.12, 0.042, width / 2 - 0.32, seatY + seatCushionH + 0.16, -depth / 2 + 0.32, pillowSandMat, -0.2, -0.65, 0.12);
-    addRoundedBox(0.36, 0.34, 0.12, 0.042, width / 2 - backThick - 0.22, seatY + seatCushionH + 0.17, depth / 2 - 0.52, pillowSageMat, 0.15, -0.35, 0.2);
+    // 6. Soft Rounded Throw Pillows (using YXZ order so rotY aims the pillow and rotX leans it back cleanly)
+    const addPillow = (
+      w: number,
+      h: number,
+      d: number,
+      x: number,
+      y: number,
+      z: number,
+      mat: THREE.Material,
+      rotY: number,
+      leanBackX = -0.18
+    ) => {
+      const mesh = new THREE.Mesh(createRoundedBoxGeo(w, h, d, 0.042), mat);
+      mesh.rotation.order = 'YXZ';
+      mesh.rotation.set(leanBackX, rotY, 0);
+      mesh.position.set(x, y, z);
+      group.add(mesh);
+    };
+
+    const pillowY = seatY + seatCushionH + 0.16;
+    addPillow(0.36, 0.34, 0.12, -width / 2 + 0.50, pillowY, -depth / 2 + backThick + 0.24, pillowSageMat, 0.25);
+    addPillow(0.34, 0.32, 0.12, width / 2 - backThick - 0.30, pillowY - 0.01, -depth / 2 + backThick + 0.30, pillowSandMat, -Math.PI / 4);
+    addPillow(0.36, 0.34, 0.12, width / 2 - backThick - 0.25, pillowY, depth / 2 - 0.55, pillowSageMat, -Math.PI / 2 - 0.2);
 
     return group;
   },
