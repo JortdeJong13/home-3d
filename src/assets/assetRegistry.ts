@@ -1,5 +1,7 @@
 import { AssetPrefabDefinition, PlacedAssetSpec } from './assetTypes';
 import { frontDoorArchPrefab } from './items/frontDoorArch';
+import { heatPumpOutdoorPrefab } from './items/heatPumpOutdoor';
+import { rainPipeHwaPrefab } from './items/rainPipeHwa';
 
 /**
  * CENTRAL ASSET PREFAB CATALOG
@@ -11,21 +13,34 @@ import { frontDoorArchPrefab } from './items/frontDoorArch';
  */
 export const ASSET_PREFABS: Record<string, AssetPrefabDefinition> = {
   front_entrance_portal: frontDoorArchPrefab,
+  heat_pump_outdoor: heatPumpOutdoorPrefab,
+  rain_pipe_hwa: rainPipeHwaPrefab,
 };
 
 /**
  * PLACED ASSETS IN BOUWNUMMER 55
  *
- * Currently empty for Version 1 (architectural fundamentals only).
  * Add `PlacedAssetSpec` entries here to place objects into specific rooms/floors.
  */
 export const PLACED_ASSETS: PlacedAssetSpec[] = [
-  // Example placement (uncomment when adding an asset):
-  // {
-  //   id: 'living_couch_main',
-  //   prefabId: 'couch_corner_soft',
-  //   floor: 'ground',
-  //   positionXZ: [3.20, -2.10],
-  //   rotationDeg: 180,
-  // }
+  {
+    id: 'gf_berging_warmtepomp_buitenunit',
+    prefabId: 'heat_pump_outdoor',
+    label: 'Warmtepomp Buitenunit (Achtergevel Berging)',
+    floor: 'ground',
+    positionXZ: [-2.20, -13.92],
+    rotationDeg: 180,
+    provenance: 'verified_drawing',
+    source: 'Verkooptekening VK-06 achtergevel berging: warmtepomp buitenunit rechts naast tuindeur',
+  },
+  {
+    id: 'gf_berging_regenpijp_achter',
+    prefabId: 'rain_pipe_hwa',
+    label: 'Regenpijp / HWA (Achtergevel Berging)',
+    floor: 'ground',
+    positionXZ: [-2.85, -13.79],
+    rotationDeg: 180,
+    provenance: 'verified_drawing',
+    source: 'Verkooptekening VK-06 achtergevel berging: HWA regenpijp met vergaderbak bij buitenhoek',
+  },
 ];
