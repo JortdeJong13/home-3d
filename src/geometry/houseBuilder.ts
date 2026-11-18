@@ -194,7 +194,7 @@ export function buildHouseScene(): HouseSceneGroups {
         ? {
             map: exteriorBrickTextures.map,
             bumpMap: exteriorBrickTextures.bumpMap,
-            bumpScale: 0.015,
+            bumpScale: 0.004,
           }
         : {}),
     });

@@ -1,20 +1,21 @@
 import * as THREE from 'three';
 
 /**
- * Real-world Dutch Waalformaat brick tile dimensions (metres):
- * - 12 bricks across × 0.22 m (210 mm brick + 10 mm head joint) = 2.64 m
- * - 40 courses high × 0.06 m (50 mm brick + 10 mm bed joint) = 2.40 m
+ * Slightly stylized Dutch running-bond brick tile dimensions (metres)
+ * tuned for clean, clutter-free legibility at isometric diorama scale:
+ * - 10 bricks across × 0.26 m = 2.60 m
+ * - 32 courses high × 0.075 m = 2.40 m
  */
-export const BRICK_TILE_WIDTH_M = 2.64;
+export const BRICK_TILE_WIDTH_M = 2.60;
 export const BRICK_TILE_HEIGHT_M = 2.40;
 
 const TEX_SIZE = 1024;
-const BRICK_COLS = 12;
-const BRICK_ROWS = 40;
+const BRICK_COLS = 10;
+const BRICK_ROWS = 32;
 
-// Mortar joint thickness as a fraction of each brick cell
-const HEAD_JOINT_FRAC = 0.010 / 0.220; // ~4.5% of 220 mm pitch
-const BED_JOINT_FRAC = 0.010 / 0.060;  // ~16.7% of 60 mm pitch
+// Subtle mortar joint thickness as a fraction of each brick cell
+const HEAD_JOINT_FRAC = 0.011 / 0.260;
+const BED_JOINT_FRAC = 0.011 / 0.075;
 
 interface BrickTone {
   r: number;
@@ -24,33 +25,31 @@ interface BrickTone {
 }
 
 /**
- * Curated warm yellow-sand / buff / muted tan / toasted umber brick palette
- * matching the reference render (Wonen aan de Hulk) while staying bright and
- * cohesive with the soft architectural diorama aesthetic.
+ * Soft, harmonious warm sand-ochre / biscuit brick palette with gentle
+ * tonal variation — maintains the clean matte diorama art style without
+ * harsh high-contrast speckles.
  */
 const BRICK_TONES: BrickTone[] = [
-  // Light cream-buff (~18%)
-  { r: 222, g: 204, b: 168, weight: 9 },
-  { r: 214, g: 193, b: 154, weight: 9 },
-  // Warm golden-sand & ochre (~44%)
-  { r: 206, g: 179, b: 128, weight: 14 },
-  { r: 199, g: 169, b: 116, weight: 12 },
-  { r: 210, g: 185, b: 138, weight: 10 },
-  { r: 191, g: 160, b: 108, weight: 8 },
-  // Muted warm tan / biscuit (~24%)
-  { r: 178, g: 149, b: 106, weight: 13 },
-  { r: 166, g: 138, b: 96, weight: 11 },
-  // Darker toasted umber / brown-grey accents (~14%)
-  { r: 142, g: 114, b: 80, weight: 8 },
-  { r: 126, g: 100, b: 70, weight: 6 },
+  // Soft warm cream-sand (~20%)
+  { r: 222, g: 202, b: 165, weight: 10 },
+  { r: 217, g: 196, b: 158, weight: 10 },
+  // Core warm sand-ochre (~50%)
+  { r: 212, g: 188, b: 146, weight: 18 },
+  { r: 207, g: 182, b: 139, weight: 16 },
+  { r: 214, g: 192, b: 152, weight: 16 },
+  // Gentle muted tan / biscuit (~20%)
+  { r: 198, g: 173, b: 132, weight: 12 },
+  { r: 192, g: 167, b: 127, weight: 8 },
+  // Subtle warm taupe-ochre accent (~10%)
+  { r: 181, g: 156, b: 118, weight: 10 },
 ];
 
 const TOTAL_WEIGHT = BRICK_TONES.reduce((sum, t) => sum + t.weight, 0);
 
-// Warm buff-grey mortar matching the reference facade
-const MORTAR_R = 194;
-const MORTAR_G = 186;
-const MORTAR_B = 172;
+// Soft warm buff mortar close in value to the bricks for a gentle, painterly joint
+const MORTAR_R = 209;
+const MORTAR_G = 197;
+const MORTAR_B = 176;
 
 /** Deterministic integer hash in [0, 1) for seamless brick-grid variation. */
 function hash2D(ix: number, iy: number, seed = 0): number {
@@ -91,9 +90,9 @@ export function getExteriorBrickTextures(): {
   const albedoData = new Uint8Array(TEX_SIZE * TEX_SIZE * 4);
   const bumpData = new Uint8Array(TEX_SIZE * TEX_SIZE * 4);
 
-  // Smooth anti-aliased edge width in brick-cell UV space (~1.4 pixels)
-  const edgeSmoothU = (1.4 / TEX_SIZE) * BRICK_COLS;
-  const edgeSmoothV = (1.4 / TEX_SIZE) * BRICK_ROWS;
+  // Soft feathered edge width in brick-cell UV space (~2.8 pixels)
+  const edgeSmoothU = (2.8 / TEX_SIZE) * BRICK_COLS;
+  const edgeSmoothV = (2.8 / TEX_SIZE) * BRICK_ROWS;
 
   for (let py = 0; py < TEX_SIZE; py++) {
     // Flip Y so row 0 is at the bottom when mapped with standard UVs
@@ -123,31 +122,24 @@ export function getExteriorBrickTextures(): {
       const brickMask = maskU * maskV;
       const tone = pickBrickTone(col, row);
 
-      // Gentle per-brick brightness nudge + soft tactile center-to-edge warmth
-      const brickTint = 0.96 + hash2D(col, row, 91) * 0.08;
-      const centerShade = 0.97 + 0.04 * Math.sin(colFrac * Math.PI) * Math.sin(rowFrac * Math.PI);
-      // Very subtle soft grain (keeps clean stylized diorama look)
-      const microGrain = 0.985 + hash2D(px >> 1, py >> 1, 33) * 0.03;
+      // Silky-smooth brick face: gentle per-brick variation & soft pillowed center
+      const brickTint = 0.98 + hash2D(col, row, 91) * 0.04;
+      const centerShade = 0.985 + 0.025 * Math.sin(colFrac * Math.PI) * Math.sin(rowFrac * Math.PI);
 
-      const shade = brickTint * centerShade * microGrain;
+      const shade = brickTint * centerShade;
       const brR = Math.min(255, tone.r * shade);
       const brG = Math.min(255, tone.g * shade);
       const brB = Math.min(255, tone.b * shade);
 
-      const mortarGrain = 0.98 + hash2D(px >> 1, py >> 1, 77) * 0.04;
-      const mrR = MORTAR_R * mortarGrain;
-      const mrG = MORTAR_G * mortarGrain;
-      const mrB = MORTAR_B * mortarGrain;
-
       const idx = (py * TEX_SIZE + px) * 4;
-      albedoData[idx] = Math.round(mrR + (brR - mrR) * brickMask);
-      albedoData[idx + 1] = Math.round(mrG + (brG - mrG) * brickMask);
-      albedoData[idx + 2] = Math.round(mrB + (brB - mrB) * brickMask);
+      albedoData[idx] = Math.round(MORTAR_R + (brR - MORTAR_R) * brickMask);
+      albedoData[idx + 1] = Math.round(MORTAR_G + (brG - MORTAR_G) * brickMask);
+      albedoData[idx + 2] = Math.round(MORTAR_B + (brB - MORTAR_B) * brickMask);
       albedoData[idx + 3] = 255;
 
-      // Bump: mortar recessed (~95), brick face raised (~228) with subtle surface relief
-      const brickBump = 222 + hash2D(col, row, 53) * 14 + hash2D(px >> 2, py >> 2, 11) * 8;
-      const mortarBump = 95;
+      // Soft, clean bump: gentle rounded mortar recess with zero harsh noise
+      const brickBump = 228 + hash2D(col, row, 53) * 8;
+      const mortarBump = 155;
       const bumpVal = Math.round(mortarBump + (brickBump - mortarBump) * brickMask);
       bumpData[idx] = bumpVal;
       bumpData[idx + 1] = bumpVal;
