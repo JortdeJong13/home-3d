@@ -534,20 +534,42 @@ function buildPlotAndEnvironment(
     plotGroup.add(mesh);
   };
 
-  // Stone Patio directly behind Kitchen Double Doors B13 (X: 0.08 -> 5.85 m, Z: -14.40 -> -12.86 m)
-  addGroundZone(
-    'garden_stone_patio',
-    'Terras achter Dubbele Tuindeuren (5.77 × 1.54 m)',
-    0.08,
-    -14.40,
-    5.85,
-    -12.86,
-    0.045,
-    0.012,
-    'plot_patio_limestone',
-    'user_supplied',
-    'Garden layout.png & User plot plan'
-  );
+  // Stone Patio directly behind Kitchen Double Doors B13: 14 individual tiles (staggered secondary assets).
+  // Area 5.39 x 0.94 m = 7 tiles of 77 cm (X: 0.33 -> 5.72 m) x 2 tiles of 47 cm (Z: -12.86 -> -13.80 m).
+  const PATIO_TILE_X = 0.77;
+  const PATIO_TILE_Z = 0.47;
+  const PATIO_JOINT = 0.015;
+  const PATIO_X0 = 0.33;
+  const PATIO_Z0 = -12.86;
+  for (let row = 0; row < 2; row++) {
+    for (let col = 0; col < 7; col++) {
+      const id = `patio_tile_${row}_${col}`;
+      const tileGeo = new THREE.BoxGeometry(PATIO_TILE_X - PATIO_JOINT, 0.045, PATIO_TILE_Z - PATIO_JOINT);
+      const tile = new THREE.Mesh(tileGeo, getMat('plot_patio_limestone'));
+      tile.position.set(
+        PATIO_X0 + (col + 0.5) * PATIO_TILE_X,
+        0.01,
+        PATIO_Z0 - (row + 0.5) * PATIO_TILE_Z
+      );
+      registerMesh(
+        tile,
+        'plot_patio_limestone',
+        {
+          id,
+          label: 'Terrastegel achter Dubbele Tuindeuren (77 × 47 cm)',
+          dimensionsLabel: '0.77 × 0.47 m',
+          provenance: 'user_supplied',
+          source: 'Garden layout.png & User: terras 539 × 94 cm = 7 × 77 cm bij 2 × 47 cm',
+          floor: 'ground',
+          category: 'furniture',
+        },
+        false,
+        true
+      );
+      groundGroup.add(tile);
+      registerStaggered(id, tile, 'ground', 0.01);
+    }
+  }
 
   // Garden Gate ("Tuinpoort" at Z = -13.72 m between Berging X = -3.27 m and Left Hedge) -> Staggered drop on Ground Floor!
   const gateLeftX = leftBoundaryXAtZ(-13.72) + 0.32;

@@ -44,9 +44,6 @@ scene.add(houseGroups.root);
 // =============================================================================
 const skyRenderer = new SkyRenderer(document.getElementById('sky-canvas') as HTMLCanvasElement, cameraController.camera);
 const celestialRotorEl = document.getElementById('celestial-rotor');
-const floorTitleEl = document.getElementById('floor-title');
-const floorElevationEl = document.getElementById('floor-elevation-badge');
-const floorSubtitleEl = document.getElementById('floor-subtitle');
 const selectorFillEl = document.getElementById('selector-line-fill');
 const scrollHintEl = document.getElementById('scroll-hint');
 const floorDotBtns = Array.from(document.querySelectorAll<HTMLButtonElement>('.floor-dot-btn'));
@@ -140,6 +137,7 @@ const camPresetBtns = Array.from(document.querySelectorAll<HTMLButtonElement>('[
 for (const btn of camPresetBtns) {
   btn.addEventListener('click', () => {
     const presetId = btn.dataset.camPreset as CameraPreset['id'];
+    cameraController.autoRotate = false; // choosing a camera view stops the auto-orbit
     cameraController.transitionToPreset(presetId);
     for (const b of camPresetBtns) b.classList.toggle('active', b === btn);
   });
@@ -237,7 +235,7 @@ function animate(now: number) {
 
   const activeStop = applyScrollProgressToScene(houseGroups, smoothedScrollProgress);
 
-  // Sync Floor Selector UI & Header Card
+  // Sync Floor Selector UI
   if (selectorFillEl) {
     selectorFillEl.style.height = `${(smoothedScrollProgress * 100).toFixed(1)}%`;
   }
@@ -247,15 +245,6 @@ function animate(now: number) {
   for (const btn of floorDotBtns) {
     const idx = Number(btn.dataset.stopIndex ?? -1);
     btn.classList.toggle('active', idx === activeStop.index);
-  }
-  if (floorTitleEl && floorTitleEl.textContent !== activeStop.title) {
-    floorTitleEl.textContent = activeStop.title;
-  }
-  if (floorElevationEl && floorElevationEl.textContent !== activeStop.elevationLabel) {
-    floorElevationEl.textContent = activeStop.elevationLabel;
-  }
-  if (floorSubtitleEl && floorSubtitleEl.textContent !== activeStop.subtitle) {
-    floorSubtitleEl.textContent = activeStop.subtitle;
   }
 
   // 2. Smoothly animate Day / Night transition & Rotating Celestial Backdrop

@@ -91,67 +91,6 @@
         cursor: grabbing;
       }
 
-      /* Top-Left Minimal Architectural Title & Active Floor Status */
-      #header-card {
-        position: absolute;
-        top: 24px;
-        left: 28px;
-        z-index: 10;
-        background: var(--panel-bg);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        border: 1px solid var(--panel-border);
-        border-radius: 16px;
-        padding: 16px 20px;
-        max-width: 390px;
-        box-shadow: var(--shadow-soft);
-        transition: background 0.35s ease, color 0.35s ease, border-color 0.35s ease;
-      }
-
-      .eyebrow {
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--accent);
-        margin-bottom: 4px;
-      }
-
-      #header-card h1 {
-        font-size: 18px;
-        font-weight: 650;
-        letter-spacing: -0.01em;
-        margin-bottom: 6px;
-      }
-
-      #floor-status-line {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        padding-top: 8px;
-        margin-top: 6px;
-        border-top: 1px solid var(--panel-border);
-        font-size: 13px;
-        font-weight: 600;
-      }
-
-      #floor-elevation-badge {
-        font-size: 11px;
-        font-weight: 600;
-        padding: 2px 8px;
-        border-radius: 999px;
-        background: var(--accent-soft);
-        color: var(--accent);
-      }
-
-      #floor-subtitle {
-        margin-top: 4px;
-        font-size: 12px;
-        line-height: 1.45;
-        color: var(--text-secondary);
-      }
-
       /* Top-Right Controls: Rotating Day/Night Switch + Audit & B33 Toggles */
       #top-right-controls {
         position: absolute;
@@ -452,13 +391,6 @@
       }
 
       @media (max-width: 768px) {
-        #header-card {
-          top: 14px;
-          left: 14px;
-          right: 76px;
-          max-width: none;
-          padding: 12px 14px;
-        }
         #top-right-controls {
           top: auto;
           bottom: 82px;
@@ -489,17 +421,7 @@
       <canvas id="webgl-canvas"></canvas>
 
       <!-- Top-Left Project Header & Synchronised Floor Readout -->
-      <header id="header-card">
-        <div class="eyebrow">Wonen aan de Hulk · Scharwoude · Bnr. 55</div>
-        <h1>Interactieve 3D Woningvisualisatie</h1>
-        <div id="floor-status-line">
-          <span id="floor-title">Kavel & Tuin</span>
-          <span id="floor-elevation-badge">Peil 0.00 m</span>
-        </div>
-        <p id="floor-subtitle">
-          Scroll omlaag om de woning verdieping voor verdieping op te bouwen, of klik rechts op een woonlaag.
-        </p>
-      </header>
+
 
       <!-- Top-Right Toggle: Day/Night -->
       <div id="top-right-controls">
