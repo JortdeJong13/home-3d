@@ -86,4 +86,32 @@ export const PLACED_ASSETS: PlacedAssetSpec[] = [
     provenance: 'verified_drawing',
     source: 'Verkooptekening VK-06 linkerzijgevel: HWA regenpijp bij voorhoek (zolder tot goot +6.13 m)',
   },
+  {
+    id: 'ff_linkerzijgevel_regenpijp_achter',
+    prefabId: 'rain_pipe_hwa_section',
+    label: 'Regenpijp / HWA (Linkerzijgevel Achterhoek · 1e Verdieping tot Plat Dak Berging)',
+    floor: 'first',
+    positionXZ: [-0.07, -10.24],
+    elevationOffsetY: -0.01,
+    rotationDeg: 270,
+    dimensionsOverride: {
+      height: m(2.61, 'verified_drawing', 'Van plat dak berging (+2.84 m) tot bovenkant 1e verdieping (+5.45 m)'),
+    },
+    provenance: 'verified_drawing',
+    source: 'Verkooptekening VK-06 linkerzijgevel: HWA regenpijp eindigend op plat dak berging',
+  },
+  {
+    id: 'sf_linkerzijgevel_regenpijp_achter',
+    prefabId: 'rain_pipe_hwa',
+    label: 'Regenpijp / HWA (Linkerzijgevel Achterhoek · Zolder / Goot)',
+    floor: 'second',
+    positionXZ: [-0.07, -10.24],
+    elevationOffsetY: -0.25,
+    rotationDeg: 270,
+    dimensionsOverride: {
+      height: m(0.68, 'verified_drawing', 'Zolder borstwering incl. vloerrand tot goothoogte (+5.45 -> +6.13 m)'),
+    },
+    provenance: 'verified_drawing',
+    source: 'Verkooptekening VK-06 linkerzijgevel: HWA regenpijp bij achterhoek (zolder tot goot +6.13 m)',
+  },
 ];
