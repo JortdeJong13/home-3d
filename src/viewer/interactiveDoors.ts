@@ -6,6 +6,8 @@ export interface InteractiveDoorPivot {
   openAngle: number;
   closedAngle: number;
   currentAngle: number;
+  /** Optional custom transform callback (e.g. for tilt/slide kanteldeur kinematics). */
+  onUpdate?: (currentAngle: number, t: number) => void;
 }
 
 export interface InteractiveDoor {
@@ -121,10 +123,18 @@ export class InteractiveDoorManager {
 
         if (Math.abs(diff) > 0.0005) {
           pivot.currentAngle += diff * lambda;
-          pivot.group.rotation.y = pivot.currentAngle;
         } else if (pivot.currentAngle !== target) {
           pivot.currentAngle = target;
-          pivot.group.rotation.y = target;
+        } else {
+          continue;
+        }
+
+        if (pivot.onUpdate) {
+          const span = pivot.openAngle - pivot.closedAngle;
+          const t = Math.abs(span) > 1e-6 ? (pivot.currentAngle - pivot.closedAngle) / span : 0;
+          pivot.onUpdate(pivot.currentAngle, t);
+        } else {
+          pivot.group.rotation.y = pivot.currentAngle;
         }
       }
     }

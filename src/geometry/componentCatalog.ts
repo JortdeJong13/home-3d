@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { MaterialId } from '../model/materials';
 import { FloorLayerId, ProvenanceType } from '../model/houseData';
 import { InspectableMetadata, ElementCategory, RegisterMeshFn } from './houseBuilder';
@@ -186,18 +187,18 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
     source: 'Plattegrond.png (2.58 m) & Tekening 55.1 (B13)',
   },
 
-  // 11. Berging Double Garage Doors
+  // 11. Berging Garage Kanteldeur (Up-and-Over Tilt Door)
   door_berging_garage_double: {
     prefabId: 'door_berging_garage_double',
-    defaultLabel: 'Dubbele Bergingsdeuren (250 × 225 cm)',
+    defaultLabel: 'Garagedeur Kanteldeur (250 × 225 cm)',
     width: 2.50,
     height: 2.25,
     sillHeight: 0.00,
     frameMaterial: 'door_exterior_sage',
     panelMaterial: 'door_exterior_sage',
-    hasTerracottaSurround: true,
+    hasTerracottaSurround: false, // Top red brick rollaag is built directly into the garage door asset
     provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 voorgevel & Woning.jpg',
+    source: 'Verkooptekening VK-06 voorgevel & referentiefoto (sage-groene kanteldeur met verticale profilering en rollaag bovenzijde)',
   },
 
   // 12. Berging Rear Garden Door
@@ -736,43 +737,72 @@ export function instantiateOpeningPrefab3D(
     }
 
     case 'door_berging_garage_double': {
-      const leafW = innerW / 2;
+      // 1. Red-brown facade brick soldier course (rollaag) ONLY across the top of the garage door
+      const lintelHeight = 0.19;
+      const reliefDepth = 0.032;
+      const exteriorFaceZ = wallThickness / 2 + reliefDepth / 2 - 0.002;
+      const lintelWidth = op.width + 0.06;
+      const numBricks = Math.round(lintelWidth / 0.068);
+      const brickPitch = lintelWidth / numBricks;
+      const brickGeos: THREE.BufferGeometry[] = [];
+      for (let b = 0; b < numBricks; b++) {
+        const bx = -lintelWidth / 2 + (b + 0.5) * brickPitch;
+        const brick = new THREE.BoxGeometry(brickPitch - 0.008, lintelHeight, reliefDepth);
+        brick.translate(bx, op.height / 2 + lintelHeight / 2, exteriorFaceZ);
+        brickGeos.push(brick);
+      }
+      // Thin recessed mortar backing behind the soldier bricks
+      const mortarBack = new THREE.BoxGeometry(lintelWidth, lintelHeight - 0.01, reliefDepth * 0.55);
+      mortarBack.translate(0, op.height / 2 + lintelHeight / 2, exteriorFaceZ - reliefDepth * 0.22);
+      brickGeos.push(mortarBack);
 
-      // Left garage door leaf (hinged at -innerW / 2)
-      const leftPivot = new THREE.Group();
-      leftPivot.position.set(-innerW / 2, 0, frameCenterZ);
-      const leftPanel = new THREE.Mesh(
-        new THREE.BoxGeometry(leafW - 0.005, innerH, 0.06),
-        getMat(op.panelMaterial)
-      );
-      leftPanel.position.set(leafW / 2, 0, 0);
-      leftPivot.add(leftPanel);
+      const mergedLintel = mergeGeometries(brickGeos, false);
+      for (const g of brickGeos) g.dispose();
+      const lintelMesh = new THREE.Mesh(mergedLintel, getMat('window_trim_terracotta'));
+      registerMesh(lintelMesh, 'window_trim_terracotta', {
+        id: `${op.id}_top_rollaag`,
+        label: 'Gemetselde Rollaag boven Garagedeur',
+        dimensionsLabel: `${lintelWidth.toFixed(2)} × ${lintelHeight.toFixed(2)} m`,
+        provenance: op.provenance,
+        source: op.source,
+        floor,
+      });
+      group.add(lintelMesh);
 
-      const leftHandle = new THREE.Mesh(
-        new THREE.BoxGeometry(0.12, 0.025, 0.06),
+      // 2. Single-piece sage-green kanteldeur (up-and-over tilt door) with crisp vertical ribs
+      const doorPivot = new THREE.Group();
+      doorPivot.position.set(0, -frameThick / 2, frameCenterZ);
+
+      const doorGeos: THREE.BufferGeometry[] = [];
+      const plateDepth = 0.036;
+      const backingPlate = new THREE.BoxGeometry(innerW, innerH, plateDepth);
+      doorGeos.push(backingPlate);
+
+      const numSlats = 24;
+      const slatPitch = innerW / numSlats;
+      const slatW = slatPitch - 0.012; // 1.2 cm vertical shadow groove between slats
+      const slatDepth = 0.016;
+      for (let i = 0; i < numSlats; i++) {
+        const sx = -innerW / 2 + (i + 0.5) * slatPitch;
+        const slat = new THREE.BoxGeometry(slatW, innerH - 0.015, slatDepth);
+        slat.translate(sx, 0, plateDepth / 2 + slatDepth / 2);
+        doorGeos.push(slat);
+      }
+
+      const mergedDoorGeo = mergeGeometries(doorGeos, false);
+      for (const g of doorGeos) g.dispose();
+      const doorPanel = new THREE.Mesh(mergedDoorGeo, getMat(op.panelMaterial));
+      doorPivot.add(doorPanel);
+
+      // Centered kanteldeur grip/handle near bottom third
+      const handle = new THREE.Mesh(
+        new THREE.BoxGeometry(0.14, 0.028, 0.035),
         getMat('roof_tile_anthracite')
       );
-      leftHandle.position.set(leafW - 0.08, -0.12, 0.035);
-      leftPivot.add(leftHandle);
-      group.add(leftPivot);
+      handle.position.set(0, -innerH / 2 + 0.48, plateDepth / 2 + slatDepth + 0.012);
+      doorPivot.add(handle);
 
-      // Right garage door leaf (hinged at +innerW / 2)
-      const rightPivot = new THREE.Group();
-      rightPivot.position.set(innerW / 2, 0, frameCenterZ);
-      const rightPanel = new THREE.Mesh(
-        new THREE.BoxGeometry(leafW - 0.005, innerH, 0.06),
-        getMat(op.panelMaterial)
-      );
-      rightPanel.position.set(-leafW / 2, 0, 0);
-      rightPivot.add(rightPanel);
-
-      const rightHandle = new THREE.Mesh(
-        new THREE.BoxGeometry(0.12, 0.025, 0.06),
-        getMat('roof_tile_anthracite')
-      );
-      rightHandle.position.set(-leafW + 0.08, -0.12, 0.035);
-      rightPivot.add(rightHandle);
-      group.add(rightPivot);
+      group.add(doorPivot);
 
       const meta = {
         id: op.id,
@@ -782,8 +812,7 @@ export function instantiateOpeningPrefab3D(
         source: op.source,
         floor,
       };
-      registerMesh(leftPanel, op.panelMaterial, meta);
-      registerMesh(rightPanel, op.panelMaterial, meta);
+      registerMesh(doorPanel, op.panelMaterial, meta);
 
       const trigger = createTrigger();
       if (onRegisterDoor) {
@@ -793,19 +822,19 @@ export function instantiateOpeningPrefab3D(
           floor,
           pivots: [
             {
-              group: leftPivot,
-              openAngle: -Math.PI * 0.45, // swings outward (+Z) to driveway
+              group: doorPivot,
+              openAngle: -Math.PI * 0.48, // tilts top inward (-Z) and bottom outward (+Z)
               closedAngle: 0,
               currentAngle: 0,
-            },
-            {
-              group: rightPivot,
-              openAngle: Math.PI * 0.45, // swings outward (+Z) to driveway
-              closedAngle: 0,
-              currentAngle: 0,
+              onUpdate: (angle, t) => {
+                doorPivot.rotation.x = angle;
+                // Keep top edge gliding cleanly below the lintel while retracting ~65% into the garage
+                doorPivot.position.y = -frameThick / 2 + (innerH / 2) * (1 - Math.cos(angle)) - 0.03 * t;
+                doorPivot.position.z = frameCenterZ - (innerH * 0.35) * Math.sin(-angle);
+              },
             },
           ],
-          triggerMeshes: [trigger, leftPanel, rightPanel],
+          triggerMeshes: [trigger, doorPanel],
           isHovered: false,
           isPinned: false,
         });
