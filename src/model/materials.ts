@@ -39,8 +39,10 @@ export type MaterialId =
   | 'plot_hedge_beech'
   | 'plot_tree_foliage_sage'
   | 'plot_tree_foliage_warm'
+  | 'plot_tree_foliage_bolboom'
   | 'plot_tree_foliage_blossom'
   | 'plot_tree_trunk'
+  | 'plot_tree_stake_wood'
   | 'plot_gate_timber'
   | 'plot_fence_post'
   | 'plinth_base_white'
@@ -293,6 +295,12 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     roughness: 0.92,
     metalness: 0.0,
   },
+  plot_tree_foliage_bolboom: {
+    colorDay: '#79a662',
+    colorNight: '#2c3d24',
+    roughness: 0.92,
+    metalness: 0.0,
+  },
   plot_tree_foliage_blossom: {
     colorDay: '#f2f5f0',
     colorNight: '#7d827a',
@@ -303,6 +311,12 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     colorDay: '#6e5846',
     colorNight: '#362b22',
     roughness: 0.94,
+    metalness: 0.0,
+  },
+  plot_tree_stake_wood: {
+    colorDay: '#cfc0a8',
+    colorNight: '#5e564a',
+    roughness: 0.92,
     metalness: 0.0,
   },
   plot_gate_timber: {

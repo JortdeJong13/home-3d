@@ -825,12 +825,30 @@ function buildPlotAndEnvironment(
     source: 'Neighbour context matching 75 cm front hedge',
   });
 
-  // 5. SOFT ARCHITECTURAL DIORAMA TREES (Matching positions in user's plot screenshot!)
-  // Two trees in back garden + two small trees in front garden (varied sizes & rotations)
+  // 5. SOFT ARCHITECTURAL DIORAMA TREES (Matching positions in user's plot screenshot & front photo)
+  // Two trees in back garden + two young standard trees ("Bolbomen" with twin wooden stakes) flanking the front living room window
   addStylisedDioramaTree(plotGroup, getMat, -1.65, -16.85, 3.6, 1.65, 'plot_tree_foliage_sage', 'plot_tree_trunk', 20);
   addStylisedDioramaTree(plotGroup, getMat, 3.15, -16.10, 3.1, 1.40, 'plot_tree_foliage_sage', 'plot_tree_trunk', 145);
-  addStylisedDioramaTree(plotGroup, getMat, 1.65, 2.35, 2.0, 0.65, 'plot_tree_foliage_warm', 'plot_tree_trunk', 0);
-  addStylisedDioramaTree(plotGroup, getMat, 4.15, 2.45, 2.25, 0.74, 'plot_tree_foliage_warm', 'plot_tree_trunk', 135);
+  addFrontBolboomTree(plotGroup, getMat, registerMesh, {
+    id: 'front_bolboom_left',
+    label: 'Bolboom Voortuin Links (met boompalen)',
+    x: 1.55,
+    z: 2.38,
+    totalHeight: 3.16,
+    crownRadius: 0.52,
+    rotationDeg: 18,
+    seed: 501,
+  });
+  addFrontBolboomTree(plotGroup, getMat, registerMesh, {
+    id: 'front_bolboom_right',
+    label: 'Bolboom Voortuin Rechts (met boompalen)',
+    x: 4.35,
+    z: 2.44,
+    totalHeight: 3.24,
+    crownRadius: 0.50,
+    rotationDeg: -14,
+    seed: 502,
+  });
 
   // 6. SURROUNDINGS (outside the owned plot, neutral grey): pavement strip & garden fences (schuttingen)
   const ctxRightX = rightX + CONTEXT_MARGIN;
@@ -1030,6 +1048,136 @@ function addStylisedDioramaTree(
     puff.receiveShadow = true;
     treeGroup.add(puff);
   }
+
+  group.add(treeGroup);
+  return treeGroup;
+}
+
+interface FrontBolboomTreeOptions {
+  id: string;
+  label: string;
+  x: number;
+  z: number;
+  totalHeight: number;
+  crownRadius: number;
+  rotationDeg: number;
+  seed: number;
+}
+
+/**
+ * Build a young standard ball-crown tree ("Bolboom") with a slender straight trunk,
+ * compact ovoid leafy crown made of overlapping maquette foliage clusters, and twin
+ * weathered wooden stakes ("boompalen") connected by a horizontal tie strap ("boomband").
+ */
+function addFrontBolboomTree(
+  group: THREE.Group,
+  getMat: (id: MaterialId) => THREE.MeshStandardMaterial,
+  registerMesh: RegisterMeshFn,
+  opts: FrontBolboomTreeOptions
+): THREE.Group {
+  const { id, label, x, z, totalHeight, crownRadius, rotationDeg, seed } = opts;
+  const treeGroup = new THREE.Group();
+  treeGroup.position.set(x, 0, z);
+  treeGroup.rotation.y = THREE.MathUtils.degToRad(rotationDeg);
+
+  // Deterministic LCG PRNG for organic cluster placement
+  let s = (seed * 1664525 + 1013904223) >>> 0;
+  const rand = () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+
+  // Crown vertical span: slightly taller-than-wide ovoid sitting atop ~1.95 m clear trunk
+  const crownHeight = crownRadius * 2.28;
+  const crownCenterY = totalHeight - crownHeight * 0.5;
+  const trunkTopY = crownCenterY + crownHeight * 0.12;
+
+  // 1. Slender straight trunk
+  const trunkGeo = new THREE.CylinderGeometry(0.026, 0.036, trunkTopY, 10);
+  const trunk = new THREE.Mesh(trunkGeo, getMat('plot_tree_trunk'));
+  trunk.position.y = trunkTopY / 2;
+  trunk.castShadow = true;
+  trunk.receiveShadow = true;
+  treeGroup.add(trunk);
+
+  // 2. Twin wooden stakes ("boompalen") flanking the trunk + horizontal tie strap ("boomband")
+  const stakeOffset = 0.23;
+  const stakeHeight = 1.12;
+  const stakeTiltRad = THREE.MathUtils.degToRad(1.5);
+  const stakeGeos: THREE.BufferGeometry[] = [];
+  for (const side of [-1, 1] as const) {
+    const stake = new THREE.CylinderGeometry(0.026, 0.029, stakeHeight, 8);
+    stake.rotateZ(side * stakeTiltRad);
+    stake.translate(side * stakeOffset, stakeHeight / 2, 0);
+    stakeGeos.push(stake);
+  }
+  const stakesMesh = new THREE.Mesh(mergeGeometries(stakeGeos, false), getMat('plot_tree_stake_wood'));
+  stakesMesh.castShadow = true;
+  stakesMesh.receiveShadow = true;
+  treeGroup.add(stakesMesh);
+
+  const strapY = 0.96;
+  const strapGeos: THREE.BufferGeometry[] = [];
+  const crossStrap = new THREE.BoxGeometry(stakeOffset * 2 + 0.055, 0.042, 0.024).toNonIndexed();
+  crossStrap.translate(0, strapY, 0);
+  strapGeos.push(crossStrap);
+
+  const trunkCollar = new THREE.CylinderGeometry(0.042, 0.042, 0.048, 10).toNonIndexed();
+  trunkCollar.translate(0, strapY, 0);
+  strapGeos.push(trunkCollar);
+
+  for (const side of [-1, 1] as const) {
+    const stakeLoop = new THREE.CylinderGeometry(0.034, 0.034, 0.046, 8).toNonIndexed();
+    stakeLoop.translate(side * (stakeOffset - Math.sin(stakeTiltRad) * (strapY - stakeHeight / 2)), strapY, 0);
+    strapGeos.push(stakeLoop);
+  }
+  const strapMesh = new THREE.Mesh(mergeGeometries(strapGeos, false), getMat('roof_tile_anthracite'));
+  strapMesh.castShadow = true;
+  treeGroup.add(strapMesh);
+
+  // 3. Compact rounded-ovoid leafy crown built from overlapping maquette clusters
+  const crownGeos: THREE.BufferGeometry[] = [];
+  const coreGeo = new THREE.IcosahedronGeometry(crownRadius * 0.72, 2);
+  coreGeo.scale(0.92, 1.12, 0.92);
+  coreGeo.translate(0, crownCenterY, 0);
+  crownGeos.push(coreGeo);
+
+  const numClusters = 32;
+  const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+  for (let i = 0; i < numClusters; i++) {
+    const t = (i + 0.5) / numClusters;
+    const phi = Math.acos(1 - 2 * t);
+    const theta = goldenAngle * i + (rand() - 0.5) * 0.25;
+
+    const radialScale = 0.62 + rand() * 0.16;
+    const ox = Math.sin(phi) * Math.cos(theta) * crownRadius * radialScale;
+    const oy = Math.cos(phi) * (crownHeight * 0.5) * radialScale;
+    const oz = Math.sin(phi) * Math.sin(theta) * crownRadius * radialScale;
+
+    const clusterR = crownRadius * (0.28 + rand() * 0.12);
+    const cluster = new THREE.IcosahedronGeometry(clusterR, 1);
+    cluster.scale(0.92 + rand() * 0.18, 0.88 + rand() * 0.20, 0.92 + rand() * 0.18);
+    cluster.rotateY(rand() * Math.PI * 2);
+    cluster.translate(ox, crownCenterY + oy, oz);
+    crownGeos.push(cluster);
+  }
+
+  const crownMesh = new THREE.Mesh(mergeGeometries(crownGeos, false), getMat('plot_tree_foliage_bolboom'));
+  registerMesh(
+    crownMesh,
+    'plot_tree_foliage_bolboom',
+    {
+      id,
+      label,
+      dimensionsLabel: `H ${totalHeight.toFixed(2)} m · Kroon Ø ${(crownRadius * 2).toFixed(2)} m`,
+      provenance: 'user_supplied',
+      source: 'Referentiefoto voortuin: bolbomen met dubbele boompalen en boomband',
+      floor: 'plot',
+    },
+    true,
+    true
+  );
+  treeGroup.add(crownMesh);
 
   group.add(treeGroup);
   return treeGroup;
