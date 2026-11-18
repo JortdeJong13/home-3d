@@ -620,7 +620,10 @@ export function instantiateOpeningPrefab3D(
     const brickZ = baseZ + mortarDepth + brickRelief / 2;
 
     const topH = bandWidth * 1.15;
-    const hasBottomBand = op.sillHeight > 0.05;
+    const hasBottomBand =
+      op.sillHeight > 0.05 ||
+      op.prefabId === 'window_french_balcony_1st' ||
+      op.prefabId === 'neighbour_french_balcony';
     const bottomH = hasBottomBand ? bandWidth * 1.05 : 0;
     const fullW = op.width + bandWidth * 2;
 
