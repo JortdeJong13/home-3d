@@ -118,18 +118,18 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
     source: 'Verkooptekening VK-06 achtergevel & HomeByMe 1st Floor',
   },
 
-  // 6. First Floor Side Bedroom Window
+  // 6. First Floor Side Bedroom Window (matched to ground floor side living room window)
   window_bedroom_side: {
     prefabId: 'window_bedroom_side',
-    defaultLabel: 'Zijraam Slaapkamer 1e Verdieping (126 × 165 cm)',
-    width: 1.26,
-    height: 1.65,
-    sillHeight: 0.65,
+    defaultLabel: 'Zijraam Slaapkamer 1e Verdieping (165 × 185 cm)',
+    width: 1.65,
+    height: 1.85,
+    sillHeight: 0.45,
     frameMaterial: 'window_frame_cream',
     panelMaterial: 'window_glass_day',
     hasTerracottaSurround: true,
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 linkerzijgevel & Woning.jpg',
+    provenance: 'user_supplied',
+    source: 'Matched to ground floor side living room window (165 × 185 cm, sill 45 cm)',
   },
 
   // 7. Ground Floor Wide Front Living Room Window
