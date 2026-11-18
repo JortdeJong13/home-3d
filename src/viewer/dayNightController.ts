@@ -49,26 +49,28 @@ export function createLightingRig(scene: THREE.Scene): SceneLightingRig {
 
 /**
  * Update the 3D lighting, material colours, window glow, outer ground diffusion,
- * and the rotating celestial backdrop disc for a continuous transition value `nightT` in [0, 1]
- * (0 = Day, 1 = Evening).
+ * and the rotating celestial backdrop disc for a continuous phase `nightPhase`
+ * (0, 2, 4... = Day; 1, 3, 5... = Evening), always advancing forward by +1 per toggle.
  */
 export function applyDayNightState(
   rig: SceneLightingRig,
   groups: HouseSceneGroups,
-  nightT: number,
+  nightPhase: number,
   celestialRotorEl: HTMLElement | null
 ) {
-  const t = Math.max(0, Math.min(1, nightT));
+  const cycle = ((nightPhase % 2) + 2) % 2;
+  const t = cycle <= 1 ? cycle : 2 - cycle;
 
   // 1. The sky itself (rotation, stars, sun, moon) is drawn by SkyRenderer in the render loop.
 
-  // 2. Orbit the 3D Directional Light along a celestial arc to match the rotating sky
-  // At t=0 (Day): sun is at (-14, 24, 15). As t->0.5 (Dusk): sun sweeps low to the west. At t=1 (Night): moon is at (13, 21, -11).
-  const arcAngle = t * Math.PI;
+  // 2. Orbit the 3D Directional Light along a full 360° celestial circle to match the rotating sky
+  // At phase=0 (Day): sun is at (-14, 24, 15). As phase->0.5 (Dusk): sun sweeps low.
+  // At phase=1 (Night): moon is at (14, 20, -15). As phase->1.5 (Dawn): continues forward to (-14, 24, 15) at phase=2.
+  const arcAngle = nightPhase * Math.PI;
   const sunX = -14 * Math.cos(arcAngle) + 6 * Math.sin(arcAngle);
   const sunZ = 15 * Math.cos(arcAngle) - 8 * Math.sin(arcAngle);
-  // Keep vertical elevation high enough to cast clean shadows while dipping slightly during golden hour
-  const dip = Math.sin(arcAngle); // peaks at t = 0.5 (sunset/sunrise)
+  // Keep vertical elevation high enough to cast clean shadows while dipping slightly during golden hour (dusk & dawn)
+  const dip = Math.sin(t * Math.PI); // peaks at t = 0.5 (sunset/sunrise)
   const sunY = THREE.MathUtils.lerp(24, 20, t) - dip * 7.5;
   rig.sunLight.position.set(sunX, Math.max(8, sunY), sunZ);
 

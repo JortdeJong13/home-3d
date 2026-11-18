@@ -282,7 +282,10 @@ export class SkyRenderer {
     return { fh, r, elevDeg };
   }
 
-  update(t: number) {
+  update(phase: number) {
+    const cycle = ((phase % 2) + 2) % 2;
+    const t = cycle <= 1 ? cycle : 2 - cycle;
+
     const W = (this.canvas.width = window.innerWidth);
     const Hh = (this.canvas.height = window.innerHeight);
     const { fh, r, elevDeg } = this.basis();
@@ -300,7 +303,7 @@ export class SkyRenderer {
     const fs = fh.clone().multiplyScalar(Math.cos(p)).addScaledVector(this.Y, Math.sin(p));
     const us = fh.clone().multiplyScalar(-Math.sin(p)).addScaledVector(this.Y, Math.cos(p));
 
-    const theta = t * Math.PI;
+    const theta = phase * Math.PI;
     const cosT = Math.cos(theta);
     const sinT = Math.sin(theta);
     const A = new THREE.Vector3().crossVectors(this.Y, H);

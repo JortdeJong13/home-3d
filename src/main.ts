@@ -30,7 +30,8 @@ const cameraController = new IsometricCameraController(canvas);
 
 // State
 let isNightTarget = false;
-let currentNightT = 0.0; // 0.0 = Day, 1.0 = Night
+let targetNightPhase = 0.0; // Increments by +1.0 per toggle (even = Day, odd = Night) for continuous 180° forward rotation
+let currentNightPhase = 0.0;
 
 // Scroll state: smooth damped interpolation of physical scroll progress
 let rawScrollProgress = 0.0;
@@ -157,8 +158,12 @@ for (const btn of floorDotBtns) {
 // Day / Night Toggle with Rotating Celestial Backdrop (Section 5.2)
 btnDayNight?.addEventListener('click', () => {
   isNightTarget = !isNightTarget;
+  targetNightPhase += 1.0;
   document.body.classList.toggle('night-mode', isNightTarget);
-  if (dayNightIcon) dayNightIcon.textContent = isNightTarget ? '🌙' : '☀️';
+  if (dayNightIcon) {
+    dayNightIcon.textContent = isNightTarget ? '🌙' : '☀️';
+    dayNightIcon.style.transform = `rotate(${targetNightPhase * 180}deg)`;
+  }
   if (dayNightLabel) dayNightLabel.textContent = isNightTarget ? 'Avond' : 'Dag';
 });
 
@@ -293,15 +298,14 @@ function animate(now: number) {
   }
 
   // 2. Smoothly animate Day / Night transition & Rotating Celestial Backdrop
-  const targetT = isNightTarget ? 1.0 : 0.0;
-  if (Math.abs(targetT - currentNightT) > 0.0005) {
-    currentNightT += (targetT - currentNightT) * (1 - Math.exp(-dt * 3.2));
-    applyDayNightState(lightingRig, houseGroups, currentNightT, celestialRotorEl);
+  if (Math.abs(targetNightPhase - currentNightPhase) > 0.0005) {
+    currentNightPhase += (targetNightPhase - currentNightPhase) * (1 - Math.exp(-dt * 3.2));
+    applyDayNightState(lightingRig, houseGroups, currentNightPhase, celestialRotorEl);
   }
 
   // 3. Update Camera Controls & Render
   cameraController.update(dt);
-  skyRenderer.update(currentNightT);
+  skyRenderer.update(currentNightPhase);
   edgeBlur.render(scene, cameraController.camera);
 }
 
