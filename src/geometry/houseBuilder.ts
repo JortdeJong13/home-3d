@@ -1368,11 +1368,11 @@ function buildDrivewayEdgeBushes(
     yellowCount: number;
     lavenderCount: number;
   }> = [
-    { z: 2.15, rx: 0.36, ry: 0.60, rz: 0.42, yellowCount: 12, lavenderCount: 0 },
-    { z: 0.55, rx: 0.36, ry: 0.56, rz: 0.42, yellowCount: 0, lavenderCount: 14 },
-    { z: -1.10, rx: 0.34, ry: 0.54, rz: 0.40, yellowCount: 0, lavenderCount: 14 },
-    { z: -2.85, rx: 0.34, ry: 0.52, rz: 0.40, yellowCount: 0, lavenderCount: 12 },
-    { z: -4.45, rx: 0.32, ry: 0.48, rz: 0.38, yellowCount: 0, lavenderCount: 10 },
+    // First natural cluster of bushes & flowers, then a wide open grass stretch, then one lone bush near the garage
+    { z: 2.35, rx: 0.36, ry: 0.58, rz: 0.44, yellowCount: 12, lavenderCount: 0 },
+    { z: 1.48, rx: 0.38, ry: 0.62, rz: 0.48, yellowCount: 0, lavenderCount: 16 },
+    { z: 0.72, rx: 0.32, ry: 0.48, rz: 0.38, yellowCount: 0, lavenderCount: 11 },
+    { z: -3.85, rx: 0.38, ry: 0.58, rz: 0.46, yellowCount: 0, lavenderCount: 14 },
   ];
 
   for (const bush of bushes) {
