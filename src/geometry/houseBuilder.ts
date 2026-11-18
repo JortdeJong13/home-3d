@@ -556,8 +556,8 @@ function buildPlotAndEnvironment(
   gravelShape.lineTo(leftBoundaryXAtZ(gravelRearZ) + 0.32, -gravelRearZ);
 
   // Curvy garden path branching from the gravel behind the berging (Z = -14.70) to the rear lounge terrace (Z = -17.73)
-  const pathP0 = { x: -0.03, y: -gravelRearZ };
-  const pathP1 = { x: -0.48, y: 15.65 };
+  const pathP0 = { x: -0.11, y: -gravelRearZ };
+  const pathP1 = { x: -0.55, y: 15.65 };
   const pathP2 = { x: 1.55, y: 16.85 };
   const pathP3 = { x: 2.46, y: 17.73 };
   const evalPath = (t: number) => {
@@ -570,7 +570,7 @@ function buildPlotAndEnvironment(
     // Normal pointing to the right (+X when moving toward +Y / rear)
     return { x, y, nx: dy / len, ny: -dx / len, angle: Math.atan2(dx, dy) };
   };
-  const pathHalfW = 0.36;
+  const pathHalfW = 0.44;
   const pathSteps = 20;
   gravelShape.lineTo(pathP0.x - pathHalfW, pathP0.y);
   for (let i = 1; i <= pathSteps; i++) {
@@ -698,46 +698,59 @@ function buildPlotAndEnvironment(
     }
   }
 
-  // Limestone stepping stones along the curvy garden path (14 tidy 42 × 23 cm stones closely spaced along the curve)
-  const steppingStoneCount = 14;
-  const stoneW = 0.42;
-  const stoneD = 0.23;
-  const rCorner = 0.06;
-  const hw = stoneW / 2;
-  const hd = stoneD / 2;
-  const sShape = new THREE.Shape();
-  sShape.moveTo(-hw + rCorner, -hd);
-  sShape.lineTo(hw - rCorner, -hd);
-  sShape.quadraticCurveTo(hw, -hd, hw, -hd + rCorner);
-  sShape.lineTo(hw, hd - rCorner);
-  sShape.quadraticCurveTo(hw, hd, hw - rCorner, hd);
-  sShape.lineTo(-hw + rCorner, hd);
-  sShape.quadraticCurveTo(-hw, hd, -hw, hd - rCorner);
-  sShape.lineTo(-hw, -hd + rCorner);
-  sShape.quadraticCurveTo(-hw, -hd, -hw + rCorner, -hd);
-  sShape.closePath();
+  // Organic flagstone mosaic along the curvy garden path (varied natural rounded shapes covering most of the gravel)
+  const buildRoundedPolyStone = (
+    polyTV: Array<[number, number]>,
+    stoneIdx: number
+  ) => {
+    // Map (t, v) -> local (x, y) in shape space, centered around its centroid for clean staggered animation
+    const worldPts = polyTV.map(([t, v]) => {
+      const pt = evalPath(t);
+      return [pt.x + pt.nx * v, pt.y + pt.ny * v] as [number, number];
+    });
+    const cx = worldPts.reduce((acc, p) => acc + p[0], 0) / worldPts.length;
+    const cy = worldPts.reduce((acc, p) => acc + p[1], 0) / worldPts.length;
+    const localPts = worldPts.map(([x, y]) => [x - cx, y - cy] as [number, number]);
 
-  for (let i = 0; i < steppingStoneCount; i++) {
-    const t = (i + 0.5) / steppingStoneCount;
-    const pt = evalPath(t);
-    const id = `garden_path_stone_${i}`;
-    const stoneGeo = new THREE.ExtrudeGeometry(sShape, {
+    const shape = new THREE.Shape();
+    const n = localPts.length;
+    for (let i = 0; i < n; i++) {
+      const prev = localPts[(i - 1 + n) % n];
+      const curr = localPts[i];
+      const next = localPts[(i + 1) % n];
+      const v1x = prev[0] - curr[0];
+      const v1y = prev[1] - curr[1];
+      const v2x = next[0] - curr[0];
+      const v2y = next[1] - curr[1];
+      const l1 = Math.hypot(v1x, v1y) || 1;
+      const l2 = Math.hypot(v2x, v2y) || 1;
+      const r = Math.min(0.055, l1 * 0.34, l2 * 0.34);
+      const pStart: [number, number] = [curr[0] + (v1x / l1) * r, curr[1] + (v1y / l1) * r];
+      const pEnd: [number, number] = [curr[0] + (v2x / l2) * r, curr[1] + (v2y / l2) * r];
+      if (i === 0) shape.moveTo(pStart[0], pStart[1]);
+      else shape.lineTo(pStart[0], pStart[1]);
+      shape.quadraticCurveTo(curr[0], curr[1], pEnd[0], pEnd[1]);
+    }
+    shape.closePath();
+
+    const stoneGeo = new THREE.ExtrudeGeometry(shape, {
       depth: 0.045,
       bevelEnabled: false,
     });
     stoneGeo.rotateX(-Math.PI / 2);
     const stone = new THREE.Mesh(stoneGeo, getMat('plot_patio_limestone'));
-    stone.position.set(pt.x, -0.0125, -pt.y);
-    stone.rotation.y = -pt.angle;
+    stone.position.set(cx, -0.0125, -cy);
+
+    const id = `garden_path_stone_${stoneIdx}`;
     registerMesh(
       stone,
       'plot_patio_limestone',
       {
         id,
-        label: 'Stapsteen Tuinpad naar Loungehoek (38 × 26 cm)',
-        dimensionsLabel: `${stoneW.toFixed(2)} × ${stoneD.toFixed(2)} m`,
+        label: 'Stapsteen Tuinpad naar Loungehoek',
+        dimensionsLabel: 'Natuursteen stapsteen',
         provenance: 'user_supplied',
-        source: 'Garden layout: tidy stepping-stone path connecting berging gravel path to lounge terrace',
+        source: 'Garden layout: natural-shaped stepping-stone mosaic connecting berging gravel path to lounge terrace',
         floor: 'ground',
         category: 'furniture',
       },
@@ -746,6 +759,53 @@ function buildPlotAndEnvironment(
     );
     groundGroup.add(stone);
     registerStaggered(id, stone, 'ground', -0.0125);
+  };
+
+  // Generate 7 alternating large flagstones + paired/triangular filler stones along t ∈ [0.02..0.98]
+  const bands = 7;
+  const dt = 0.96 / bands;
+  let stoneCounter = 0;
+  for (let b = 0; b < bands; b++) {
+    const t0 = 0.02 + b * dt;
+    const t1 = t0 + dt;
+    const tGap = 0.008;
+    const a0 = t0 + tGap;
+    const a1 = t1 - tGap;
+    const tMid = (a0 + a1) * 0.5;
+    const flip = b % 2 === 1 ? -1 : 1; // alternate main stone left vs right
+
+    // Large main flagstone (5-sided organic polygon)
+    buildRoundedPolyStone(
+      [
+        [a0, flip * -0.39],
+        [a0 + (a1 - a0) * 0.14, flip * 0.18],
+        [tMid + (a1 - a0) * 0.06, flip * 0.28],
+        [a1 - (a1 - a0) * 0.08, flip * 0.14],
+        [a1, flip * -0.39],
+      ],
+      stoneCounter++
+    );
+
+    // Two smaller triangular / trapezoidal filler stones nestled in the opposite pocket
+    buildRoundedPolyStone(
+      [
+        [a0 + (a1 - a0) * 0.04, flip * 0.39],
+        [a0 + (a1 - a0) * 0.18, flip * 0.22],
+        [tMid - (a1 - a0) * 0.03, flip * 0.33],
+        [tMid - (a1 - a0) * 0.04, flip * 0.39],
+      ],
+      stoneCounter++
+    );
+
+    buildRoundedPolyStone(
+      [
+        [tMid + (a1 - a0) * 0.02, flip * 0.39],
+        [tMid + (a1 - a0) * 0.10, flip * 0.31],
+        [a1 - (a1 - a0) * 0.06, flip * 0.20],
+        [a1 - (a1 - a0) * 0.02, flip * 0.39],
+      ],
+      stoneCounter++
+    );
   }
 
   // Garden Gate ("Tuinpoort" at Z = -13.72 m between Berging X = -3.27 m and Left Hedge) -> Staggered drop on Ground Floor!
