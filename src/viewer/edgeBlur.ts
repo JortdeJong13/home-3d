@@ -23,6 +23,8 @@ export const EDGE_FADE_START = 0.0; // metres beyond the plot where the fade-out
 export class EdgeBlurPass {
   public enabled = true;
   private target: THREE.WebGLRenderTarget;
+  private depthTarget: THREE.WebGLRenderTarget;
+  private depthOnlyMat: THREE.MeshBasicMaterial;
   private material: THREE.ShaderMaterial;
   private quadScene = new THREE.Scene();
   private quadCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -37,12 +39,28 @@ export class EdgeBlurPass {
     this.target.depthTexture = new THREE.DepthTexture(4, 4);
     this.target.depthTexture.type = THREE.UnsignedIntType;
 
+    // Non-MSAA depth-only target that captures ALL visible geometry (including semi-transparent
+    // tree canopies & window glass) so elevated transparent objects against the sky retain
+    // their true 3D depth instead of falling back to the Y = -0.15 plinth plane.
+    this.depthTarget = new THREE.WebGLRenderTarget(4, 4, {
+      depthBuffer: true,
+      stencilBuffer: false,
+    });
+    this.depthTarget.depthTexture = new THREE.DepthTexture(4, 4);
+    this.depthTarget.depthTexture.type = THREE.UnsignedIntType;
+
+    this.depthOnlyMat = new THREE.MeshBasicMaterial({
+      colorWrite: false,
+      depthWrite: true,
+    });
+
     this.material = new THREE.ShaderMaterial({
       depthTest: false,
       depthWrite: false,
       uniforms: {
         tColor: { value: this.target.texture },
         tDepth: { value: this.target.depthTexture },
+        tFullDepth: { value: this.depthTarget.depthTexture },
         uCamWorld: { value: new THREE.Matrix4() },
         uProjInv: { value: new THREE.Matrix4() },
         uTexel: { value: new THREE.Vector2(1, 1) },
@@ -61,6 +79,7 @@ export class EdgeBlurPass {
       fragmentShader: /* glsl */ `
         uniform sampler2D tColor;
         uniform sampler2D tDepth;
+        uniform sampler2D tFullDepth;
         uniform mat4 uCamWorld;
         uniform mat4 uProjInv;
         uniform vec2 uTexel;
@@ -79,6 +98,10 @@ export class EdgeBlurPass {
           return length(d);
         }
 
+        float sampleMinDepth(vec2 uv) {
+          return min(texture2D(tDepth, uv).x, texture2D(tFullDepth, uv).x);
+        }
+
         void main() {
           vec4 base = texture2D(tColor, vUv);
           if (base.a <= 0.0001) {
@@ -86,9 +109,17 @@ export class EdgeBlurPass {
             return;
           }
 
-          float depth = texture2D(tDepth, vUv).x;
-          float dist = 0.0;
+          float depth = sampleMinDepth(vUv);
+          if (depth >= 0.99999) {
+            // Preserve MSAA silhouette fringes (e.g. tree canopies against sky) by checking
+            // 1-px cardinal neighbors before falling back to the ground plinth projection.
+            depth = min(
+              min(sampleMinDepth(vUv + vec2(uTexel.x, 0.0)), sampleMinDepth(vUv - vec2(uTexel.x, 0.0))),
+              min(sampleMinDepth(vUv + vec2(0.0, uTexel.y)), sampleMinDepth(vUv - vec2(0.0, uTexel.y)))
+            );
+          }
 
+          float dist = 0.0;
           if (depth < 0.99999) {
             vec4 ndc = vec4(vUv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
             vec4 view = uProjInv * ndc;
@@ -160,6 +191,7 @@ export class EdgeBlurPass {
     this.renderer.getDrawingBufferSize(this.size);
     if (this.target.width !== this.size.x || this.target.height !== this.size.y) {
       this.target.setSize(this.size.x, this.size.y);
+      this.depthTarget.setSize(this.size.x, this.size.y);
       this.material.uniforms.uTexel.value.set(1 / this.size.x, 1 / this.size.y);
       this.material.uniforms.uMaxBlurPx.value = Math.max(6, this.size.y * 0.016);
     }
@@ -167,9 +199,47 @@ export class EdgeBlurPass {
     this.material.uniforms.uCamWorld.value.copy(camera.matrixWorld);
     this.material.uniforms.uProjInv.value.copy(camera.projectionMatrixInverse);
 
+    // 1. Render full colour + MSAA opaque depth
     this.renderer.setRenderTarget(this.target);
     this.renderer.clear();
     this.renderer.render(scene, camera);
+
+    // 2. Render Z-only pass for all visible geometry (including transparent trees & glass)
+    const hiddenHitboxes: THREE.Object3D[] = [];
+    scene.traverse((obj) => {
+      if (!obj.visible) return;
+      if ((obj as THREE.Mesh).isMesh) {
+        const mat = (obj as THREE.Mesh).material;
+        const isInvisible = Array.isArray(mat)
+          ? mat.every((m) => m.transparent && m.opacity <= 0.001)
+          : Boolean(mat && mat.transparent && mat.opacity <= 0.001);
+        if (isInvisible) {
+          obj.visible = false;
+          hiddenHitboxes.push(obj);
+        }
+      }
+    });
+
+    const prevOverride = scene.overrideMaterial;
+    const prevShadowAutoUpdate = this.renderer.shadowMap.autoUpdate;
+    const prevShadowNeedsUpdate = this.renderer.shadowMap.needsUpdate;
+    scene.overrideMaterial = this.depthOnlyMat;
+    this.renderer.shadowMap.autoUpdate = false;
+    this.renderer.shadowMap.needsUpdate = false;
+    try {
+      this.renderer.setRenderTarget(this.depthTarget);
+      this.renderer.clear();
+      this.renderer.render(scene, camera);
+    } finally {
+      scene.overrideMaterial = prevOverride;
+      this.renderer.shadowMap.autoUpdate = prevShadowAutoUpdate;
+      this.renderer.shadowMap.needsUpdate = prevShadowNeedsUpdate;
+      for (const obj of hiddenHitboxes) {
+        obj.visible = true;
+      }
+    }
+
+    // 3. Composite with plot-edge blur & fade
     this.renderer.setRenderTarget(null);
     this.renderer.clear();
     this.renderer.render(this.quadScene, this.quadCamera);
