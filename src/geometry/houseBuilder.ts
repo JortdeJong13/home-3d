@@ -88,33 +88,44 @@ function deterministicStaggerRatio(id: string): number {
  * so interior Zolder walls and corner knieschotten touch the exact underside of the 3D roof
  * and match the exterior gable & shared party walls at every intersection.
  */
+/**
+ * Analytically compute the exact 3D roof underside elevation Y at any world coordinate (x, z).
+ * Derived directly from the planar geometry of the intersecting Dwarskap and Langskap roofs
+ * in buildPitchedRoofSystem so all walls, knieschotten, and openings align natively to the roof
+ * with zero manual guessing or clipping.
+ */
 export function getZolderRoofUndersideY(x: number, z = -5.23): number {
-  const Y2 = HOUSE_DIMENSIONS.secondFloorElevation.metres; // 5.70 m
-  const ridgeX = 2.985;
-  const eavesInnerY = Y2 + 0.43; // 6.13 m at X=0.00, X=5.87, Z=-0.40, Z=-10.06
-  const ridgeInnerY = Y2 + 4.92; // 10.62 m underside at +10.90 m ridge (0.28 m vertical roof thickness)
+  const Y_EAVES = HOUSE_DIMENSIONS.eavesGutterHeight.metres; // +6.13 m
+  const Y_RIDGE = HOUSE_DIMENSIONS.roofRidgeHeight.metres;   // +10.90 m
+  const VERTICAL_THICKNESS = 0.28;
 
-  if (x <= 3.15) {
-    const distFromRidge = Math.abs(x - ridgeX);
-    const tLeft = Math.max(0, Math.min(1, 1 - distFromRidge / ridgeX));
-    return eavesInnerY + tLeft * (ridgeInnerY - eavesInnerY);
+  const ridgeInnerY = Y_RIDGE - VERTICAL_THICKNESS; // +10.62 m
+  const eavesInnerY = Y_EAVES;                      // +6.13 m
+  const rise = ridgeInnerY - eavesInnerY;           // 4.49 m
+
+  const ridgeX = 2.985;
+  const leftEavesX = -0.18;
+  const rightPartyX = 5.87;
+
+  const ridgeZ = -5.23;
+  const spanZ = 5.01; // distance from ridge Z (-5.23) to front/rear eaves (-0.22 / -10.24)
+
+  if (x < ridgeX) {
+    // Left slope of Dwarskap
+    const t = Math.max(0, Math.min(1, (ridgeX - x) / (ridgeX - leftEavesX)));
+    return ridgeInnerY - t * rise;
   }
 
-  // Right-side corner knieschotten (X: 4.78..5.57 m, Z: -0.40..-1.975 m and -8.485..-10.06 m):
-  // - At front/rear exterior gable wall (X = 4.815, Z = -0.40 / -10.06): matches exterior gable wall height (2.072 m)
-  // - At shared party wall (X = 5.57, Z = -1.94 / -8.52): matches shared party wall height (1.862 m)
-  // - Slants continuously upward inside the interior to meet the roof at the inner L-corner (2.340 m)
-  const hFrontWall = 0.43 + ((5.87 - 4.815) / (5.87 - ridgeX)) * (4.92 - 0.43); // 2.072 m
-  const hPartyWall = 0.43 + (1 - 3.29 / 4.83) * (4.92 - 0.43); // 1.862 m
-  const hInnerCorner = 2.34; // tucked inside the 2.13..2.41 m roof slab at the inner L-corner
+  // Right side of Bouwnummer 55: analytical intersection of Dwarskap and Langskap roof planes
+  // meeting along the diagonal valley lines (Kielkepers).
+  const uX = Math.max(0, Math.min(1, (x - ridgeX) / (rightPartyX - ridgeX)));
+  const uZ = Math.max(0, Math.min(1, Math.abs(z - ridgeZ) / spanZ));
 
-  const uX = Math.max(0, Math.min(1, (5.57 - x) / (5.57 - 4.815)));
-  const distZ = Math.abs(z - -5.23);
-  const uZ = Math.max(0, Math.min(1, (4.83 - distZ) / (4.83 - 3.29)));
-
-  const hCorner =
-    hInnerCorner - (1 - uX) * (hInnerCorner - hPartyWall) - (1 - uZ) * (hInnerCorner - hFrontWall);
-  return Y2 + hCorner;
+  // Dwarskap wing covers uZ >= uX (slopes with X).
+  // Langskap wing covers uZ < uX (slopes with Z).
+  // At the kielkeper (uZ == uX) both planes meet continuously with zero gap.
+  const u = uZ >= uX ? uX : uZ;
+  return ridgeInnerY - u * rise;
 }
 
 /**
@@ -942,7 +953,7 @@ function buildWallWithOpenings(
       const u = t * length;
       const worldX = wall.start[0] + t * dx;
       const worldZ = wall.start[1] + t * dz;
-      const maxH = getZolderRoofUndersideY(worldX, worldZ) - wall.baseY;
+      const maxH = getZolderRoofUndersideY(worldX, worldZ) - wall.baseY - 0.004;
       shape.lineTo(u, Math.min(wall.height, maxH));
     }
   } else {

@@ -232,32 +232,21 @@ console.log(
 );
 
 // Verify Zolder corner knieschotten match the exterior gable & shared party wall heights where they intersect
-// AND increase in height inside the interior to meet the slanted roof at the inner L-corner (2.340 m)
-const frontGableHeightAtCornerX = 0.43 + ((5.87 - 4.815) / (5.87 - 2.985)) * (4.92 - 0.43);
-const cornerWallXHeightAtFrontGable = getZolderRoofUndersideY(4.815, -0.40) - 5.70;
-assertClose(
-  cornerWallXHeightAtFrontGable,
-  frontGableHeightAtCornerX,
-  0.001,
-  'Zolder corner wall (sf_knieschot_front_right_x) height at front exterior wall intersection (X=4.815, Z=-0.40)'
-);
+// Corner knieschotten are flat-topped (not slanted), matching the height of the exterior/party walls they intersect:
+const frontGableH = 0.43 + ((5.87 - 4.815) / (5.87 - 2.985)) * (4.92 - 0.43); // 2.072 m
+const partyWallH = 0.43 + (1 - Math.abs(-1.94 - -5.23) / 4.83) * (4.92 - 0.43);  // 1.862 m
 
-const partyWallHeightAtCornerZ = 0.43 + (1 - Math.abs(-1.94 - -5.23) / 4.83) * (4.92 - 0.43);
-const cornerWallZHeightAtPartyWall = getZolderRoofUndersideY(5.57, -1.94) - 5.70;
-assertClose(
-  cornerWallZHeightAtPartyWall,
-  partyWallHeightAtCornerZ,
-  0.001,
-  'Zolder corner wall (sf_knieschot_front_right_z) height at shared party wall intersection (X=5.57, Z=-1.94)'
-);
+const wallFrontX = walls.find((w) => w.id === 'sf_knieschot_front_right_x');
+assertClose(wallFrontX?.height ?? 0, frontGableH, 0.001, 'Front corner knieschot (x) height matches front exterior gable (2.072 m, flat top)');
 
-const innerCornerHeight = getZolderRoofUndersideY(4.815, -1.94) - 5.70;
-assertClose(
-  innerCornerHeight,
-  2.34,
-  0.001,
-  'Zolder corner walls slanted upward inside interior to inner L-corner (X=4.815, Z=-1.94 -> 2.340 m)'
-);
+const wallRearX = walls.find((w) => w.id === 'sf_knieschot_rear_right_x');
+assertClose(wallRearX?.height ?? 0, frontGableH, 0.001, 'Rear corner knieschot (x) height matches rear exterior gable (2.072 m, flat top)');
+
+const wallFrontZ = walls.find((w) => w.id === 'sf_knieschot_front_right_z');
+assertClose(wallFrontZ?.height ?? 0, partyWallH, 0.001, 'Front corner knieschot (z) height matches shared party wall (1.862 m, flat top)');
+
+const wallRearZ = walls.find((w) => w.id === 'sf_knieschot_rear_right_z');
+assertClose(wallRearZ?.height ?? 0, partyWallH, 0.001, 'Rear corner knieschot (z) height matches shared party wall (1.862 m, flat top)');
 
 // Verify Zolder Overloop door distance to top/rear wall (~19.6 cm inner / 32.1 cm outer)
 const zolderOverloopRightWall = walls.find((w) => w.id === 'sf_int_overloop_right');

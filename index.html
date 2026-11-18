@@ -179,24 +179,23 @@
       /* Vertical connecting line */
       .selector-line-bg {
         position: absolute;
-        top: 10px;
-        bottom: 10px;
+        top: 11px;
+        bottom: 11px;
         left: 50%;
         width: 2px;
         transform: translateX(-50%);
         background: var(--dot-inactive);
         z-index: 0;
+        overflow: hidden;
       }
 
       .selector-line-fill {
         position: absolute;
-        top: 10px;
-        left: 50%;
-        width: 2px;
+        top: 0;
+        left: 0;
+        width: 100%;
         height: 0%;
-        transform: translateX(-50%);
         background: var(--dot-active);
-        z-index: 1;
         transition: height 0.08s linear;
       }
 
@@ -434,8 +433,9 @@
       <!-- Right-Side Vertical Manual Floor Selector (Section 5.4) -->
       <nav id="floor-selector" aria-label="Woonlaag selector">
         <div class="selector-track-wrapper">
-          <div class="selector-line-bg"></div>
-          <div class="selector-line-fill" id="selector-line-fill"></div>
+          <div class="selector-line-bg">
+            <div class="selector-line-fill" id="selector-line-fill"></div>
+          </div>
 
           <button class="floor-dot-btn active" data-stop-index="0" aria-label="Kavel & Tuin">
             <span class="floor-dot-core"></span>

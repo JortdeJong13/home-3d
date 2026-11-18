@@ -241,7 +241,8 @@ function animate(now: number) {
 
   // Sync Floor Selector UI
   if (selectorFillEl) {
-    selectorFillEl.style.height = `${(smoothedScrollProgress * 100).toFixed(1)}%`;
+    const clampedProgress = Math.max(0, Math.min(1, smoothedScrollProgress));
+    selectorFillEl.style.height = `${(clampedProgress * 100).toFixed(1)}%`;
   }
   if (scrollHintEl) {
     scrollHintEl.classList.toggle('hidden', smoothedScrollProgress > 0.05);

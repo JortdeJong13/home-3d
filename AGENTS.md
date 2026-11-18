@@ -86,7 +86,7 @@ All chains are automatically asserted by `npm run verify` (`src/scripts/verifyDi
 4. **Intersecting Roof System (*Dwarskap* + *Langskap*) & Zolder *Knieschotten***:
    - Built via `buildVerticalExtrudedRoofPolygon` in `src/geometry/houseBuilder.ts` so the main front-to-back *dwarskap* (`ridgeX = 2.985 m`) and perpendicular *langskap* (`nbRidgeZ = -5.23 m`) share exact 3D vertices along the diagonal valley lines (*kielkepers*) with zero gap.
    - The perpendicular *langskap* wing above Bouwnummer 55's Zolder (`X: 2.985..5.87 m`) is colored in `roof_tile_anthracite`; only the neighbour section (`X: 5.87..8.05 m`) is `neighbour_roof_grey`.
-   - The front-right and rear-right corner *knieschotten* match the exterior gable and shared party wall heights where they intersect (`2.072 m` and `1.862 m`) and slant upward inside the interior (`2.340 m` at the inner L-corner) following the slanted roof.
+   - The front-right and rear-right corner *knieschotten* are flat-topped (not slanted) knee walls matching the exact height of the walls they intersect: `2.072 m` (`207 cm`) along the front/rear exterior gable walls, and `1.862 m` (`186 cm`) along the shared party wall.
 5. **Scroll-Driven Assembly & Staggered Secondary/Furniture Drop**:
    - Scroll steps (`src/viewer/scrollTimeline.ts`): `0 · Kavel & Tuin` → `1 · Begane Grond` → `2 · 1e Verdieping (+ Dak Uitbouw & Berging)` → `3 · 2e Verdieping (Zolder)` → `4 · Kap & Volledige Woning`.
    - Secondary/furniture assets (`staggeredAssets`: the 14 *Oprit* pavers, *Tuinpoort*, Zolder WP/WTW units, and any furniture in `PLACED_ASSETS`) drop right behind their floor (`8%–26%` start offset, `6.5 m` relative drop height) in a pseudo-random staggered cascade.
