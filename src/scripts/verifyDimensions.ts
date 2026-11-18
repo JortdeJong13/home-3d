@@ -231,25 +231,40 @@ console.log(
   `  ✓ Attic shared wall (sf_wall_party_zolder) verified with pointy gablePeak (${zolderPartyWall.gablePeak.peakHeight.toFixed(2)} m at Z = -5.23 m)`
 );
 
-// Verify Zolder corner knieschotten match VK-06 drawing (79 cm from party wall, 1.575 m deep)
-// and have uniform 1.50 m height (flat top):
-const targetKneeH = HOUSE_DIMENSIONS.zolderKneeWallHeight.metres; // 1.50 m
+// Verify Zolder left knieschot (Doorsnede AA) & roof underside alignment with VK-06 H=1.50m contour
+const zolderLeftKnieschot = walls.find((w) => w.id === 'sf_wall_left_eaves');
+if (!zolderLeftKnieschot?.clipToRoof) {
+  throw new Error('Zolder left knieschot (sf_wall_left_eaves) must have clipToRoof: true');
+}
+assertClose(zolderLeftKnieschot.start[0], 1.105, 0.001, 'Left knieschot centerline at X = 1.105 m (inner face 1.14 m)');
 
-const wallFrontX = walls.find((w) => w.id === 'sf_knieschot_front_right_x');
-assertClose(wallFrontX?.height ?? 0, targetKneeH, 0.001, 'Front corner knieschot (x) height is 1.50 m (flat top)');
-assertClose(wallFrontX?.start[0] ?? 0, 4.78, 0.001, 'Front corner knieschot (x) placed at X = 4.78 m (79 cm from party wall on VK-06)');
+const Y2 = HOUSE_DIMENSIONS.secondFloorElevation.metres;
+assertClose(
+  zolderPartyWall.gablePeak.peakHeight,
+  getZolderRoofUndersideY(5.72, -5.23) - Y2,
+  0.005,
+  'Attic party wall peak matches Langskap roof underside at Z = -5.23 m'
+);
 
-const wallRearX = walls.find((w) => w.id === 'sf_knieschot_rear_right_x');
-assertClose(wallRearX?.height ?? 0, targetKneeH, 0.001, 'Rear corner knieschot (x) height is 1.50 m (flat top)');
-assertClose(wallRearX?.start[0] ?? 0, 4.78, 0.001, 'Rear corner knieschot (x) placed at X = 4.78 m (79 cm from party wall on VK-06)');
+// Verify VK-06 right-corner areas remain open (H=1.500 mm contour lines, not physical walls)
+for (const removedId of ['sf_knieschot_front_right_x', 'sf_knieschot_front_right_z', 'sf_knieschot_rear_right_x', 'sf_knieschot_rear_right_z']) {
+  if (walls.some((w) => w.id === removedId)) {
+    throw new Error(`Phantom corner wall ${removedId} should not exist per VK-06 & Doorsnede AA`);
+  }
+}
 
-const wallFrontZ = walls.find((w) => w.id === 'sf_knieschot_front_right_z');
-assertClose(wallFrontZ?.height ?? 0, targetKneeH, 0.001, 'Front corner knieschot (z) height is 1.50 m (flat top)');
-assertClose(wallFrontZ?.start[1] ?? 0, -1.975, 0.001, 'Front corner knieschot (z) placed at Z = -1.975 m (1.575 m from front inner wall on VK-06)');
-
-const wallRearZ = walls.find((w) => w.id === 'sf_knieschot_rear_right_z');
-assertClose(wallRearZ?.height ?? 0, targetKneeH, 0.001, 'Rear corner knieschot (z) height is 1.50 m (flat top)');
-assertClose(wallRearZ?.start[1] ?? 0, -8.485, 0.001, 'Rear corner knieschot (z) placed at Z = -8.485 m (1.575 m from rear inner wall on VK-06)');
+// Verify analytical roof underside continuity along the diagonal Kielkeper (uX == uZ)
+const kielLeft = getZolderRoofUndersideY(4.4275, -2.725);
+const kielRight = getZolderRoofUndersideY(4.4276, -2.725);
+assertClose(kielLeft, kielRight, 0.002, 'Dwarskap and Langskap undersides meet continuously at Kielkeper');
+const hLeft150 = getZolderRoofUndersideY(1.14, -5.23) - Y2;
+const hRight150 = getZolderRoofUndersideY(4.78, -1.975) - Y2;
+if (hLeft150 < 1.40 || hLeft150 > 1.75 || hRight150 < 1.40 || hRight150 > 1.75) {
+  throw new Error(`Expected ~1.50 m roof underside near VK-06 H=1.50m contour (got left=${hLeft150.toFixed(2)}, right=${hRight150.toFixed(2)})`);
+}
+console.log(
+  `  ✓ Attic roof underside & VK-06 H=1.50m alignment verified (left=${hLeft150.toFixed(2)} m, right=${hRight150.toFixed(2)} m)`
+);
 
 // Verify Zolder Overloop door distance to top/rear wall (~19.6 cm inner / 32.1 cm outer)
 const zolderOverloopRightWall = walls.find((w) => w.id === 'sf_int_overloop_right');

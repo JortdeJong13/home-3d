@@ -43,7 +43,7 @@ All internal geometry uses **metres** (`1.0 = 1.00 m`). Helper functions `m(...)
   - `Y = +2.85 m`: 1st floor finished floor level (`2.60 m` ceiling + `0.25 m` slab), `2.60 m` ceiling height, and flat roof elevation of the *Berging* & `2.40 m` rear extension.
   - `Y = +5.70 m`: 2nd floor (*Zolder*) finished floor level (`2.85 m + 2.60 m + 0.25 m`).
   - `Y = +6.13 m`: Eaves gutter height (*goothoogte*, `+0.43 m` above Zolder floor).
-  - `Y = +10.90 m`: Roof ridge height (*nokhoogte*, `+5.20 m` above Zolder floor; underside of roof slab at `+10.62 m` / `+4.92 m` above Zolder floor).
+  - `Y = +10.90 m`: Roof ridge height (*nokhoogte*, `+5.20 m` above Zolder floor; interior roof underside at `+10.24 m` / `+4.54 m` above Zolder floor with `0.66 m` vertical roof build-up).
 
 ---
 
@@ -69,8 +69,8 @@ All chains are automatically asserted by `npm run verify` (`src/scripts/verifyDi
   - Rear Width: `201 cm` (Badkamer) + `7 cm` (Wand) + `309 cm` (Kantoor) = **`517 cm`**.
 - **2nd Floor (*Zolder*) Chains**:
   - Depth: `346 cm` (Zolder voor) + `12.5 cm` (Wand) + `225 cm` (Overloop) + `12.5 cm` (Wand) + `370 cm` (Zolder achter) = **`966 cm`**.
-  - Right-side Party Wall & Corner *Knieschotten* Depth: `157.5 cm` (Front corner knieschot) + `651 cm` (Middle party wall span) + `157.5 cm` (Rear corner knieschot) = **`966 cm`**.
-  - Width at `H = 1.50 m`: `74 cm` (Left eaves storage) + `178 cm` (Overloop) + `12.5 cm` (Wand) + `252.5 cm` (Zolder rechts) = **`517 cm`** (`443 cm` from left knieschot to shared wall; `364 cm` between left and right corner knieschotten).
+  - Right-side Party Wall & `H = 1.50 m` Contour Depth: `157.5 cm` (Front `1.50 m` contour zone) + `651 cm` (Middle party wall span) + `157.5 cm` (Rear `1.50 m` contour zone) = **`966 cm`**.
+  - Width at `H = 1.50 m`: `74 cm` (Left eaves storage behind *knieschot*) + `178 cm` (Overloop) + `12.5 cm` (Wand) + `252.5 cm` (Zolder rechts) = **`517 cm`** (`443 cm` from left knieschot to shared wall; `364 cm` between left and right `H = 1.50 m` contour lines).
   - Overloop Door (`sf_door_overloop_to_zolder`): Positioned at `offsetAlongWall: 1.714 m` on `sf_int_overloop_right` so its rear/top edge is **`19.6 cm`** from the inner rear wall (`32.1 cm` from outer corner), clear of the stairs.
 
 ---
@@ -83,10 +83,11 @@ All chains are automatically asserted by `npm run verify` (`src/scripts/verifyDi
    - Structural floor slabs (`buildStructuralSlabCollars` in `src/geometry/houseBuilder.ts`) span strictly between the inner faces of the exterior walls (`X: 0.40..5.57 m`), while exterior & shared party walls extend `25 cm` downward (`bottomY = -0.25 m`) so no white slab stripe or stairwell gap is ever visible on the yellow brick exterior.
 3. **White Double-90°-Turn Staircases**:
    - Both the Ground→1st and 1st→2nd floor stairs use the centralized `instantiateWhiteDoubleTurnStaircase3D` prefab in `src/geometry/componentCatalog.ts` (two `90°` winder turns with 3 kites each, central straight treads, newel posts, and spindled balustrades, all finished in white).
-4. **Intersecting Roof System (*Dwarskap* + *Langskap*) & Zolder *Knieschotten***:
-   - Built via `buildVerticalExtrudedRoofPolygon` in `src/geometry/houseBuilder.ts` so the main front-to-back *dwarskap* (`ridgeX = 2.985 m`) and perpendicular *langskap* (`nbRidgeZ = -5.23 m`) share exact 3D vertices along the diagonal valley lines (*kielkepers*) with zero gap.
-   - The perpendicular *langskap* wing above Bouwnummer 55's Zolder (`X: 2.985..5.87 m`) is colored in `roof_tile_anthracite`; only the neighbour section (`X: 5.87..8.05 m`) is `neighbour_roof_grey`.
-   - The front-right and rear-right corner *knieschotten* are flat-topped (not slanted) knee walls with a uniform height of `1.50 m` (`150 cm`), positioned at `X = 4.78 m` (spanning `79 cm` from the shared party wall) and `Z = -1.975 m` (front) / `Z = -8.485 m` (rear, `157.5 cm` corner depth), matching Verkooptekening VK-06.
+4. **Intersecting Roof System (*Dwarskap* + *Langskap*) & Zolder Layout**:
+   - Built via `buildRoofSlopeGeometries` and shared `ROOF_SPEC` in `src/geometry/houseBuilder.ts` so the main front-to-back *dwarskap* (`ridgeX = 2.985 m`) and perpendicular *langskap* (`nbRidgeZ = -5.23 m`) share exact 3D vertices along the diagonal valley lines (*kielkepers*) with zero gap, anthracite roof tiles outside, and white `interior_wall_plaster` undersides inside.
+   - Includes mitered anthracite *gevelpannen* (verge tiles) along the front & rear gables, half-round *nokvorsten* (ridge caps) at `+10.90 m`, horizontal *bakgoten* (box gutters) + *klossen* along the eaves, a rear-left Velux *dakraam* cut into the left roof slope, and roof vents.
+   - The perpendicular *langskap* wing above Bouwnummer 55's Zolder (`X: 2.985..5.87 m`) is colored in `roof_tile_anthracite`; only the neighbour section (`X: 5.87..10.05 m`) is `neighbour_roof_grey`.
+   - Per *VK-06* and *Doorsnede AA*, Zolder has a physical left *knieschot* (`sf_wall_left_eaves` at `X = 1.105 m`, `clipToRoof: true`), while the right side stays open to the shared party wall (`H = 1.500 mm` lines in the corners are headroom contours, not walls).
 5. **Scroll-Driven Assembly & Staggered Secondary/Furniture Drop**:
    - Scroll steps (`src/viewer/scrollTimeline.ts`): `0 · Kavel` → `1 · Begane Grond` → `2 · 1e Verdieping` → `3 · 2e Verdieping` → `4 · Kap`.
    - Secondary/furniture assets (`staggeredAssets`: the 14 *Oprit* pavers, *Tuinpoort*, Zolder WP warmtepomp unit, and any furniture in `PLACED_ASSETS`) drop right behind their floor (`8%–26%` start offset, `6.5 m` relative drop height) in a pseudo-random staggered cascade.

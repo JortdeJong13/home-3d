@@ -87,49 +87,55 @@ function deterministicStaggerRatio(id: string): number {
 }
 
 /**
- * Compute roof ceiling height (Y in world metres) at any (X, Z) on the 2nd floor (Zolder)
- * accounting for both the main cross-gable (Dwarskap) and perpendicular T-wing (Langskap),
- * so interior Zolder walls and corner knieschotten touch the exact underside of the 3D roof
- * and match the exterior gable & shared party walls at every intersection.
+ * Shared canonical roof parameters derived from VK-06 Voorgevel, Doorsnede AA & Zolder.
+ * Used identically by both `getZolderRoofUndersideY` and `buildPitchedRoofSystem`
+ * so all attic walls, inner plaster linings, skylights, and roof slopes align to 0.0 mm.
  */
+const ROOF_SPEC = {
+  yEaves: HOUSE_DIMENSIONS.eavesGutterHeight.metres, // +6.13 m
+  yRidge: HOUSE_DIMENSIONS.roofRidgeHeight.metres,   // +10.90 m
+  /** Vertical roof thickness (~0.35 m perpendicular kapelement + tiles on 57.5° Dwarskap) */
+  verticalThickness: 0.66,
+  ridgeX: 2.985,
+  leftWallOuterX: 0.00,
+  leftTileEdgeX: -0.06,
+  rightPartyX: 5.87,
+  neighbourMaxX: 10.05,
+  /** Sleek 6 cm verge tile projection past brick gables (Z = 0.00 / -10.46) */
+  roofFrontZ: 0.06,
+  roofRearZ: -10.52,
+  nbRidgeZ: -5.23,
+  nbFrontEavesZ: -0.22,
+  nbRearEavesZ: -10.24,
+} as const;
+
+/**
+ * Analytically compute the exact 3D roof outer tile Y at any world coordinate (x, z).
+ */
+function getZolderRoofTopY(x: number, z: number = ROOF_SPEC.nbRidgeZ): number {
+  const { yEaves, yRidge, ridgeX, leftTileEdgeX, rightPartyX, nbRidgeZ, nbFrontEavesZ } = ROOF_SPEC;
+  const rise = yRidge - yEaves; // 4.77 m
+  const spanZ = nbFrontEavesZ - nbRidgeZ; // 5.01 m
+
+  if (x < ridgeX) {
+    const t = Math.max(0, Math.min(1, (ridgeX - x) / (ridgeX - leftTileEdgeX)));
+    return yRidge - t * rise;
+  }
+
+  const uX = Math.max(0, Math.min(1, (x - ridgeX) / (rightPartyX - ridgeX)));
+  const uZ = Math.max(0, Math.min(1, Math.abs(z - nbRidgeZ) / spanZ));
+  const u = uZ >= uX ? uX : uZ;
+  return yRidge - u * rise;
+}
+
 /**
  * Analytically compute the exact 3D roof underside elevation Y at any world coordinate (x, z).
  * Derived directly from the planar geometry of the intersecting Dwarskap and Langskap roofs
  * in buildPitchedRoofSystem so all walls, knieschotten, and openings align natively to the roof
  * with zero manual guessing or clipping.
  */
-export function getZolderRoofUndersideY(x: number, z = -5.23): number {
-  const Y_EAVES = HOUSE_DIMENSIONS.eavesGutterHeight.metres; // +6.13 m
-  const Y_RIDGE = HOUSE_DIMENSIONS.roofRidgeHeight.metres;   // +10.90 m
-  const VERTICAL_THICKNESS = 0.28;
-
-  const ridgeInnerY = Y_RIDGE - VERTICAL_THICKNESS; // +10.62 m
-  const eavesInnerY = Y_EAVES;                      // +6.13 m
-  const rise = ridgeInnerY - eavesInnerY;           // 4.49 m
-
-  const ridgeX = 2.985;
-  const leftEavesX = -0.18;
-  const rightPartyX = 5.87;
-
-  const ridgeZ = -5.23;
-  const spanZ = 5.01; // distance from ridge Z (-5.23) to front/rear eaves (-0.22 / -10.24)
-
-  if (x < ridgeX) {
-    // Left slope of Dwarskap
-    const t = Math.max(0, Math.min(1, (ridgeX - x) / (ridgeX - leftEavesX)));
-    return ridgeInnerY - t * rise;
-  }
-
-  // Right side of Bouwnummer 55: analytical intersection of Dwarskap and Langskap roof planes
-  // meeting along the diagonal valley lines (Kielkepers).
-  const uX = Math.max(0, Math.min(1, (x - ridgeX) / (rightPartyX - ridgeX)));
-  const uZ = Math.max(0, Math.min(1, Math.abs(z - ridgeZ) / spanZ));
-
-  // Dwarskap wing covers uZ >= uX (slopes with X).
-  // Langskap wing covers uZ < uX (slopes with Z).
-  // At the kielkeper (uZ == uX) both planes meet continuously with zero gap.
-  const u = uZ >= uX ? uX : uZ;
-  return ridgeInnerY - u * rise;
+export function getZolderRoofUndersideY(x: number, z: number = ROOF_SPEC.nbRidgeZ): number {
+  return getZolderRoofTopY(x, z) - ROOF_SPEC.verticalThickness;
 }
 
 /**
@@ -2541,9 +2547,19 @@ function buildWallWithOpenings(
     innerShape.moveTo(startTrim, innerBottomY);
     innerShape.lineTo(length - endTrim, innerBottomY);
     if (wall.gablePeak) {
-      innerShape.lineTo(length - endTrim, wall.height);
-      innerShape.lineTo(wall.gablePeak.offsetAlongWall, wall.gablePeak.peakHeight - 0.05);
-      innerShape.lineTo(startTrim, wall.height);
+      // Sample the exact interior roof underside along the inner wall face (-Z local normal)
+      // so the plaster triangle matches the true kapelement ceiling slope with zero wedge/gap.
+      const innerNormalOffsetX = (dz / length) * (wall.thickness / 2);
+      const innerNormalOffsetZ = -(dx / length) * (wall.thickness / 2);
+      const innerGableH = (u: number) => {
+        const t = u / length;
+        const wx = wall.start[0] + t * dx + innerNormalOffsetX;
+        const wz = wall.start[1] + t * dz + innerNormalOffsetZ;
+        return Math.max(0.05, getZolderRoofUndersideY(wx, wz) - wall.baseY - 0.004);
+      };
+      innerShape.lineTo(length - endTrim, innerGableH(length - endTrim));
+      innerShape.lineTo(wall.gablePeak.offsetAlongWall, innerGableH(wall.gablePeak.offsetAlongWall));
+      innerShape.lineTo(startTrim, innerGableH(startTrim));
     } else {
       innerShape.lineTo(length - endTrim, wall.height);
       innerShape.lineTo(startTrim, wall.height);
@@ -2663,7 +2679,8 @@ function buildQuarterTurnStaircase(
 }
 
 /**
- * Add Zolder technical installations (WP, WTW) in the rear-left installation zone.
+ * Add Zolder technical installations (WP boiler, WP indoor unit, WTW) in the rear-left installation zone
+ * matching Verkooptekening VK-06.
  */
 function buildZolderDetails(
   secondGroup: THREE.Group,
@@ -2673,12 +2690,13 @@ function buildZolderDetails(
 ) {
   const Y2 = HOUSE_DIMENSIONS.secondFloorElevation.metres; // 5.70 m
 
-  const wpGeo = new THREE.CylinderGeometry(0.32, 0.32, 1.65, 20);
+  // 1. Heat pump buffer tank / boiler cylinder (VK-06 circular 'wp' symbol)
+  const wpGeo = new THREE.CylinderGeometry(0.32, 0.32, 1.65, 24);
   const wpMesh = new THREE.Mesh(wpGeo, getMat('window_frame_cream'));
-  wpMesh.position.set(2.15, Y2 + 0.825, -6.85);
+  wpMesh.position.set(2.22, Y2 + 0.825, -6.95);
   registerMesh(wpMesh, 'window_frame_cream', {
     id: 'sf_tech_wp',
-    label: 'Warmtepomp (WP) Opstelplaats',
+    label: 'Warmtepomp Boilervat (WP)',
     dimensionsLabel: 'Ø 0.64 × 1.65 m',
     provenance: 'verified_drawing',
     source: 'Verkooptekening VK-06 & Tekening 55.3 (wp)',
@@ -2687,6 +2705,38 @@ function buildZolderDetails(
   });
   secondGroup.add(wpMesh);
   registerStaggered('sf_tech_wp', wpMesh, 'second', Y2 + 0.825);
+
+  // 2. Heat pump indoor module against rear wall of Overloop (VK-06 'wp' box)
+  const wpBoxGeo = new THREE.BoxGeometry(0.46, 0.88, 0.38);
+  const wpBoxMesh = new THREE.Mesh(wpBoxGeo, getMat('window_frame_cream'));
+  wpBoxMesh.position.set(1.55, Y2 + 0.44, -6.55);
+  registerMesh(wpBoxMesh, 'window_frame_cream', {
+    id: 'sf_tech_wp_unit',
+    label: 'Warmtepomp Binnenunit (WP)',
+    dimensionsLabel: '0.46 × 0.38 × 0.88 m',
+    provenance: 'verified_drawing',
+    source: 'Verkooptekening VK-06 Zolder (wp tegen achterwand overloop)',
+    floor: 'second',
+    category: 'furniture',
+  });
+  secondGroup.add(wpBoxMesh);
+  registerStaggered('sf_tech_wp_unit', wpBoxMesh, 'second', Y2 + 0.44);
+
+  // 3. Balanced ventilation heat-recovery unit (VK-06 'wtw' on rear gable wall)
+  const wtwGeo = new THREE.BoxGeometry(0.64, 0.82, 0.36);
+  const wtwMesh = new THREE.Mesh(wtwGeo, getMat('window_frame_cream'));
+  wtwMesh.position.set(1.55, Y2 + 0.96, -9.87);
+  registerMesh(wtwMesh, 'window_frame_cream', {
+    id: 'sf_tech_wtw',
+    label: 'WTW Ventilatie-unit',
+    dimensionsLabel: '0.64 × 0.36 × 0.82 m',
+    provenance: 'verified_drawing',
+    source: 'Verkooptekening VK-06 Zolder (wtw tegen achtergevel)',
+    floor: 'second',
+    category: 'furniture',
+  });
+  secondGroup.add(wtwMesh);
+  registerStaggered('sf_tech_wtw', wtwMesh, 'second', Y2 + 0.96);
 }
 
 /**
@@ -2771,14 +2821,15 @@ function buildExtensionAndBergingFlatRoofs(
 }
 
 /**
- * Build a planar 3D roof polygon extruded vertically downward by `verticalThickness`
- * so intersecting roof planes (ridges, diagonal valleys / kielkepers, and party-wall seams)
- * share the exact same 3D top and bottom vertices with zero gaps or interior overhang.
+ * Build a planar 3D roof polygon extruded vertically downward by `verticalThickness`,
+ * separating the outer roof tiles/edges (`outerGeo`) from the interior ceiling underside (`ceilingGeo`)
+ * so intersecting roof planes share exact 3D ridge/valley vertices while interior ceilings render
+ * in clean white plaster (`interior_wall_plaster`).
  */
-function buildVerticalExtrudedRoofPolygon(
+function buildRoofSlopeGeometries(
   topPoints: Array<[number, number, number]>,
   verticalThickness: number
-): THREE.BufferGeometry {
+): { outerGeo: THREE.BufferGeometry; ceilingGeo: THREE.BufferGeometry } {
   const pts = topPoints.map((p) => [...p] as [number, number, number]);
   // Ensure top face winding produces an upward (+Y) normal:
   // cross(pts[1] - pts[0], pts[2] - pts[0]).y > 0
@@ -2792,240 +2843,581 @@ function buildVerticalExtrudedRoofPolygon(
   }
 
   const bot = pts.map(([x, y, z]) => [x, y - verticalThickness, z] as [number, number, number]);
-  const positions: number[] = [];
+  const outerPositions: number[] = [];
+  const ceilingPositions: number[] = [];
 
   const pushTri = (
+    target: number[],
     a: [number, number, number],
     b: [number, number, number],
     c: [number, number, number]
   ) => {
-    positions.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]);
+    target.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]);
   };
 
   // Top face (+Y normal)
   for (let i = 1; i < pts.length - 1; i++) {
-    pushTri(pts[0], pts[i], pts[i + 1]);
+    pushTri(outerPositions, pts[0], pts[i], pts[i + 1]);
   }
-  // Bottom face (-Y normal)
+  // Bottom face (-Y normal) -> interior ceiling underside
   for (let i = 1; i < bot.length - 1; i++) {
-    pushTri(bot[0], bot[i + 1], bot[i]);
+    pushTri(ceilingPositions, bot[0], bot[i + 1], bot[i]);
   }
   // Perimeter side faces
   for (let k = 0; k < pts.length; k++) {
     const next = (k + 1) % pts.length;
-    pushTri(pts[k], bot[k], bot[next]);
-    pushTri(pts[k], bot[next], pts[next]);
+    pushTri(outerPositions, pts[k], bot[k], bot[next]);
+    pushTri(outerPositions, pts[k], bot[next], pts[next]);
   }
 
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geo.computeVertexNormals();
-  return geo;
+  const makeGeo = (positions: number[]) => {
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geo.computeVertexNormals();
+    return geo;
+  };
+
+  return {
+    outerGeo: makeGeo(outerPositions),
+    ceilingGeo: makeGeo(ceilingPositions),
+  };
+}
+
+/**
+ * Build an anthracite verge-tile strip (Gevelpan) along a gable slope edge,
+ * vertically mitered at `X = ridgeX` so left and right halves meet cleanly at the peak.
+ */
+function buildMiteredVergeHalf(
+  eavesX: number,
+  eavesY: number,
+  ridgeX: number,
+  ridgeY: number,
+  zCenter: number,
+  zDepth: number,
+  mat: THREE.Material
+): THREE.Mesh {
+  const minX = Math.min(eavesX, ridgeX);
+  const maxX = Math.max(eavesX, ridgeX);
+  const yAtMinX = eavesX < ridgeX ? eavesY : ridgeY;
+  const yAtMaxX = eavesX < ridgeX ? ridgeY : eavesY;
+  const dropTop = 0.035;
+  const dropBotAtEaves = 0.0; // Sits cleanly atop the bakgoot without clipping its white end-cap
+  const dropBotAtRidge = 0.13;
+
+  const shape = new THREE.Shape();
+  shape.moveTo(minX, yAtMinX - (eavesX < ridgeX ? dropBotAtEaves : dropBotAtRidge));
+  shape.lineTo(maxX, yAtMaxX - (eavesX < ridgeX ? dropBotAtRidge : dropBotAtEaves));
+  shape.lineTo(maxX, yAtMaxX + dropTop);
+  shape.lineTo(minX, yAtMinX + dropTop);
+  shape.closePath();
+
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: zDepth, bevelEnabled: false });
+  geo.translate(0, 0, zCenter - zDepth / 2);
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+/**
+ * Build a half-round ridge cap (Nokvorst) along an axis ('x' or 'z') with clean end-caps.
+ */
+function buildHalfRoundRidgeCap(
+  axis: 'x' | 'z',
+  startCoord: number,
+  endCoord: number,
+  fixedCoord: number,
+  yCenter: number,
+  radius: number,
+  mat: THREE.Material
+): THREE.Group {
+  const group = new THREE.Group();
+  const length = Math.abs(endCoord - startCoord);
+  const mid = (startCoord + endCoord) / 2;
+
+  const capGeo = new THREE.CylinderGeometry(radius, radius, length, 14, 1, false, -Math.PI / 2, Math.PI);
+  if (axis === 'z') {
+    capGeo.rotateX(Math.PI / 2);
+  } else {
+    capGeo.rotateZ(Math.PI / 2);
+  }
+  const capMesh = new THREE.Mesh(capGeo, mat);
+  capMesh.position.set(
+    axis === 'x' ? mid : fixedCoord,
+    yCenter,
+    axis === 'z' ? mid : fixedCoord
+  );
+  capMesh.castShadow = true;
+  capMesh.receiveShadow = true;
+  group.add(capMesh);
+
+  return group;
+}
+
+/**
+ * Build a horizontal box gutter (Bakgoot) with recessed zinc lining and spaced rafter tails (Klossen).
+ */
+function buildBoxGutterAndKlossen(
+  parent: THREE.Group,
+  axis: 'x' | 'z',
+  spanStart: number,
+  spanEnd: number,
+  eavesCoord: number,
+  outwardSign: 1 | -1,
+  yTop: number,
+  fasciaMat: THREE.Material,
+  zincMat: THREE.Material
+) {
+  const length = Math.abs(spanEnd - spanStart);
+  const mid = (spanStart + spanEnd) / 2;
+  const gutterWidth = 0.20;
+  const gutterHeight = 0.16;
+  const wallT = 0.025;
+  const centerOut = eavesCoord + outwardSign * (gutterWidth / 2);
+  const centerY = yTop - gutterHeight / 2;
+
+  const addBox = (w: number, h: number, d: number, x: number, y: number, z: number, mat: THREE.Material) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    m.position.set(x, y, z);
+    m.castShadow = true;
+    m.receiveShadow = true;
+    parent.add(m);
+  };
+
+  if (axis === 'z') {
+    // Gutter running along Z (left eaves of bnr. 55)
+    addBox(gutterWidth, wallT, length, centerOut, yTop - gutterHeight + wallT / 2, mid, fasciaMat); // Soffit
+    addBox(wallT, gutterHeight, length, eavesCoord + outwardSign * (gutterWidth - wallT / 2), centerY, mid, fasciaMat); // Outer face
+    addBox(wallT, gutterHeight, length, eavesCoord + outwardSign * (wallT / 2), centerY, mid, fasciaMat); // Inner back
+    addBox(gutterWidth - wallT * 2, 0.02, length - 0.04, centerOut, yTop - 0.075, mid, zincMat); // Zinc gutter bed
+    for (const zEnd of [spanStart + wallT / 2, spanEnd - wallT / 2]) {
+      addBox(gutterWidth, gutterHeight, wallT, centerOut, centerY, zEnd, fasciaMat); // End-caps
+    }
+    // Rafter tails (klossen) underneath
+    const count = Math.max(2, Math.round(length / 0.68));
+    for (let i = 0; i <= count; i++) {
+      const zPos = spanStart + 0.20 + (i / count) * (length - 0.40);
+      addBox(0.16, 0.065, 0.055, eavesCoord + outwardSign * 0.08, yTop - gutterHeight - 0.0325, zPos, fasciaMat);
+    }
+  } else {
+    // Gutter running along X (front & rear eaves of bnr. 56)
+    addBox(length, wallT, gutterWidth, mid, yTop - gutterHeight + wallT / 2, centerOut, fasciaMat); // Soffit
+    addBox(length, gutterHeight, wallT, mid, centerY, eavesCoord + outwardSign * (gutterWidth - wallT / 2), fasciaMat); // Outer face
+    addBox(length, gutterHeight, wallT, mid, centerY, eavesCoord + outwardSign * (wallT / 2), fasciaMat); // Inner back
+    addBox(length - 0.04, 0.02, gutterWidth - wallT * 2, mid, yTop - 0.04, centerOut, zincMat); // Zinc gutter bed
+    for (const xEnd of [spanStart + wallT / 2, spanEnd - wallT / 2]) {
+      addBox(wallT, gutterHeight, gutterWidth, xEnd, centerY, centerOut, fasciaMat); // End-caps
+    }
+    const count = Math.max(2, Math.round(length / 0.68));
+    for (let i = 0; i <= count; i++) {
+      const xPos = spanStart + 0.25 + (i / count) * (length - 0.50);
+      addBox(0.055, 0.065, 0.16, xPos, yTop - gutterHeight - 0.0325, eavesCoord + outwardSign * 0.08, fasciaMat);
+    }
+  }
 }
 
 /**
  * Build the pitched intersecting roof system:
- * - Bouwnummer 55's front-to-back Cross-Gable Roof (Dwarskap, left slope + front/rear right wings)
+ * - Bouwnummer 55's front-to-back Cross-Gable Roof (Dwarskap, left slope with Velux dakraam + front/rear right wings)
  * - Bouwnummer 55's owned perpendicular T-wing (Langskap over X: 2.985 -> 5.87 m in Anthracite)
  * - Bouwnummer 56's perpendicular Side-Gable Roof (Langskap over X: 5.87 -> 10.05 m in Neutral Grey)
+ * - Mitered anthracite gevelpannen (verge tiles), half-round nokvorsten (ridge caps), bakgoten + klossen, and roof vents.
  */
 function buildPitchedRoofSystem(
   roofGroup: THREE.Group,
   getMat: (id: MaterialId) => THREE.MeshStandardMaterial,
   registerMesh: RegisterMeshFn
 ) {
-  const Y_EAVES = HOUSE_DIMENSIONS.eavesGutterHeight.metres; // +6.13 m
-  const Y_RIDGE = HOUSE_DIMENSIONS.roofRidgeHeight.metres;   // +10.90 m
-  const ridgeX = 2.985;
-  const leftEavesX = -0.18;
-  const rightPartyX = 5.87;
-  const neighbourMaxX = 10.05;
-  const roofFrontZ = 0.16;
-  const roofRearZ = -10.62;
-  const roofLengthZ = roofFrontZ - roofRearZ; // 10.78 m
-  const nbRidgeZ = -5.23;
-  const nbFrontEavesZ = -0.22;
-  const nbRearEavesZ = -10.24;
-  const VERTICAL_THICKNESS = 0.28;
+  const {
+    yEaves,
+    yRidge,
+    verticalThickness,
+    ridgeX,
+    leftWallOuterX,
+    leftTileEdgeX,
+    rightPartyX,
+    neighbourMaxX,
+    roofFrontZ,
+    roofRearZ,
+    nbRidgeZ,
+    nbFrontEavesZ,
+    nbRearEavesZ,
+  } = ROOF_SPEC;
 
-  // 1. Left Slope of Bouwnummer 55 (X: -0.18 -> 2.985 m, Z: +0.16 -> -10.62 m)
-  const leftRunX = ridgeX - leftEavesX;
-  const leftRiseY = Y_RIDGE - Y_EAVES;
+  const roofLengthZ = roofFrontZ - roofRearZ; // 10.58 m
+  const leftRunX = ridgeX - leftTileEdgeX;
+  const leftRiseY = yRidge - yEaves;
   const leftSlopeLen = Math.hypot(leftRunX, leftRiseY);
   const leftAngle = Math.atan2(leftRiseY, leftRunX);
+  const rightRunX = rightPartyX - ridgeX;
+  const rightSlopeLen = Math.hypot(rightRunX, leftRiseY);
 
-  const leftSlopeGeo = buildVerticalExtrudedRoofPolygon(
+  const addOwnedSlope = (
+    id: string,
+    label: string,
+    dimensionsLabel: string,
+    source: string,
+    polygons: Array<Array<[number, number, number]>>,
+    vThick: number = verticalThickness
+  ) => {
+    const outerParts: THREE.BufferGeometry[] = [];
+    const ceilingParts: THREE.BufferGeometry[] = [];
+    for (const poly of polygons) {
+      const { outerGeo, ceilingGeo } = buildRoofSlopeGeometries(poly, vThick);
+      outerParts.push(outerGeo);
+      ceilingParts.push(ceilingGeo);
+    }
+
+    const mergedOuter = outerParts.length === 1 ? outerParts[0] : mergeGeometries(outerParts, false);
+    const mergedCeiling = ceilingParts.length === 1 ? ceilingParts[0] : mergeGeometries(ceilingParts, false);
+    if (outerParts.length > 1) {
+      outerParts.forEach((g) => g.dispose());
+      ceilingParts.forEach((g) => g.dispose());
+    }
+
+    const outerMesh = new THREE.Mesh(mergedOuter, getMat('roof_tile_anthracite'));
+    registerMesh(outerMesh, 'roof_tile_anthracite', {
+      id,
+      label,
+      dimensionsLabel,
+      provenance: 'verified_drawing',
+      source,
+      floor: 'roof',
+    });
+    roofGroup.add(outerMesh);
+
+    const ceilingMesh = new THREE.Mesh(mergedCeiling, getMat('interior_wall_plaster'));
+    ceilingMesh.castShadow = false;
+    ceilingMesh.receiveShadow = true;
+    roofGroup.add(ceilingMesh);
+  };
+
+  // 1. Left Slope of Bouwnummer 55 (split cleanly around rear-left Velux dakraam + sleek eaves drip lip)
+  const winX0 = 1.12;
+  const winX1 = 1.76;
+  const winZ0 = -8.72;
+  const winZ1 = -7.78;
+  const yWallOuter = getZolderRoofTopY(leftWallOuterX);
+  const yWin0 = getZolderRoofTopY(winX0);
+  const yWin1 = getZolderRoofTopY(winX1);
+
+  addOwnedSlope(
+    'roof_bnr55_left_slope',
+    'Schuine Kap Links bnr. 55 (Goothoogte +6.13 m, Nok +10.90 m)',
+    `${leftSlopeLen.toFixed(2)} × ${roofLengthZ.toFixed(2)} m`,
+    'Verkooptekening VK-06 Gevels, Zolder & Doorsnede AA',
     [
-      [leftEavesX, Y_EAVES, roofFrontZ],
-      [ridgeX, Y_RIDGE, roofFrontZ],
-      [ridgeX, Y_RIDGE, roofRearZ],
-      [leftEavesX, Y_EAVES, roofRearZ],
-    ],
-    VERTICAL_THICKNESS
+      // Front full-height band (Z: winZ1 -> roofFrontZ)
+      [
+        [leftWallOuterX, yWallOuter, roofFrontZ],
+        [ridgeX, yRidge, roofFrontZ],
+        [ridgeX, yRidge, winZ1],
+        [leftWallOuterX, yWallOuter, winZ1],
+      ],
+      // Rear full-height band (Z: roofRearZ -> winZ0)
+      [
+        [leftWallOuterX, yWallOuter, winZ0],
+        [ridgeX, yRidge, winZ0],
+        [ridgeX, yRidge, roofRearZ],
+        [leftWallOuterX, yWallOuter, roofRearZ],
+      ],
+      // Lower band below skylight (X: leftWallOuterX -> winX0, Z: winZ0 -> winZ1)
+      [
+        [leftWallOuterX, yWallOuter, winZ1],
+        [winX0, yWin0, winZ1],
+        [winX0, yWin0, winZ0],
+        [leftWallOuterX, yWallOuter, winZ0],
+      ],
+      // Upper band above skylight (X: winX1 -> ridgeX, Z: winZ0 -> winZ1)
+      [
+        [winX1, yWin1, winZ1],
+        [ridgeX, yRidge, winZ1],
+        [ridgeX, yRidge, winZ0],
+        [winX1, yWin1, winZ0],
+      ],
+    ]
   );
-  const leftSlopeMesh = new THREE.Mesh(leftSlopeGeo, getMat('roof_tile_anthracite'));
-  registerMesh(leftSlopeMesh, 'roof_tile_anthracite', {
-    id: 'roof_bnr55_left_slope',
-    label: 'Schuine Kap Links bnr. 55 (Goothoogte +6.13 m, Nok +10.90 m)',
-    dimensionsLabel: `${leftSlopeLen.toFixed(2)} × ${roofLengthZ.toFixed(2)} m`,
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 Gevels & Doorsnede AA',
-    floor: 'roof',
-  });
-  roofGroup.add(leftSlopeMesh);
 
-  const panelGeo = new THREE.BoxGeometry(1.15, 0.06, 1.05);
+  // Thin 6 cm eaves drip lip overhanging from X = 0.00 to X = -0.06 above the white bakgoot
+  addOwnedSlope(
+    'roof_bnr55_left_eaves_lip',
+    'Dakvoet / Onderste Pannenrij Links bnr. 55',
+    `0.12 × ${roofLengthZ.toFixed(2)} m`,
+    'Verkooptekening VK-06 Doorsnede AA & Voorgevel',
+    [
+      [
+        [leftTileEdgeX, yEaves, roofFrontZ],
+        [leftWallOuterX, yWallOuter, roofFrontZ],
+        [leftWallOuterX, yWallOuter, roofRearZ],
+        [leftTileEdgeX, yEaves, roofRearZ],
+      ],
+    ],
+    0.06
+  );
+
+  // 1a. Velux Dakraam (Recessed Skylight on Rear-Left Slope — VK-06, Doorsnede AA & Render)
+  {
+    const skGroup = new THREE.Group();
+    const skSlopeLen = Math.hypot(winX1 - winX0, yWin1 - yWin0);
+    const skWidthZ = winZ1 - winZ0;
+    const perpThick = verticalThickness * Math.cos(leftAngle);
+    skGroup.position.set((winX0 + winX1) / 2, (yWin0 + yWin1) / 2, (winZ0 + winZ1) / 2);
+    skGroup.rotation.z = leftAngle;
+
+    const frameT = 0.045;
+    const flashMat = getMat('roof_tile_anthracite');
+    const sashMat = getMat('window_frame_cream');
+
+    // Outer anthracite flashing surround sitting slightly proud of tiles
+    const addSkPart = (w: number, h: number, d: number, x: number, y: number, z: number, mat: THREE.Material) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+      m.position.set(x, y, z);
+      m.castShadow = true;
+      m.receiveShadow = true;
+      skGroup.add(m);
+    };
+    const flashH = 0.07;
+    addSkPart(skSlopeLen + 0.12, flashH, 0.07, 0, 0.02, -skWidthZ / 2 - 0.01, flashMat);
+    addSkPart(skSlopeLen + 0.12, flashH, 0.07, 0, 0.02, skWidthZ / 2 + 0.01, flashMat);
+    addSkPart(0.07, flashH, skWidthZ + 0.12, -skSlopeLen / 2 - 0.01, 0.02, 0, flashMat);
+    addSkPart(0.07, flashH, skWidthZ + 0.12, skSlopeLen / 2 + 0.01, 0.02, 0, flashMat);
+
+    // White interior reveal shaft + sash frame
+    addSkPart(skSlopeLen, perpThick, frameT, 0, -perpThick / 2, -skWidthZ / 2 + frameT / 2, sashMat);
+    addSkPart(skSlopeLen, perpThick, frameT, 0, -perpThick / 2, skWidthZ / 2 - frameT / 2, sashMat);
+    addSkPart(frameT, perpThick, skWidthZ - frameT * 2, -skSlopeLen / 2 + frameT / 2, -perpThick / 2, 0, sashMat);
+    addSkPart(frameT, perpThick, skWidthZ - frameT * 2, skSlopeLen / 2 - frameT / 2, -perpThick / 2, 0, sashMat);
+
+    // Transparent skylight glass pane
+    const glassMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(skSlopeLen - frameT * 2, 0.018, skWidthZ - frameT * 2),
+      getMat('window_glass_day')
+    );
+    glassMesh.position.set(0, -0.025, 0);
+    registerMesh(
+      glassMesh,
+      'window_glass_day',
+      {
+        id: 'sf_win_zolder_dakraam',
+        label: 'Dakraam Zolder (Linker Dakvlak)',
+        dimensionsLabel: `${skWidthZ.toFixed(2)} × ${skSlopeLen.toFixed(2)} m`,
+        provenance: 'verified_drawing',
+        source: 'Verkooptekening VK-06 Zolder, Doorsnede AA & Gevelrender',
+        floor: 'roof',
+      },
+      false,
+      false
+    );
+    skGroup.add(glassMesh);
+    roofGroup.add(skGroup);
+  }
+
+  // 1b. Roof Ventilation Pipes (Ontluchting & WTW Dakdoorvoer on left slope, seen in Render, Doorsnede AA & Voorgevel)
+  const addRoofVent = (x: number, z: number, radius: number, heightAboveSlope: number, hasCowl: boolean) => {
+    const yBase = getZolderRoofTopY(x, z);
+    const ventGroup = new THREE.Group();
+    ventGroup.position.set(x, yBase, z);
+    const pipe = new THREE.Mesh(
+      new THREE.CylinderGeometry(radius, radius, heightAboveSlope, 16),
+      getMat('roof_tile_anthracite')
+    );
+    pipe.position.y = heightAboveSlope / 2 - 0.08;
+    pipe.castShadow = true;
+    ventGroup.add(pipe);
+
+    const collar = new THREE.Mesh(
+      new THREE.BoxGeometry(radius * 4.2, 0.04, radius * 4.2),
+      getMat('roof_tile_anthracite')
+    );
+    collar.rotation.z = leftAngle;
+    ventGroup.add(collar);
+
+    const cap = new THREE.Mesh(
+      new THREE.CylinderGeometry(radius * (hasCowl ? 1.45 : 1.35), radius * (hasCowl ? 1.25 : 1.35), hasCowl ? 0.14 : 0.04, 16),
+      getMat('roof_tile_anthracite')
+    );
+    cap.position.y = heightAboveSlope - 0.06;
+    if (hasCowl) {
+      cap.rotation.z = 0.25;
+    }
+    cap.castShadow = true;
+    ventGroup.add(cap);
+    roofGroup.add(ventGroup);
+  };
+  addRoofVent(1.98, -6.95, 0.055, 0.42, false); // Ontluchtingspijpje
+  addRoofVent(2.26, -8.95, 0.075, 0.56, true);  // WTW / MV dakdoorvoer
+
+  // 1c. Solar Panel (clear of dakraam & vents, flush on left slope)
+  const panelGeo = new THREE.BoxGeometry(1.15, 0.055, 1.05);
   const panelMesh = new THREE.Mesh(panelGeo, getMat('roof_solar_panel'));
-  panelMesh.position.set(1.28, 8.42, -7.85);
+  panelMesh.position.set(1.55, getZolderRoofTopY(1.55) + 0.045, -4.20);
   panelMesh.rotation.z = leftAngle;
+  panelMesh.castShadow = true;
   roofGroup.add(panelMesh);
 
   // 2. Right Slope of Bouwnummer 55 (Front & Rear Dwarskap Wings meeting the diagonal Kielkepers)
-  const rightRunX = rightPartyX - ridgeX;
-  const rightEavesY = Y_EAVES + VERTICAL_THICKNESS; // +6.41 m top surface (+6.13 m underside, matching gable & party walls!)
-  const rightRiseY = Y_RIDGE - rightEavesY;
-  const rightSlopeLen = Math.hypot(rightRunX, rightRiseY);
-  const rightAngle = -Math.atan2(rightRiseY, rightRunX);
-
-  const rightFrontWingGeo = buildVerticalExtrudedRoofPolygon(
+  addOwnedSlope(
+    'roof_bnr55_right_slope',
+    'Schuine Kap Rechts bnr. 55 (Dwarskap Voorzijde tot Kielkeper)',
+    `${rightSlopeLen.toFixed(2)} × 5.29 m`,
+    'Verkooptekening VK-06 Gevels, Zolder & Doorsnede AA',
     [
-      [ridgeX, Y_RIDGE, roofFrontZ],
-      [rightPartyX, rightEavesY, roofFrontZ],
-      [rightPartyX, rightEavesY, nbFrontEavesZ],
-      [ridgeX, Y_RIDGE, nbRidgeZ],
-    ],
-    VERTICAL_THICKNESS
+      [
+        [ridgeX, yRidge, roofFrontZ],
+        [rightPartyX, yEaves, roofFrontZ],
+        [rightPartyX, yEaves, nbFrontEavesZ],
+        [ridgeX, yRidge, nbRidgeZ],
+      ],
+    ]
   );
-  const rightFrontWingMesh = new THREE.Mesh(rightFrontWingGeo, getMat('roof_tile_anthracite'));
-  registerMesh(rightFrontWingMesh, 'roof_tile_anthracite', {
-    id: 'roof_bnr55_right_slope',
-    label: 'Schuine Kap Rechts bnr. 55 (Dwarskap Voorzijde tot Kielkeper)',
-    dimensionsLabel: `${rightSlopeLen.toFixed(2)} × 5.39 m`,
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 Gevels, Zolder & Doorsnede AA',
-    floor: 'roof',
-  });
-  roofGroup.add(rightFrontWingMesh);
 
-  const rightRearWingGeo = buildVerticalExtrudedRoofPolygon(
+  addOwnedSlope(
+    'roof_bnr55_right_rear_slope',
+    'Schuine Kap Rechts bnr. 55 (Dwarskap Achterzijde tot Kielkeper)',
+    `${rightSlopeLen.toFixed(2)} × 5.29 m`,
+    'Verkooptekening VK-06 Gevels, Zolder & Doorsnede AA',
     [
-      [ridgeX, Y_RIDGE, nbRidgeZ],
-      [rightPartyX, rightEavesY, nbRearEavesZ],
-      [rightPartyX, rightEavesY, roofRearZ],
-      [ridgeX, Y_RIDGE, roofRearZ],
-    ],
-    VERTICAL_THICKNESS
+      [
+        [ridgeX, yRidge, nbRidgeZ],
+        [rightPartyX, yEaves, nbRearEavesZ],
+        [rightPartyX, yEaves, roofRearZ],
+        [ridgeX, yRidge, roofRearZ],
+      ],
+    ]
   );
-  const rightRearWingMesh = new THREE.Mesh(rightRearWingGeo, getMat('roof_tile_anthracite'));
-  registerMesh(rightRearWingMesh, 'roof_tile_anthracite', {
-    id: 'roof_bnr55_right_rear_slope',
-    label: 'Schuine Kap Rechts bnr. 55 (Dwarskap Achterzijde tot Kielkeper)',
-    dimensionsLabel: `${rightSlopeLen.toFixed(2)} × 5.39 m`,
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 Gevels, Zolder & Doorsnede AA',
-    floor: 'roof',
-  });
-  roofGroup.add(rightRearWingMesh);
-
-  // White bargeboards (windveren) at front and rear gable edges
-  for (const zPos of [roofFrontZ - 0.06, roofRearZ + 0.06]) {
-    const bargeL = new THREE.Mesh(
-      new THREE.BoxGeometry(leftSlopeLen + 0.1, 0.26, 0.14),
-      getMat('roof_fascia_white')
-    );
-    bargeL.position.set((leftEavesX + ridgeX) / 2, (Y_EAVES + Y_RIDGE) / 2 - 0.12, zPos);
-    bargeL.rotation.z = leftAngle;
-    roofGroup.add(bargeL);
-
-    const bargeR = new THREE.Mesh(
-      new THREE.BoxGeometry(rightSlopeLen + 0.1, 0.26, 0.14),
-      getMat('roof_fascia_white')
-    );
-    bargeR.position.set((ridgeX + rightPartyX) / 2, (Y_RIDGE + rightEavesY) / 2 - 0.12, zPos);
-    bargeR.rotation.z = rightAngle;
-    roofGroup.add(bargeR);
-  }
 
   // 3. Bouwnummer 55's Owned Perpendicular Roof Wing (Langskap above bnr. 55's Zolder floor: X 2.985 -> 5.87 m)
-  // Colored in bnr. 55's anthracite roof tile material and meeting the Dwarskap along the exact Kielkepers!
-  const ownedLangsFrontGeo = buildVerticalExtrudedRoofPolygon(
+  addOwnedSlope(
+    'roof_bnr55_langskap_front',
+    'Aansluitende Langskap bnr. 55 (Voorzijde boven Eigen Zolder)',
+    '2.89 × 5.01 m (tot Kielkeper)',
+    'Verkooptekening VK-06 Zolder (kielkeper) & Doorsnede AA',
     [
-      [ridgeX, Y_RIDGE, nbRidgeZ],
-      [rightPartyX, rightEavesY, nbFrontEavesZ],
-      [rightPartyX, Y_RIDGE, nbRidgeZ],
-    ],
-    VERTICAL_THICKNESS
+      [
+        [ridgeX, yRidge, nbRidgeZ],
+        [rightPartyX, yEaves, nbFrontEavesZ],
+        [rightPartyX, yRidge, nbRidgeZ],
+      ],
+    ]
   );
-  const ownedLangsFrontMesh = new THREE.Mesh(ownedLangsFrontGeo, getMat('roof_tile_anthracite'));
-  registerMesh(ownedLangsFrontMesh, 'roof_tile_anthracite', {
-    id: 'roof_bnr55_langskap_front',
-    label: 'Aansluitende Langskap bnr. 55 (Voorzijde boven Eigen Zolder)',
-    dimensionsLabel: '2.89 × 5.01 m (tot Kielkeper)',
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 Zolder (kielkeper) & Doorsnede AA',
-    floor: 'roof',
-  });
-  roofGroup.add(ownedLangsFrontMesh);
 
-  const ownedLangsRearGeo = buildVerticalExtrudedRoofPolygon(
+  addOwnedSlope(
+    'roof_bnr55_langskap_rear',
+    'Aansluitende Langskap bnr. 55 (Achterzijde boven Eigen Zolder)',
+    '2.89 × 5.01 m (tot Kielkeper)',
+    'Verkooptekening VK-06 Zolder (kielkeper) & Doorsnede AA',
     [
-      [ridgeX, Y_RIDGE, nbRidgeZ],
-      [rightPartyX, Y_RIDGE, nbRidgeZ],
-      [rightPartyX, rightEavesY, nbRearEavesZ],
-    ],
-    VERTICAL_THICKNESS
+      [
+        [ridgeX, yRidge, nbRidgeZ],
+        [rightPartyX, yRidge, nbRidgeZ],
+        [rightPartyX, yEaves, nbRearEavesZ],
+      ],
+    ]
   );
-  const ownedLangsRearMesh = new THREE.Mesh(ownedLangsRearGeo, getMat('roof_tile_anthracite'));
-  registerMesh(ownedLangsRearMesh, 'roof_tile_anthracite', {
-    id: 'roof_bnr55_langskap_rear',
-    label: 'Aansluitende Langskap bnr. 55 (Achterzijde boven Eigen Zolder)',
-    dimensionsLabel: '2.89 × 5.01 m (tot Kielkeper)',
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 Zolder (kielkeper) & Doorsnede AA',
-    floor: 'roof',
-  });
-  roofGroup.add(ownedLangsRearMesh);
 
   // 4. Attached Neighbour bnr. 56 Perpendicular Pitched Roof (Langskap X: 5.87 -> 10.05 m in Neutral Grey)
-  const nbFrontSlopeGeo = buildVerticalExtrudedRoofPolygon(
+  const nbFrontGeo = buildRoofSlopeGeometries(
     [
-      [rightPartyX, Y_RIDGE, nbRidgeZ],
-      [rightPartyX, rightEavesY, nbFrontEavesZ],
-      [neighbourMaxX, rightEavesY, nbFrontEavesZ],
-      [neighbourMaxX, Y_RIDGE, nbRidgeZ],
+      [rightPartyX, yRidge, nbRidgeZ],
+      [rightPartyX, yEaves, nbFrontEavesZ],
+      [neighbourMaxX, yEaves, nbFrontEavesZ],
+      [neighbourMaxX, yRidge, nbRidgeZ],
     ],
-    VERTICAL_THICKNESS
-  );
-  const nbFrontSlope = new THREE.Mesh(nbFrontSlopeGeo, getMat('neighbour_roof_grey'));
+    verticalThickness
+  ).outerGeo;
+  const nbFrontSlope = new THREE.Mesh(nbFrontGeo, getMat('neighbour_roof_grey'));
   registerMesh(nbFrontSlope, 'neighbour_roof_grey', {
     id: 'roof_nb56_front_slope',
     label: 'Buurwoning bnr. 56 Langskap (Voorzijde Context)',
-    dimensionsLabel: '2.18 × 6.65 m',
+    dimensionsLabel: '4.18 × 6.89 m',
     provenance: 'verified_drawing',
     source: 'Verkooptekening VK-06 voorgevel & doorsnede AA bnr. 56',
     floor: 'roof',
   });
   roofGroup.add(nbFrontSlope);
 
-  const nbRearSlopeGeo = buildVerticalExtrudedRoofPolygon(
+  const nbRearGeo = buildRoofSlopeGeometries(
     [
-      [rightPartyX, Y_RIDGE, nbRidgeZ],
-      [neighbourMaxX, Y_RIDGE, nbRidgeZ],
-      [neighbourMaxX, rightEavesY, nbRearEavesZ],
-      [rightPartyX, rightEavesY, nbRearEavesZ],
+      [rightPartyX, yRidge, nbRidgeZ],
+      [neighbourMaxX, yRidge, nbRidgeZ],
+      [neighbourMaxX, yEaves, nbRearEavesZ],
+      [rightPartyX, yEaves, nbRearEavesZ],
     ],
-    VERTICAL_THICKNESS
-  );
-  const nbRearSlope = new THREE.Mesh(nbRearSlopeGeo, getMat('neighbour_roof_grey'));
+    verticalThickness
+  ).outerGeo;
+  const nbRearSlope = new THREE.Mesh(nbRearGeo, getMat('neighbour_roof_grey'));
   registerMesh(nbRearSlope, 'neighbour_roof_grey', {
     id: 'roof_nb56_rear_slope',
     label: 'Buurwoning bnr. 56 Langskap (Achterzijde Context)',
-    dimensionsLabel: '2.18 × 6.65 m',
+    dimensionsLabel: '4.18 × 6.89 m',
     provenance: 'verified_drawing',
     source: 'Verkooptekening VK-06 achtergevel & doorsnede AA bnr. 56',
     floor: 'roof',
   });
   roofGroup.add(nbRearSlope);
+
+  // Neighbour bnr. 56 front-slope skylight (neutral greyscale context, visible in Render)
+  const nbLangsAngle = Math.atan2(yRidge - yEaves, nbFrontEavesZ - nbRidgeZ);
+  const nbSkZ = -2.25;
+  const nbSkY = yEaves + ((nbFrontEavesZ - nbSkZ) / (nbFrontEavesZ - nbRidgeZ)) * (yRidge - yEaves);
+  const nbSk = new THREE.Group();
+  nbSk.position.set(7.35, nbSkY + 0.025, nbSkZ);
+  nbSk.rotation.x = nbLangsAngle;
+  const nbSkFrame = new THREE.Mesh(new THREE.BoxGeometry(0.96, 0.06, 1.18), getMat('neighbour_trim_grey'));
+  nbSk.add(nbSkFrame);
+  const nbSkGlass = new THREE.Mesh(new THREE.BoxGeometry(0.84, 0.07, 1.06), getMat('neighbour_glass_grey'));
+  nbSk.add(nbSkGlass);
+  roofGroup.add(nbSk);
+
+  // 5. Mitered Anthracite Verge Tiles (Gevelpannen) along Front & Rear Gable Edges
+  //    Clean vertical miter at X = ridgeX so there are no protruding white bargeboards or peak horns!
+  const vergeMat = getMat('roof_tile_anthracite');
+  for (const zCenter of [0.02, -10.48]) {
+    roofGroup.add(buildMiteredVergeHalf(leftTileEdgeX, yEaves, ridgeX, yRidge, zCenter, 0.11, vergeMat));
+    roofGroup.add(buildMiteredVergeHalf(rightPartyX, yEaves, ridgeX, yRidge, zCenter, 0.11, vergeMat));
+  }
+
+  // 6. Half-Round Ridge Caps (Nokvorsten) at the Top Apex (Y = +10.90 m)
+  const ridgeRadius = 0.105;
+  const ridgeCapY = yRidge - 0.015;
+  roofGroup.add(buildHalfRoundRidgeCap('z', roofRearZ - 0.015, roofFrontZ + 0.015, ridgeX, ridgeCapY, ridgeRadius, vergeMat));
+  roofGroup.add(buildHalfRoundRidgeCap('x', ridgeX, rightPartyX, nbRidgeZ, ridgeCapY, ridgeRadius, vergeMat));
+  roofGroup.add(buildHalfRoundRidgeCap('x', rightPartyX, neighbourMaxX, nbRidgeZ, ridgeCapY, ridgeRadius, getMat('neighbour_roof_grey')));
+
+  // 7. Horizontal Box Gutters (Bakgoten) & Rafter Tails (Klossen) along Eaves
+  buildBoxGutterAndKlossen(
+    roofGroup,
+    'z',
+    -10.46,
+    0.00,
+    leftWallOuterX,
+    -1,
+    yEaves + 0.01,
+    getMat('roof_fascia_white'),
+    getMat('roof_daktrim_zinc')
+  );
+  buildBoxGutterAndKlossen(
+    roofGroup,
+    'x',
+    rightPartyX,
+    neighbourMaxX,
+    nbFrontEavesZ,
+    1,
+    yEaves + 0.01,
+    getMat('neighbour_trim_grey'),
+    getMat('neighbour_trim_grey')
+  );
+  buildBoxGutterAndKlossen(
+    roofGroup,
+    'x',
+    rightPartyX,
+    neighbourMaxX,
+    nbRearEavesZ,
+    -1,
+    yEaves + 0.01,
+    getMat('neighbour_trim_grey'),
+    getMat('neighbour_trim_grey')
+  );
 }
 
 /**
