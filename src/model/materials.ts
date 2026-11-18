@@ -85,9 +85,9 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     metalness: 0.0,
   },
   exterior_arch_brick: {
-    colorDay: '#a0543f', // Rich warm Dutch terracotta-red brick from builder render
-    colorNight: '#5e3226',
-    roughness: 0.92,
+    colorDay: '#c9886b',
+    colorNight: '#6e493a',
+    roughness: 0.9,
     metalness: 0.0,
   },
 
@@ -205,9 +205,9 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     emissiveIntensityNight: 0.65,
   },
   door_exterior_sage: {
-    colorDay: '#7f9e8a', // Architectural muted sage/mint green from builder render
-    colorNight: '#44584b',
-    roughness: 0.84,
+    colorDay: '#7fa882',
+    colorNight: '#465e48',
+    roughness: 0.85,
     metalness: 0.02,
   },
   door_interior_wood: {
