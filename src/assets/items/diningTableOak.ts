@@ -376,18 +376,14 @@ export const diningTableOakPrefab: AssetPrefabDefinition = {
     const sx = width / 2.20;
     const sz = depth / 1.05;
     const legSpecs: TableLegSpec[] = [
-      // Left mid leg (Ø14 cm) — left edge at -57.5 cm (52.5 cm from left end)
-      { id: 'leg_1_d14_left', diameterM: 0.14, xM: -0.505, zM: -0.010, rotY: 0.4 },
-      // Back-left slim leg (Ø10 cm)
-      { id: 'leg_2_d10_back_left', diameterM: 0.10, xM: -0.228, zM: -0.245, rotY: 1.7 },
-      // Front-left thick leg (Ø18 cm) — front edge at +29.5 cm (23 cm from front edge)
-      { id: 'leg_3_d18_front_left', diameterM: 0.18, xM: -0.184, zM: 0.205, rotY: 0.15 },
-      // Back-center-right medium leg (Ø14 cm)
-      { id: 'leg_4_d14_back_mid', diameterM: 0.14, xM: 0.118, zM: -0.225, rotY: 2.4 },
-      // Mid-front slim leg (Ø10 cm)
-      { id: 'leg_5_d10_front_right', diameterM: 0.10, xM: 0.228, zM: 0.045, rotY: 3.1 },
-      // Back-right thick leg (Ø18 cm) — right edge at +57.5 cm (52.5 cm from right), back edge at -31.5 cm (21 cm from back)
-      { id: 'leg_6_d18_back_right', diameterM: 0.18, xM: 0.485, zM: -0.225, rotY: -0.3 },
+      // Evenly spread 6-leg sculptural cluster (3 on -Z, 3 on +Z; 3 on -X, 3 on +X)
+      // Envelope: X in [-0.575, +0.575] (115 cm, 52.5 cm overhangs), Z in [-0.315, +0.295] (61 cm, 21/23 cm overhangs)
+      { id: 'leg_1_d14_left', diameterM: 0.14, xM: -0.505, zM: 0.080, rotY: 0.4 },
+      { id: 'leg_2_d10_back_left', diameterM: 0.10, xM: -0.280, zM: -0.230, rotY: 1.7 },
+      { id: 'leg_3_d18_front_left', diameterM: 0.18, xM: -0.140, zM: 0.205, rotY: 0.15 },
+      { id: 'leg_4_d14_back_mid', diameterM: 0.14, xM: 0.110, zM: -0.245, rotY: 2.4 },
+      { id: 'leg_5_d10_front_right', diameterM: 0.10, xM: 0.320, zM: 0.215, rotY: 3.1 },
+      { id: 'leg_6_d18_back_right', diameterM: 0.18, xM: 0.485, zM: -0.090, rotY: -0.3 },
     ];
 
     const geoCache = new Map<number, THREE.BufferGeometry>();
