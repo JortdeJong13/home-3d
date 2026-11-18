@@ -522,6 +522,29 @@ function buildPlotAndEnvironment(
     plotGroup.add(mesh);
   };
 
+  // Driveway Crushed Gravel Bed ("Oprit Grind") in the Kavel layer beneath the staggered Oprit tiles
+  const gravelMat = getMat('plot_driveway_gravel');
+  if (typeof document !== 'undefined' && !gravelMat.map) {
+    const { map, bumpMap } = createGravelTextures(4, 15);
+    gravelMat.map = map;
+    gravelMat.bumpMap = bumpMap;
+    gravelMat.bumpScale = 0.025;
+    gravelMat.needsUpdate = true;
+  }
+  addGroundZone(
+    'driveway_gravel_bed',
+    'Oprit Grindbed (3.45 × 12.73 m)',
+    -3.45,
+    -7.73,
+    0.00,
+    5.00,
+    0.042,
+    0.00,
+    'plot_driveway_gravel',
+    'user_supplied',
+    'Reference photo: crushed grey gravel bed beneath and around the oprit pavers (Kavel layer)'
+  );
+
   // Stone Patio directly behind Kitchen Double Doors B13: 14 individual tiles (staggered secondary assets).
   // Area 5.39 x 0.94 m = 7 tiles of 77 cm (X: 0.33 -> 5.72 m) x 2 tiles of 47 cm (Z: -12.86 -> -13.80 m).
   const PATIO_TILE_X = 0.77;
@@ -854,6 +877,85 @@ function buildPlotAndEnvironment(
 
   // Context trees: part of the base plot layer (stationary environment)
   addStylisedDioramaTree(plotGroup, getMat, ctxLeftX + 1.9, frontZ + 0.95, 4.6, 1.5, 'neighbour_tree_grey', 'neighbour_trunk_grey', 60);
+}
+
+/**
+ * Generate a seamless procedural crushed-gravel ("grind") diffuse + bump texture pair.
+ * Neutral greyscale values allow the material's Day/Night color to tint it cleanly.
+ */
+function createGravelTextures(repeatX: number, repeatZ: number): {
+  map: THREE.CanvasTexture;
+  bumpMap: THREE.CanvasTexture;
+} {
+  const size = 256;
+  const colorCanvas = document.createElement('canvas');
+  colorCanvas.width = size;
+  colorCanvas.height = size;
+  const cCtx = colorCanvas.getContext('2d')!;
+
+  const bumpCanvas = document.createElement('canvas');
+  bumpCanvas.width = size;
+  bumpCanvas.height = size;
+  const bCtx = bumpCanvas.getContext('2d')!;
+
+  // Base mortar / fine crushed stone bed
+  cCtx.fillStyle = '#c8c8c8';
+  cCtx.fillRect(0, 0, size, size);
+  bCtx.fillStyle = '#707070';
+  bCtx.fillRect(0, 0, size, size);
+
+  // Deterministic pseudo-random generator for reproducible gravel grain
+  let seed = 5517;
+  const rand = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+
+  for (let i = 0; i < 3400; i++) {
+    const x = rand() * size;
+    const y = rand() * size;
+    const rx = 1.4 + rand() * 2.4;
+    const ry = 1.2 + rand() * 2.0;
+    const rot = rand() * Math.PI;
+    const tone = Math.floor(115 + rand() * 125); // dark charcoal to light grey stone
+    const bump = Math.floor(110 + rand() * 145);
+
+    // Draw wrapped across tile edges for seamless tiling
+    for (const ox of [-size, 0, size]) {
+      for (const oy of [-size, 0, size]) {
+        const px = x + ox;
+        const py = y + oy;
+        if (px < -6 || px > size + 6 || py < -6 || py > size + 6) continue;
+
+        cCtx.save();
+        cCtx.translate(px, py);
+        cCtx.rotate(rot);
+        cCtx.fillStyle = `rgb(${tone},${tone},${tone})`;
+        cCtx.fillRect(-rx / 2, -ry / 2, rx, ry);
+        cCtx.restore();
+
+        bCtx.save();
+        bCtx.translate(px, py);
+        bCtx.rotate(rot);
+        bCtx.fillStyle = `rgb(${bump},${bump},${bump})`;
+        bCtx.fillRect(-rx / 2, -ry / 2, rx, ry);
+        bCtx.restore();
+      }
+    }
+  }
+
+  const map = new THREE.CanvasTexture(colorCanvas);
+  map.wrapS = THREE.RepeatWrapping;
+  map.wrapT = THREE.RepeatWrapping;
+  map.repeat.set(repeatX, repeatZ);
+  map.colorSpace = THREE.SRGBColorSpace;
+
+  const bumpMap = new THREE.CanvasTexture(bumpCanvas);
+  bumpMap.wrapS = THREE.RepeatWrapping;
+  bumpMap.wrapT = THREE.RepeatWrapping;
+  bumpMap.repeat.set(repeatX, repeatZ);
+
+  return { map, bumpMap };
 }
 
 function addStylisedDioramaTree(

@@ -33,6 +33,7 @@ export type MaterialId =
   | 'plot_patio_limestone'
   | 'plot_stepping_stone'
   | 'plot_gravel_warm'
+  | 'plot_driveway_gravel'
   | 'plot_driveway_paver'
   | 'plot_soil_border'
   | 'plot_hedge_beech'
@@ -254,6 +255,12 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     colorDay: '#d9ccb4',
     colorNight: '#635d52',
     roughness: 0.95,
+    metalness: 0.0,
+  },
+  plot_driveway_gravel: {
+    colorDay: '#b4b7bc',
+    colorNight: '#52555c',
+    roughness: 0.96,
     metalness: 0.0,
   },
   plot_driveway_paver: {
