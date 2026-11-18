@@ -9,6 +9,7 @@ import {
   getRoomFloors,
 } from '../model/houseData';
 import { MaterialId, MATERIAL_PALETTE } from '../model/materials';
+import { MATERIAL_SURFACE_WEATHER } from '../model/seasons';
 import { getExteriorBrickTextures, applyWorldBrickUVs } from '../model/brickTexture';
 import { getGroundFloorTileTextures, applyWorldFloorTileUVs } from '../model/floorTileTexture';
 import { ProvenanceType } from '../model/units';
@@ -56,6 +57,13 @@ export interface StaggeredAssetEntry {
   staggerRatio: number;
 }
 
+export interface SeasonSurfaceUniforms {
+  uSeasonSnow: { value: number };
+  uSeasonWet: { value: number };
+  uSnowColorOwned: { value: THREE.Color };
+  uSnowColorNeighbour: { value: THREE.Color };
+}
+
 export interface HouseSceneGroups {
   root: THREE.Group;
   plotGroup: THREE.Group;
@@ -77,6 +85,7 @@ export interface HouseSceneGroups {
   }>;
   backdropFadeMaterial: THREE.ShaderMaterial | null;
   doorManager: InteractiveDoorManager;
+  seasonUniforms: SeasonSurfaceUniforms;
 }
 
 /**
@@ -199,6 +208,12 @@ export function buildHouseScene(): HouseSceneGroups {
   // Material instances (strictly separated from geometry)
   const exteriorBrickTextures = getExteriorBrickTextures();
   const groundTileTextures = getGroundFloorTileTextures();
+  const seasonUniforms: SeasonSurfaceUniforms = {
+    uSeasonSnow: { value: 0 },
+    uSeasonWet: { value: 0 },
+    uSnowColorOwned: { value: new THREE.Color('#eef4f8') },
+    uSnowColorNeighbour: { value: new THREE.Color('#eaedf0') },
+  };
   const materialMap = new Map<MaterialId, THREE.MeshStandardMaterial>();
   for (const [id, def] of Object.entries(MATERIAL_PALETTE) as Array<[MaterialId, typeof MATERIAL_PALETTE[MaterialId]]>) {
     const mat = new THREE.MeshStandardMaterial({
@@ -227,6 +242,75 @@ export function buildHouseScene(): HouseSceneGroups {
           }
         : {}),
     });
+
+    const weatherSurf = MATERIAL_SURFACE_WEATHER[id];
+    if (weatherSurf) {
+      const snowStrength = weatherSurf.snow ?? 0;
+      const wetStrength = weatherSurf.wet ?? 0;
+      const snowColorUniform = weatherSurf.isNeighbour
+        ? seasonUniforms.uSnowColorNeighbour
+        : seasonUniforms.uSnowColorOwned;
+
+      mat.customProgramCacheKey = () => 'season-surface-v1';
+      mat.onBeforeCompile = (shader) => {
+        shader.uniforms.uSeasonSnow = seasonUniforms.uSeasonSnow;
+        shader.uniforms.uSeasonWet = seasonUniforms.uSeasonWet;
+        shader.uniforms.uSnowColor = snowColorUniform;
+        shader.uniforms.uSnowStrength = { value: snowStrength };
+        shader.uniforms.uWetStrength = { value: wetStrength };
+
+        shader.vertexShader = shader.vertexShader
+          .replace(
+            'void main() {',
+            `varying vec3 vSeasonWorldNormal;
+varying vec3 vSeasonWorldPos;
+void main() {`
+          )
+          .replace(
+            '#include <beginnormal_vertex>',
+            `#include <beginnormal_vertex>
+vSeasonWorldNormal = normalize((modelMatrix * vec4(objectNormal, 0.0)).xyz);`
+          )
+          .replace(
+            '#include <project_vertex>',
+            `#include <project_vertex>
+vSeasonWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;`
+          );
+
+        shader.fragmentShader = shader.fragmentShader
+          .replace(
+            'void main() {',
+            `uniform float uSeasonSnow;
+uniform float uSeasonWet;
+uniform vec3 uSnowColor;
+uniform float uSnowStrength;
+uniform float uWetStrength;
+varying vec3 vSeasonWorldNormal;
+varying vec3 vSeasonWorldPos;
+void main() {`
+          )
+          .replace(
+            '#include <color_fragment>',
+            `#include <color_fragment>
+float sUp = smoothstep(0.24, 0.76, vSeasonWorldNormal.y);
+float sNoise = 0.5 + 0.5 * sin(vSeasonWorldPos.x * 1.9 + sin(vSeasonWorldPos.z * 1.4) * 1.2) * cos(vSeasonWorldPos.z * 1.7);
+float snowMask = clamp(uSeasonSnow * uSnowStrength * sUp * (0.86 + 0.14 * sNoise), 0.0, 1.0);
+diffuseColor.rgb = mix(diffuseColor.rgb, uSnowColor, snowMask);
+float wetMask = clamp(uSeasonWet * uWetStrength * sUp, 0.0, 1.0);
+diffuseColor.rgb *= mix(1.0, 0.88, wetMask);`
+          )
+          .replace(
+            '#include <roughnessmap_fragment>',
+            `#include <roughnessmap_fragment>
+float sUpR = smoothstep(0.24, 0.76, vSeasonWorldNormal.y);
+float wetMaskR = clamp(uSeasonWet * uWetStrength * sUpR, 0.0, 1.0);
+float snowMaskR = clamp(uSeasonSnow * uSnowStrength * sUpR, 0.0, 1.0);
+roughnessFactor = mix(roughnessFactor, 0.36, wetMaskR);
+roughnessFactor = mix(roughnessFactor, 0.92, snowMaskR);`
+          );
+      };
+    }
+
     mat.name = id;
     materialMap.set(id, mat);
   }
@@ -455,6 +539,7 @@ export function buildHouseScene(): HouseSceneGroups {
     meshRegistry,
     backdropFadeMaterial: null,
     doorManager,
+    seasonUniforms,
   };
 }
 
@@ -1161,16 +1246,9 @@ function buildPlotAndEnvironment(
     source: 'Neighbour context matching 75 cm front hedge',
   });
 
-  // Side-by-side comparison showcase of 5 bush-inspired hedge styles on the open front lawn (Z = 2.25 m)
-  const sampleShortLabels: Record<string, string> = {
-    bush_cluster: 'Struik-cluster',
-    trimmed_faceted: 'Geschoren facet',
-    two_tone_layered: 'Twee-tinten',
-    sculpted_poly: 'Laag-poly',
-    woody_natural: 'Takbasis',
-  };
-  const sampleLength = 0.90;
-  const sampleGap = 0.20;
+  // Side-by-side comparison showcase of 6 bush- & low-poly-inspired hedge styles on the open front lawn (Z = 2.25 m)
+  const sampleLength = 0.75;
+  const sampleGap = 0.16;
   const sampleStartX = 0.40;
   const sampleZ = 2.25;
   HEDGE_STYLE_OPTIONS.forEach((opt, idx) => {
@@ -1198,7 +1276,7 @@ function buildPlotAndEnvironment(
       (sx0 + sx1) * 0.5,
       sampleZ + 0.38,
       opt.number,
-      sampleShortLabels[opt.id] ?? opt.title
+      opt.shortTitle
     );
   });
 
