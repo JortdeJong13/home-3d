@@ -219,7 +219,7 @@ export function buildHouseScene(): HouseSceneGroups {
   // 1. STATIONARY PLOT, GARDEN & SURROUNDING ENVIRONMENT (plotGroup)
   //    (Tuinpoort and square driveway tiles are placed into groundGroup with staggered drop!)
   // ===========================================================================
-  const backdropFadeMaterial = buildPlotAndEnvironment(
+  buildPlotAndEnvironment(
     plotGroup,
     groundGroup,
     getMat,
@@ -347,7 +347,7 @@ export function buildHouseScene(): HouseSceneGroups {
     interiorLights,
     materialMap,
     meshRegistry,
-    backdropFadeMaterial,
+    backdropFadeMaterial: null,
   };
 }
 
@@ -361,7 +361,7 @@ function buildPlotAndEnvironment(
   getMat: (id: MaterialId) => THREE.MeshStandardMaterial,
   registerMesh: RegisterMeshFn,
   registerStaggered: (id: string, object: THREE.Object3D, floor: FloorLayerId, baseY: number) => void
-): THREE.ShaderMaterial {
+): void {
   // Trapezoidal Owned Plot (User Supplied Measurements):
   // - Right boundary (inline with shared wall): straight at X = +5.87 m
   // - Rear boundary (777 cm behind -12.86 m extended house): Z = -20.63 m, width = 10.15 m (X: -4.28 to +5.87 m)
@@ -378,59 +378,6 @@ function buildPlotAndEnvironment(
     const t = (z - rearZ) / totalDepthZ;
     return rearLeftX + t * (frontLeftX - rearLeftX);
   };
-
-  // 1. Soft Diffusing Context Ground Plane with trapezoidal distance fade shader
-  const fadeMat = new THREE.ShaderMaterial({
-    transparent: true,
-    depthWrite: false,
-    uniforms: {
-      uColor: { value: new THREE.Color(MATERIAL_PALETTE.neighbour_ground_grey.colorDay) },
-      uRearZ: { value: rearZ - 0.05 },
-      uFrontZ: { value: frontZ + 0.05 },
-      uRightX: { value: rightX + 0.05 },
-      uRearLeftX: { value: rearLeftX - 0.05 },
-      uFrontLeftX: { value: frontLeftX - 0.05 },
-      uOuterMargin: { value: 2.15 },
-    },
-    vertexShader: `
-      varying vec3 vWorldPos;
-      void main() {
-        vec4 wp = modelMatrix * vec4(position, 1.0);
-        vWorldPos = wp.xyz;
-        gl_Position = projectionMatrix * viewMatrix * wp;
-      }
-    `,
-    fragmentShader: `
-      uniform vec3 uColor;
-      uniform float uRearZ;
-      uniform float uFrontZ;
-      uniform float uRightX;
-      uniform float uRearLeftX;
-      uniform float uFrontLeftX;
-      uniform float uOuterMargin;
-      varying vec3 vWorldPos;
-
-      void main() {
-        vec2 p = vWorldPos.xz;
-        float tZ = clamp((p.y - uRearZ) / (uFrontZ - uRearZ), 0.0, 1.0);
-        float leftX = mix(uRearLeftX, uFrontLeftX, tZ);
-        vec2 dMin = vec2(leftX - p.x, uRearZ - p.y);
-        vec2 dMax = vec2(p.x - uRightX, p.y - uFrontZ);
-        vec2 d = max(max(dMin, dMax), vec2(0.0));
-        float distOutsidePlot = length(d);
-        float alpha = 1.0 - smoothstep(0.15, uOuterMargin, distOutsidePlot);
-        if (alpha <= 0.01) discard;
-        gl_FragColor = vec4(uColor, alpha * 0.92);
-      }
-    `,
-  });
-
-  const contextPlaneGeo = new THREE.PlaneGeometry(18.0, 32.0, 1, 1);
-  contextPlaneGeo.rotateX(-Math.PI / 2);
-  const contextPlane = new THREE.Mesh(contextPlaneGeo, fadeMat);
-  contextPlane.position.set(0.65, -0.14, -7.80);
-  contextPlane.receiveShadow = true;
-  plotGroup.add(contextPlane);
 
   // 2. Trapezoidal Architectural Diorama Plinth under Owned Plot
   // Shape in (X, -Z) so ExtrudeGeometry rotated by -PI/2 around X maps cleanly to world (X, Y, Z)
@@ -743,15 +690,10 @@ function buildPlotAndEnvironment(
   addPlotHedge('hedge_rear_neighbour', 'Haag achterzijde buurkavel', 'neighbour_hedge_grey',
     rightX, ctxRightX - 0.3, rearZ, rearZ + 0.32);
 
-  // Context trees: drop in as secondary assets together with the ground floor
-  const bigTree = addStylisedDioramaTree(groundGroup, getMat, 8.3, -16.6, 7.4, 3.0, 'neighbour_tree_grey', 'neighbour_trunk_grey');
-  registerStaggered('ctx_tree_big_rear', bigTree, 'ground', 0);
-  const roundTree = addStylisedDioramaTree(groundGroup, getMat, ctxLeftX + 1.9, frontZ + 0.95, 4.6, 1.5, 'neighbour_tree_grey', 'neighbour_trunk_grey');
-  registerStaggered('ctx_tree_round_front', roundTree, 'ground', 0);
+  // Context trees: part of the base plot layer (stationary environment)
+  addStylisedDioramaTree(plotGroup, getMat, ctxLeftX + 1.9, frontZ + 0.95, 4.6, 1.5, 'neighbour_tree_grey', 'neighbour_trunk_grey');
 
   addStylisedDioramaTree(plotGroup, getMat, 4.15, 2.45, 2.0, 0.65, 'plot_tree_foliage_warm');
-
-  return fadeMat;
 }
 
 function addStylisedDioramaTree(

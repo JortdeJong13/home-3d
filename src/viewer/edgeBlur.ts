@@ -81,19 +81,38 @@ export class EdgeBlurPass {
 
         void main() {
           vec4 base = texture2D(tColor, vUv);
-          float depth = texture2D(tDepth, vUv).x;
+          if (base.a <= 0.0001) {
+            gl_FragColor = vec4(0.0);
+            return;
+          }
 
+          float depth = texture2D(tDepth, vUv).x;
           float dist = 0.0;
+
           if (depth < 0.99999) {
             vec4 ndc = vec4(vUv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
             vec4 view = uProjInv * ndc;
             view /= view.w;
             vec3 world = (uCamWorld * view).xyz;
             dist = outsideDistance(world.xz);
+          } else {
+            // Silhouette edge where MSAA resolved depth to clear depth (1.0).
+            // Reconstruct the world ray and find where it hits the ground plinth level (Y = -0.15).
+            vec4 ndc0 = vec4(vUv * 2.0 - 1.0, 0.0, 1.0);
+            vec4 v0 = uProjInv * ndc0;
+            vec3 rayOrigin = (uCamWorld * vec4(v0.xyz, 1.0)).xyz;
+            vec3 rayDir = normalize((uCamWorld * vec4(0.0, 0.0, -1.0, 0.0)).xyz);
+            float tG = abs(rayDir.y) > 0.0001 ? (-0.15 - rayOrigin.y) / rayDir.y : 0.0;
+            vec3 hitPos = rayOrigin + rayDir * tG;
+            dist = outsideDistance(hitPos.xz);
           }
 
           float blurAmt = smoothstep(uRanges.x, uRanges.y, dist);
           float fade = 1.0 - smoothstep(uRanges.z, uRanges.y, dist);
+          if (fade <= 0.0001) {
+            gl_FragColor = vec4(0.0);
+            return;
+          }
 
           vec4 acc = vec4(0.0);
           float wsum = 0.0;
