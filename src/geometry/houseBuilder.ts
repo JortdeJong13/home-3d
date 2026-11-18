@@ -557,7 +557,8 @@ function buildPlotAndEnvironment(
   gravelShape.lineTo(0.00, -1.05);
   gravelShape.lineTo(5.85, -1.05);
   gravelShape.lineTo(5.85, -1.95);
-  gravelShape.lineTo(0.00, -1.95);
+  gravelShape.lineTo(0.35, -1.95);
+  gravelShape.quadraticCurveTo(0.00, -1.95, 0.00, -2.30);
   gravelShape.closePath();
 
   const gravelGeo = new THREE.ExtrudeGeometry(gravelShape, {
