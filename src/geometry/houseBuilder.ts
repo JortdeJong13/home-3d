@@ -533,15 +533,15 @@ function buildPlotAndEnvironment(
   }
 
   const gravelRearZ = -14.70;
-  const gravelCurveEndZ = -8.20;
+  const gravelCurveEndZ = -8.00;
   const gravelCurveEndX = leftBoundaryXAtZ(gravelCurveEndZ) + 0.32;
   const gravelShape = new THREE.Shape();
   gravelShape.moveTo(0.00, -frontZ);
   gravelShape.lineTo(-3.45, -frontZ);
-  gravelShape.lineTo(-3.45, 5.50);
+  gravelShape.lineTo(-3.45, 6.70);
   gravelShape.bezierCurveTo(
-    -3.45, 6.85,
-    gravelCurveEndX, 6.85,
+    -3.45, 7.35,
+    gravelCurveEndX, 7.35,
     gravelCurveEndX, -gravelCurveEndZ
   );
   gravelShape.lineTo(leftBoundaryXAtZ(gravelRearZ) + 0.32, -gravelRearZ);
