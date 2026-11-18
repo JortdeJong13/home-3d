@@ -522,28 +522,50 @@ function buildPlotAndEnvironment(
     plotGroup.add(mesh);
   };
 
-  // Driveway Crushed Gravel Bed ("Oprit Grind") in the Kavel layer beneath the staggered Oprit tiles
+  // Driveway & Berging Perimeter Crushed Gravel Bed ("Oprit & Pad Grindbed") in the Kavel layer
   const gravelMat = getMat('plot_driveway_gravel');
   if (typeof document !== 'undefined' && !gravelMat.map) {
-    const { map, bumpMap } = createGravelTextures(4, 15);
+    const { map, bumpMap } = createGravelTextures(1.15, 1.15);
     gravelMat.map = map;
     gravelMat.bumpMap = bumpMap;
     gravelMat.bumpScale = 0.025;
     gravelMat.needsUpdate = true;
   }
-  addGroundZone(
-    'driveway_gravel_bed',
-    'Oprit Grindbed (3.45 × 12.73 m)',
-    -3.45,
-    -7.73,
-    0.00,
-    5.00,
-    0.048,
-    0.008,
+
+  const gravelRearZ = -14.70;
+  const gravelShape = new THREE.Shape();
+  gravelShape.moveTo(0.00, -frontZ);
+  gravelShape.lineTo(-3.45, -frontZ);
+  gravelShape.lineTo(-3.45, 7.73);
+  gravelShape.lineTo(leftBoundaryXAtZ(-7.73) + 0.32, 7.73);
+  gravelShape.lineTo(leftBoundaryXAtZ(gravelRearZ) + 0.32, -gravelRearZ);
+  gravelShape.lineTo(0.33, -gravelRearZ);
+  gravelShape.lineTo(0.33, 12.86);
+  gravelShape.lineTo(0.00, 12.86);
+  gravelShape.closePath();
+
+  const gravelGeo = new THREE.ExtrudeGeometry(gravelShape, {
+    depth: 0.048,
+    bevelEnabled: false,
+  });
+  gravelGeo.rotateX(-Math.PI / 2);
+  const gravelMesh = new THREE.Mesh(gravelGeo, gravelMat);
+  gravelMesh.position.y = -0.04;
+  registerMesh(
+    gravelMesh,
     'plot_driveway_gravel',
-    'user_supplied',
-    'Reference photo: crushed grey gravel bed beneath and around the oprit pavers (Kavel layer)'
+    {
+      id: 'driveway_gravel_bed',
+      label: 'Oprit & Pad Grindbed (rondom Berging naar Terras)',
+      dimensionsLabel: '3.45 m oprit + 0.98 m pad',
+      provenance: 'user_supplied',
+      source: 'Reference photo & Garden layout: crushed grey gravel bed under oprit, through garden gate, and behind berging',
+      floor: 'plot',
+    },
+    false,
+    true
   );
+  plotGroup.add(gravelMesh);
 
   // Stone Patio directly behind Kitchen Double Doors B13: 14 individual tiles (staggered secondary assets).
   // Area 5.39 x 0.94 m = 7 tiles of 77 cm (X: 0.33 -> 5.72 m) x 2 tiles of 47 cm (Z: -12.86 -> -13.80 m).
