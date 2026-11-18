@@ -1129,13 +1129,6 @@ function buildZolderDetails(
   });
   secondGroup.add(wpMesh);
   registerStaggered('sf_tech_wp', wpMesh, 'second', Y2 + 0.825);
-
-  const wtwGeo = new THREE.BoxGeometry(0.65, 0.80, 0.55);
-  const wtwMesh = new THREE.Mesh(wtwGeo, getMat('window_frame_cream'));
-  wtwMesh.position.set(1.65, Y2 + 1.45, -9.65);
-  wtwMesh.castShadow = true;
-  secondGroup.add(wtwMesh);
-  registerStaggered('sf_tech_wtw', wtwMesh, 'second', Y2 + 1.45);
 }
 
 /**
