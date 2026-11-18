@@ -925,7 +925,7 @@ export function instantiateOpeningPrefab3D(
     case 'window_french_balcony_1st':
     case 'neighbour_french_balcony': {
       if (op.prefabId === 'window_french_balcony_1st') {
-        addExteriorDoorThreshold('floor_bedroom_soft');
+        addExteriorDoorThreshold('floor_bedroom_soft', 'window_frame_cream');
       } else {
         addExteriorDoorThreshold('neighbour_wall_grey', 'neighbour_window_grey');
       }
