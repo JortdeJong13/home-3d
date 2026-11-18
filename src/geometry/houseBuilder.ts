@@ -1914,6 +1914,7 @@ function splitWallTopCapGeometry(
   if (mainNorm.length > 0) {
     mainGeo.setAttribute('normal', new THREE.Float32BufferAttribute(mainNorm, 3));
   }
+  mainGeo.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array((mainPos.length / 3) * 2), 2));
 
   const topCapGeo = new THREE.BufferGeometry();
   topCapGeo.setAttribute('position', new THREE.Float32BufferAttribute(topPos, 3));
