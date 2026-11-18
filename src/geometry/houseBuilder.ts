@@ -639,71 +639,71 @@ function buildPlotAndEnvironment(
 
   // 4. STYLISED BALL HEDGES ALONG LEFT & FRONT BOUNDARIES
   // Left boundary splits at the Garden Gate ("Tuinpoort", Z = -13.72 m):
-  // - Front/side section (Z: +4.92 -> -13.72 m): 55 cm (0.55 m) tall
-  // - Rear/garden section (Z: -13.72 -> -20.55 m): 200 cm (2.00 m) tall
+  // - Front/side section (Z: +4.92 -> -13.72 m): 90 cm (0.90 m) tall
+  // - Rear/garden section (Z: -13.72 -> -20.55 m): 210 cm (2.10 m) tall
   const gateZ = -13.72;
   const gateBoundaryX = leftBoundaryXAtZ(gateZ) + 0.18;
 
   buildBallHedgeSegment(plotGroup, getMat, registerMesh, {
     id: 'hedge_left_front_beech',
-    label: 'Beukenhaag Links Voorzijde (tot Tuinpoort · 55 cm hoog)',
+    label: 'Beukenhaag Links Voorzijde (tot Tuinpoort · 90 cm hoog)',
     matId: 'plot_hedge_beech',
     x0: frontLeftX + 0.18,
     z0: frontZ - 0.08,
     x1: gateBoundaryX,
     z1: gateZ,
     width: 0.34,
-    height: 0.55,
+    height: 0.90,
     seed: 101,
     provenance: 'user_supplied',
-    source: 'User specification: 55 cm side hedge up to garden door next to garage',
+    source: 'User specification: 90 cm side hedge up to garden door next to garage',
   });
 
   buildBallHedgeSegment(plotGroup, getMat, registerMesh, {
     id: 'hedge_left_rear_beech',
-    label: 'Beukenhaag Links Achtertuin (vanaf Tuinpoort · 2.00 m hoog)',
+    label: 'Beukenhaag Links Achtertuin (vanaf Tuinpoort · 2.10 m hoog)',
     matId: 'plot_hedge_beech',
     x0: gateBoundaryX,
     z0: gateZ,
     x1: rearLeftX + 0.18,
     z1: rearZ + 0.08,
     width: 0.40,
-    height: 2.00,
+    height: 2.10,
     seed: 202,
     provenance: 'user_supplied',
-    source: 'User specification: 2.00 m hedge from garden door to the back',
+    source: 'User specification: 2.10 m hedge from garden door to the back',
   });
 
-  // Front street low hedge on right half of front boundary (X: 0.40 -> +5.85 m at Z = +4.82 m, 50 cm tall)
+  // Front street low hedge on right half of front boundary (X: 0.40 -> +5.85 m at Z = +4.82 m, 75 cm tall)
   buildBallHedgeSegment(plotGroup, getMat, registerMesh, {
     id: 'hedge_front_beech',
-    label: 'Beukenhaag Voorzijde (50 cm hoog)',
+    label: 'Beukenhaag Voorzijde (75 cm hoog)',
     matId: 'plot_hedge_beech',
     x0: 0.40,
     z0: frontZ - 0.18,
     x1: 5.85,
     z1: frontZ - 0.18,
     width: 0.34,
-    height: 0.50,
+    height: 0.75,
     seed: 303,
     provenance: 'user_supplied',
-    source: 'User specification: 50 cm front hedge',
+    source: 'User specification: 75 cm front hedge',
   });
 
-  // Neighbour front street low hedge (neutral grey, 50 cm tall)
+  // Neighbour front street low hedge (neutral grey, 75 cm tall)
   buildBallHedgeSegment(plotGroup, getMat, registerMesh, {
     id: 'hedge_front_neighbour',
-    label: 'Haag Voorzijde Buurkavel (50 cm hoog)',
+    label: 'Haag Voorzijde Buurkavel (75 cm hoog)',
     matId: 'neighbour_hedge_grey',
     x0: 5.87,
     z0: frontZ - 0.18,
     x1: 10.02,
     z1: frontZ - 0.18,
     width: 0.34,
-    height: 0.50,
+    height: 0.75,
     seed: 404,
     provenance: 'assumed',
-    source: 'Neighbour context matching 50 cm front hedge',
+    source: 'Neighbour context matching 75 cm front hedge',
   });
 
   // 5. SOFT ARCHITECTURAL DIORAMA TREES (Matching positions in user's plot screenshot!)
@@ -874,39 +874,44 @@ function buildBallHedgeSegment(
     return s / 4294967296;
   };
 
-  const baseR = Math.min(0.19, Math.max(0.11, Math.min(width * 0.42, height * 0.30)));
+  const baseR = Math.min(0.105, Math.max(0.075, width * 0.26));
   const yMin = baseR * 0.72;
-  const yMax = Math.max(yMin, height - baseR * 0.78);
-  const numY = Math.max(2, Math.round((yMax - yMin) / (baseR * 1.15)) + 1);
-  const numX = width >= 0.30 ? 2 : 1;
+  const yMax = Math.max(yMin, height - baseR * 0.76);
+  const numY = Math.max(3, Math.round((yMax - yMin) / (baseR * 1.18)) + 1);
+  const numX = width >= 0.30 ? 3 : 2;
   const zMin = -length / 2 + baseR * 0.65;
   const zMax = length / 2 - baseR * 0.65;
-  const numZ = Math.max(2, Math.round(length / (baseR * 1.25)) + 1);
+  const numZ = Math.max(3, Math.round(length / (baseR * 1.28)) + 1);
 
   const geometries: THREE.BufferGeometry[] = [];
-  const xSpread = numX === 2 ? width * 0.22 : 0;
+  const xHalfSpan = Math.max(0, width / 2 - baseR * 0.72);
 
   for (let iy = 0; iy < numY; iy++) {
     const ty = numY > 1 ? iy / (numY - 1) : 0.5;
     const baseY = yMin + ty * (yMax - yMin);
 
     for (let ix = 0; ix < numX; ix++) {
-      const baseX = numX === 2 ? (ix === 0 ? -xSpread : xSpread) : 0;
-      const staggerZ = ((iy + ix) % 2) * (baseR * 0.42);
+      const tx = numX > 1 ? (ix / (numX - 1)) * 2 - 1 : 0;
+      const baseX = tx * xHalfSpan;
+      const staggerZ = ((iy + ix) % 2) * (baseR * 0.45);
 
       for (let iz = 0; iz < numZ; iz++) {
+        // Skip interior core balls on tall hedges to keep triangle count lean while keeping outer surface dense
+        const isInterior = iy > 0 && iy < numY - 1 && ix > 0 && ix < numX - 1 && iz > 0 && iz < numZ - 1;
+        if (isInterior) continue;
+
         const tz = numZ > 1 ? iz / (numZ - 1) : 0.5;
         let pz = zMin + tz * (zMax - zMin) + (iz > 0 && iz < numZ - 1 ? staggerZ * 0.5 : 0);
         pz = Math.max(zMin, Math.min(zMax, pz));
 
-        const rScale = 0.85 + rand() * 0.32;
+        const rScale = 0.85 + rand() * 0.30;
         const r = baseR * rScale;
         const ballGeo = new THREE.IcosahedronGeometry(r, 1);
         ballGeo.scale(0.95 + rand() * 0.12, 0.88 + rand() * 0.16, 0.95 + rand() * 0.12);
 
-        const jx = (rand() - 0.5) * baseR * 0.38;
-        const jy = (rand() - 0.5) * baseR * 0.28;
-        const jz = (rand() - 0.5) * baseR * 0.38;
+        const jx = (rand() - 0.5) * baseR * 0.34;
+        const jy = (rand() - 0.5) * baseR * 0.26;
+        const jz = (rand() - 0.5) * baseR * 0.34;
         const finalY = Math.max(r * 0.65, Math.min(height - r * 0.55, baseY + jy));
 
         ballGeo.translate(baseX + jx, finalY, pz + jz);
@@ -954,8 +959,8 @@ interface SchuttingSegmentOptions {
 }
 
 /**
- * Build a Dutch wood-concrete garden fence ("Hout-beton schutting") with posts,
- * bottom plinths, timber panels, and top cap rails.
+ * Build a fully wooden Dutch garden fence ("Houten schutting") with timber posts,
+ * horizontal backing rails, top cap, and alternating vertical planks ("om-en-om").
  */
 function buildSchuttingSegment(
   group: THREE.Group,
@@ -971,36 +976,54 @@ function buildSchuttingSegment(
 
   const numPanels = Math.max(1, Math.round(length / 1.80));
   const panelLen = length / numPanels;
-  const postSize = 0.095;
-  const plinthH = 0.22;
-  const topRailH = 0.045;
-  const timberH = height - plinthH - topRailH;
+  const postSize = 0.09;
+  const topRailH = 0.04;
+  const plankBottomY = 0.02;
+  const plankH = height - topRailH - plankBottomY;
 
   const postGeos: THREE.BufferGeometry[] = [];
   const panelGeos: THREE.BufferGeometry[] = [];
 
   for (let i = 0; i <= numPanels; i++) {
     const pz = -length / 2 + i * panelLen;
-    const post = new THREE.BoxGeometry(postSize, height + 0.02, postSize);
-    post.translate(0, (height + 0.02) / 2, pz);
+    const post = new THREE.BoxGeometry(postSize, height + 0.03, postSize);
+    post.translate(0, (height + 0.03) / 2, pz);
     postGeos.push(post);
   }
 
   for (let i = 0; i < numPanels; i++) {
-    const centerZ = -length / 2 + (i + 0.5) * panelLen;
-    const bayLen = Math.max(0.10, panelLen - postSize * 0.75);
+    const bayStartZ = -length / 2 + i * panelLen + postSize * 0.5;
+    const bayEndZ = -length / 2 + (i + 1) * panelLen - postSize * 0.5;
+    const bayLen = Math.max(0.10, bayEndZ - bayStartZ);
+    const centerZ = (bayStartZ + bayEndZ) / 2;
 
-    const plinth = new THREE.BoxGeometry(0.055, plinthH, bayLen);
-    plinth.translate(0, plinthH / 2, centerZ);
-    postGeos.push(plinth);
+    // Two horizontal backing rails between the posts
+    for (const railY of [0.42, height - 0.45]) {
+      const rail = new THREE.BoxGeometry(0.032, 0.065, bayLen);
+      rail.translate(0, railY, centerZ);
+      postGeos.push(rail);
+    }
 
-    const panel = new THREE.BoxGeometry(0.04, timberH, bayLen);
-    panel.translate(0, plinthH + timberH / 2, centerZ);
-    panelGeos.push(panel);
-
-    const topRail = new THREE.BoxGeometry(0.06, topRailH, bayLen + 0.02);
+    // Top wood cap ("afdeklat")
+    const topRail = new THREE.BoxGeometry(0.072, topRailH, bayLen + 0.02);
     topRail.translate(0, height - topRailH / 2, centerZ);
-    panelGeos.push(topRail);
+    postGeos.push(topRail);
+
+    // Individual vertical planks alternating front/back ("om-en-om")
+    const targetPitch = 0.125;
+    const numPlanks = Math.max(3, Math.round(bayLen / targetPitch));
+    const pitch = bayLen / numPlanks;
+    const plankWidth = pitch * 1.12; // slight overlap for om-en-om look
+    const plankThickness = 0.018;
+
+    for (let p = 0; p < numPlanks; p++) {
+      const pz = bayStartZ + (p + 0.5) * pitch;
+      const offsetX = (p % 2 === 0 ? 1 : -1) * 0.018;
+      const w = p === 0 || p === numPlanks - 1 ? pitch * 0.94 : plankWidth;
+      const plank = new THREE.BoxGeometry(plankThickness, plankH, w);
+      plank.translate(offsetX, plankBottomY + plankH / 2, pz);
+      panelGeos.push(plank);
+    }
   }
 
   const mergedPosts = mergeGeometries(postGeos, false);

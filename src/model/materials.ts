@@ -305,9 +305,9 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     metalness: 0.0,
   },
   plot_fence_post: {
-    colorDay: '#52565c',
-    colorNight: '#282b30',
-    roughness: 0.92,
+    colorDay: '#947350',
+    colorNight: '#463626',
+    roughness: 0.90,
     metalness: 0.0,
   },
   plinth_base_white: {
