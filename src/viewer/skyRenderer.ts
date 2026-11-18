@@ -9,9 +9,9 @@ import * as THREE from 'three';
  */
 
 const TAN_V = Math.tan(THREE.MathUtils.degToRad(25)); // 50 deg vertical sky FOV
-const SUN_ELEV = THREE.MathUtils.degToRad(26.5);
+const SUN_ELEV = THREE.MathUtils.degToRad(26.0);
 const SUN_AZ_OFFSET = THREE.MathUtils.degToRad(34); // sun starts left of the default view direction
-const MOON_ELEV = THREE.MathUtils.degToRad(27.0);
+const MOON_ELEV = THREE.MathUtils.degToRad(26.5);
 const MOON_AZ_OFFSET = THREE.MathUtils.degToRad(30); // moon starts right of the default view direction
 const DAY_BIAS = 0.7;
 
