@@ -8,7 +8,9 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build && cp dist/index.html ./house-visualiser.html",
     "preview": "vite preview",
-    "verify": "npx tsx src/scripts/verifyDimensions.ts"
+    "verify": "npx tsx src/scripts/verifyDimensions.ts",
+    "asset:dev": "vite --open /asset-viewer.html",
+    "asset:build": "tsc --noEmit && vite build --config vite.asset.config.ts && cp dist-asset/asset-viewer.html ./asset-viewer-standalone.html"
   },
   "dependencies": {
     "three": "^0.170.0"

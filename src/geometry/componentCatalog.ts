@@ -719,7 +719,7 @@ export function instantiateWhiteDoubleTurnStaircase3D(
   frontZ: number,
   baseY: number,
   topY: number
-) {
+): THREE.Group {
   const stairGroup = new THREE.Group();
   const totalRise = topY - baseY; // 2.85 m
   const totalSteps = 14;
@@ -1011,5 +1011,6 @@ export function instantiateWhiteDoubleTurnStaircase3D(
   }
 
   targetGroup.add(stairGroup);
+  return stairGroup;
 }
 

@@ -128,3 +128,16 @@ Whenever you want to add a new object in a fresh chat to save tokens, paste this
 > - **Location & Orientation:** [e.g. Ground floor Woonkamer (Voorzijde), centered against the front window facing into the room]
 > - **Style / Photo Reference:** [Attach photo or describe colours/materials]
 > Follow the workflow in `ASSET_WORKFLOW.md`, register the asset in `src/assets/assetRegistry.ts`, and run `npm run verify && npm run build`.
+
+---
+
+## 5. Inspecting a Single Asset in Isolation (dev only)
+
+After creating and registering a prefab, inspect it alone (orbit/zoom, wireframe, front/back/side/top views, 10 cm grid, 1.75 m human scale reference, target-vs-actual bounding box check in cm, base-at-Y=0 and XZ-centred checks, front-arrow `+Z`, mesh/tri/material counts):
+
+```bash
+npm run asset:dev                          # live dev server at /asset-viewer.html (?asset=<prefabId>, dropdown lists all prefabs)
+ASSET=<prefabId> npm run asset:build       # standalone offline file: asset-viewer-standalone.html
+```
+
+The viewer reads `ASSET_PREFABS` (and the matching `PLACED_ASSETS` `dimensionsOverride` if placed). Red numbers in the table mean the built geometry deviates >5 mm from the target dimensions. It is separate from the house build (`npm run build`) and not part of `house-visualiser.html`. Agents: use this to validate an asset before/after placing it.

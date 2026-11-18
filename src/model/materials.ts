@@ -47,7 +47,11 @@ export type MaterialId =
   | 'neighbour_window_grey'
   | 'neighbour_glass_grey'
   | 'neighbour_ground_grey'
-  | 'neighbour_hedge_grey';
+  | 'neighbour_hedge_grey'
+  | 'neighbour_tree_grey'
+  | 'neighbour_trunk_grey'
+  | 'neighbour_pavement_grey'
+  | 'neighbour_kerb_grey';
 
 export interface MaterialStyleDef {
   colorDay: string;
@@ -341,6 +345,34 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     colorDay: '#c2c6ca',
     colorNight: '#474c56',
     roughness: 0.95,
+    metalness: 0.0,
+    isNeighbourContext: true,
+  },
+  neighbour_tree_grey: {
+    colorDay: '#b4babe',
+    colorNight: '#454b56',
+    roughness: 0.95,
+    metalness: 0.0,
+    isNeighbourContext: true,
+  },
+  neighbour_trunk_grey: {
+    colorDay: '#9da3a8',
+    colorNight: '#383d46',
+    roughness: 0.95,
+    metalness: 0.0,
+    isNeighbourContext: true,
+  },
+  neighbour_pavement_grey: {
+    colorDay: '#c9cdd0',
+    colorNight: '#4b515b',
+    roughness: 0.95,
+    metalness: 0.0,
+    isNeighbourContext: true,
+  },
+  neighbour_kerb_grey: {
+    colorDay: '#eef0f1',
+    colorNight: '#5b616c',
+    roughness: 0.9,
     metalness: 0.0,
     isNeighbourContext: true,
   },

@@ -3,6 +3,7 @@ import { buildHouseScene, HouseSceneGroups, InspectableMetadata } from './geomet
 import { PROVENANCE_COLORS } from './model/materials';
 import { PROVENANCE_LABELS } from './model/units';
 import { IsometricCameraController, CameraPreset } from './viewer/cameraController';
+import { EdgeBlurPass } from './viewer/edgeBlur';
 import { SkyRenderer } from './viewer/skyRenderer';
 import { createLightingRig, applyDayNightState } from './viewer/dayNightController';
 import { FLOOR_STOPS, applyScrollProgressToScene } from './viewer/scrollTimeline';
@@ -25,6 +26,7 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.04;
 
 const scene = new THREE.Scene();
+const edgeBlur = new EdgeBlurPass(renderer);
 const lightingRig = createLightingRig(scene);
 const cameraController = new IsometricCameraController(canvas);
 
@@ -125,7 +127,9 @@ btnDayNight?.addEventListener('click', () => {
 });
 
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'n' || e.key === 'N') {
+  if (e.key === 'b' || e.key === 'B') {
+    edgeBlur.enabled = !edgeBlur.enabled; // compare with / without edge diffusion
+  } else if (e.key === 'n' || e.key === 'N') {
     btnDayNight?.click();
   } else if (e.key === 'r' || e.key === 'R') {
     cameraController.resetToDefault();
@@ -257,7 +261,7 @@ function animate(now: number) {
   // 3. Update Camera Controls & Render
   cameraController.update(dt);
   skyRenderer.update(currentNightT);
-  renderer.render(scene, cameraController.camera);
+  edgeBlur.render(scene, cameraController.camera);
 }
 
 requestAnimationFrame(animate);

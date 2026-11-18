@@ -263,7 +263,7 @@ export function buildHouseScene(): HouseSceneGroups {
   // ===========================================================================
   // 4. STAIRCASES (White Double 90°-Turn Staircases: Ground -> 1st & 1st -> 2nd)
   // ===========================================================================
-  instantiateWhiteDoubleTurnStaircase3D(
+  const stairGfGroup = instantiateWhiteDoubleTurnStaircase3D(
     groundGroup,
     getMat,
     registerMesh,
@@ -276,7 +276,7 @@ export function buildHouseScene(): HouseSceneGroups {
     HOUSE_DIMENSIONS.firstFloorElevation.metres
   );
 
-  instantiateWhiteDoubleTurnStaircase3D(
+  const stairFfGroup = instantiateWhiteDoubleTurnStaircase3D(
     firstGroup,
     getMat,
     registerMesh,
@@ -288,6 +288,10 @@ export function buildHouseScene(): HouseSceneGroups {
     HOUSE_DIMENSIONS.firstFloorElevation.metres,
     HOUSE_DIMENSIONS.secondFloorElevation.metres
   );
+
+  // Staircases are secondary assets: they drop in separately, right behind their floor.
+  registerStaggered('stair_gf_to_ff', stairGfGroup, 'ground', 0);
+  registerStaggered('stair_ff_to_sf', stairFfGroup, 'first', 0);
 
   // ===========================================================================
   // 5. ZOLDER TECHNICAL INSTALLATIONS (WP, WTW)
@@ -454,19 +458,38 @@ function buildPlotAndEnvironment(
   });
   plotGroup.add(plinthMesh);
 
-  // Neighbour bnr. 56 Plinth in Neutral Grey (X: +5.87 to +8.05 m, Z: -20.63 to +5.00 m)
-  const nbPlinthGeo = new THREE.BoxGeometry(2.18, 0.22, totalDepthZ);
-  const nbPlinthMesh = new THREE.Mesh(nbPlinthGeo, getMat('neighbour_ground_grey'));
-  nbPlinthMesh.position.set(6.96, -0.15, (rearZ + frontZ) / 2);
-  registerMesh(nbPlinthMesh, 'neighbour_ground_grey', {
+  // Surrounding context ground in neutral grey: a ring around the owned plot.
+  // Right side (bnr. 56): 2.18 m strip + 2.00 m extra = 4.18 m; same width on the front, rear and left sides.
+  const CONTEXT_MARGIN = 4.18;
+  const ctx = new THREE.Shape();
+  // Outer boundary is a true rectangle (90 degree corners), even though the owned plot is a trapezoid.
+  const outerLeftX = Math.min(rearLeftX, frontLeftX) - CONTEXT_MARGIN;
+  ctx.moveTo(outerLeftX, -(rearZ - CONTEXT_MARGIN));
+  ctx.lineTo(rightX + CONTEXT_MARGIN, -(rearZ - CONTEXT_MARGIN));
+  ctx.lineTo(rightX + CONTEXT_MARGIN, -(frontZ + CONTEXT_MARGIN));
+  ctx.lineTo(outerLeftX, -(frontZ + CONTEXT_MARGIN));
+  ctx.closePath();
+  const ctxHole = new THREE.Path();
+  ctxHole.moveTo(rearLeftX, -rearZ);
+  ctxHole.lineTo(rightX, -rearZ);
+  ctxHole.lineTo(rightX, -frontZ);
+  ctxHole.lineTo(frontLeftX, -frontZ);
+  ctxHole.closePath();
+  ctx.holes.push(ctxHole);
+
+  const ctxGeo = new THREE.ExtrudeGeometry(ctx, { depth: 0.22, bevelEnabled: false });
+  ctxGeo.rotateX(-Math.PI / 2);
+  const ctxMesh = new THREE.Mesh(ctxGeo, getMat('neighbour_ground_grey'));
+  ctxMesh.position.y = -0.26;
+  registerMesh(ctxMesh, 'neighbour_ground_grey', {
     id: 'plot_plinth_neighbour',
-    label: 'Buurkavel bnr. 56 Context (2.20 m strook)',
-    dimensionsLabel: '2.20 × 25.63 m',
+    label: 'Omgeving buiten kavel (neutraal grijs, 4.18 m rondom, rechthoekig)',
+    dimensionsLabel: `${CONTEXT_MARGIN.toFixed(2)} m rondom de kavel`,
     provenance: 'assumed',
-    source: 'Section 4: 1–2 m surrounding neighbour context in neutral grey',
+    source: 'Context beyond the owned plot in neutral grey (neighbour strip 2.18 m + 2.00 m extension, all sides)',
     floor: 'plot',
   });
-  plotGroup.add(nbPlinthMesh);
+  plotGroup.add(ctxMesh);
 
   // 3. Trapezoidal Grass Lawn covering the Owned Plot (inset 3 cm from plinth edge)
   const lawnShape = new THREE.Shape();
@@ -653,9 +676,9 @@ function buildPlotAndEnvironment(
   frontStreetHedge.receiveShadow = true;
   plotGroup.add(frontStreetHedge);
 
-  const nbHedgeGeo = new THREE.BoxGeometry(2.15, 0.75, 0.32);
+  const nbHedgeGeo = new THREE.BoxGeometry(4.15, 0.75, 0.32);
   const nbHedge = new THREE.Mesh(nbHedgeGeo, getMat('neighbour_hedge_grey'));
-  nbHedge.position.set(6.95, 0.375, frontZ - 0.18);
+  nbHedge.position.set(7.945, 0.375, frontZ - 0.18);
   nbHedge.castShadow = true;
   nbHedge.receiveShadow = true;
   plotGroup.add(nbHedge);
@@ -665,6 +688,67 @@ function buildPlotAndEnvironment(
   addStylisedDioramaTree(plotGroup, getMat, -1.65, -16.85, 3.4, 1.55, 'plot_tree_foliage_sage');
   addStylisedDioramaTree(plotGroup, getMat, 3.15, -16.10, 3.1, 1.40, 'plot_tree_foliage_sage');
   addStylisedDioramaTree(plotGroup, getMat, 1.65, 2.35, 2.0, 0.65, 'plot_tree_foliage_warm');
+
+  // 6. SURROUNDINGS (outside the owned plot, neutral grey): pavement strip, hedges and context trees
+  const ctxRightX = rightX + CONTEXT_MARGIN;
+  const ctxLeftX = Math.min(rearLeftX, frontLeftX) - CONTEXT_MARGIN;
+  const addCtxBox = (
+    id: string,
+    label: string,
+    matId: MaterialId,
+    x0: number,
+    x1: number,
+    z0: number,
+    z1: number,
+    y0: number,
+    y1: number
+  ) => {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), getMat(matId));
+    mesh.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+    registerMesh(mesh, matId, {
+      id,
+      label,
+      dimensionsLabel: `${(x1 - x0).toFixed(2)} × ${(z1 - z0).toFixed(2)} m`,
+      provenance: 'assumed',
+      source: 'Surroundings in neutral grey (reference photos: pavement and hedges along the street)',
+      floor: 'plot',
+    }, false, true);
+    plotGroup.add(mesh);
+  };
+
+  // Pavement (1.80 m) + kerb along the street side
+  addCtxBox('ctx_pavement', 'Trottoir langs straat (1.80 m)', 'neighbour_pavement_grey',
+    ctxLeftX, ctxRightX, frontZ, frontZ + 1.8, -0.04, 0.0);
+  addCtxBox('ctx_kerb', 'Stoeprand', 'neighbour_kerb_grey',
+    ctxLeftX, ctxRightX, frontZ + 1.8, frontZ + 1.95, -0.04, 0.03);
+
+  // Boundary hedges: rear boundary (plot in green, neighbour side in grey) + right garden boundary behind the terrace
+  const addPlotHedge = (id: string, label: string, matId: MaterialId, x0: number, x1: number, z0: number, z1: number) => {
+    const hMesh = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, 1.35, z1 - z0), getMat(matId));
+    hMesh.position.set((x0 + x1) / 2, 0.675, (z0 + z1) / 2);
+    registerMesh(hMesh, matId, {
+      id,
+      label,
+      dimensionsLabel: `${(x1 - x0).toFixed(2)} × ${(z1 - z0).toFixed(2)} × 1.35 m`,
+      provenance: 'assumed',
+      source: 'Hedges along the plot boundary (reference photos)',
+      floor: 'plot',
+    }, true, true);
+    plotGroup.add(hMesh);
+  };
+  addPlotHedge('hedge_rear_plot', 'Haag achterzijde kavel', 'plot_hedge_beech',
+    rearLeftX + 0.18, rightX, rearZ, rearZ + 0.32);
+  addPlotHedge('hedge_right_plot', 'Haag rechter kavelgrens (achtertuin)', 'plot_hedge_beech',
+    rightX - 0.32, rightX, rearZ + 0.32, -14.3);
+  addPlotHedge('hedge_rear_neighbour', 'Haag achterzijde buurkavel', 'neighbour_hedge_grey',
+    rightX, ctxRightX - 0.3, rearZ, rearZ + 0.32);
+
+  // Context trees: drop in as secondary assets together with the ground floor
+  const bigTree = addStylisedDioramaTree(groundGroup, getMat, 8.3, -16.6, 7.4, 3.0, 'neighbour_tree_grey', 'neighbour_trunk_grey');
+  registerStaggered('ctx_tree_big_rear', bigTree, 'ground', 0);
+  const roundTree = addStylisedDioramaTree(groundGroup, getMat, ctxLeftX + 1.9, frontZ + 0.95, 4.6, 1.5, 'neighbour_tree_grey', 'neighbour_trunk_grey');
+  registerStaggered('ctx_tree_round_front', roundTree, 'ground', 0);
+
   addStylisedDioramaTree(plotGroup, getMat, 4.15, 2.45, 2.0, 0.65, 'plot_tree_foliage_warm');
 
   return fadeMat;
@@ -677,14 +761,15 @@ function addStylisedDioramaTree(
   z: number,
   height: number,
   crownRadius: number,
-  foliageMat: MaterialId
-) {
+  foliageMat: MaterialId,
+  trunkMat: MaterialId = 'plot_tree_trunk'
+): THREE.Group {
   const treeGroup = new THREE.Group();
   treeGroup.position.set(x, 0, z);
 
   const trunkH = height * 0.48;
   const trunkGeo = new THREE.CylinderGeometry(0.07, 0.11, trunkH, 10);
-  const trunk = new THREE.Mesh(trunkGeo, getMat('plot_tree_trunk'));
+  const trunk = new THREE.Mesh(trunkGeo, getMat(trunkMat));
   trunk.position.y = trunkH / 2;
   trunk.castShadow = true;
   treeGroup.add(trunk);
@@ -708,6 +793,7 @@ function addStylisedDioramaTree(
   }
 
   group.add(treeGroup);
+  return treeGroup;
 }
 
 /**
@@ -1212,7 +1298,7 @@ function buildVerticalExtrudedRoofPolygon(
  * Build the pitched intersecting roof system:
  * - Bouwnummer 55's front-to-back Cross-Gable Roof (Dwarskap, left slope + front/rear right wings)
  * - Bouwnummer 55's owned perpendicular T-wing (Langskap over X: 2.985 -> 5.87 m in Anthracite)
- * - Bouwnummer 56's perpendicular Side-Gable Roof (Langskap over X: 5.87 -> 8.05 m in Neutral Grey)
+ * - Bouwnummer 56's perpendicular Side-Gable Roof (Langskap over X: 5.87 -> 10.05 m in Neutral Grey)
  */
 function buildPitchedRoofSystem(
   roofGroup: THREE.Group,
@@ -1224,7 +1310,7 @@ function buildPitchedRoofSystem(
   const ridgeX = 2.985;
   const leftEavesX = -0.18;
   const rightPartyX = 5.87;
-  const neighbourMaxX = 8.05;
+  const neighbourMaxX = 10.05;
   const roofFrontZ = 0.16;
   const roofRearZ = -10.62;
   const roofLengthZ = roofFrontZ - roofRearZ; // 10.78 m
@@ -1371,7 +1457,7 @@ function buildPitchedRoofSystem(
   });
   roofGroup.add(ownedLangsRearMesh);
 
-  // 4. Attached Neighbour bnr. 56 Perpendicular Pitched Roof (Langskap X: 5.87 -> 8.05 m in Neutral Grey)
+  // 4. Attached Neighbour bnr. 56 Perpendicular Pitched Roof (Langskap X: 5.87 -> 10.05 m in Neutral Grey)
   const nbFrontSlopeGeo = buildVerticalExtrudedRoofPolygon(
     [
       [rightPartyX, Y_RIDGE, nbRidgeZ],
