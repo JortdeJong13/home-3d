@@ -417,8 +417,8 @@ const stairFfBox = getBoundsById('stair_ff_to_sf');
 assertClose(stairGfBox.min.x, 0.408, 0.002, 'Ground->1st stair left edge aligns to Hal plaster face (0.408 m)');
 assertClose(stairGfBox.max.x, 2.940, 0.002, 'Ground->1st stair right edge aligns to Hal right wall (2.940 m)');
 assertClose(stairGfBox.max.z, -3.960, 0.002, 'Ground->1st stair front edge aligns to 12 cm stair wall (-3.960 m)');
-assertClose(stairFfBox.min.x, 0.720, 0.002, '1st->Zolder stair left edge aligns to Zolder knieschot (0.720 m)');
-assertClose(stairFfBox.max.x, 2.920, 0.002, '1st->Zolder stair right edge aligns to Zolder Overloop wall (2.920 m)');
-assertClose(stairFfBox.max.z, -3.985, 0.002, '1st->Zolder stair front edge aligns to Zolder Overloop front wall (-3.985 m)');
+assertClose(stairFfBox.min.x, 0.408, 0.002, '1st->Zolder stair left edge aligns directly above Ground->1st (0.408 m)');
+assertClose(stairFfBox.max.x, 2.940, 0.002, '1st->Zolder stair right edge aligns to Zolder Overloop right wall (2.940 m)');
+assertClose(stairFfBox.max.z, -3.960, 0.002, '1st->Zolder stair front edge aligns directly above Ground->1st (-3.960 m)');
 
 console.log('\nALL DIMENSIONAL, PREFAB & 3D SCENE CHECKS PASSED SUCCESSFULLY.');

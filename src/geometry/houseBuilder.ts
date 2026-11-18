@@ -376,7 +376,7 @@ export function buildHouseScene(): HouseSceneGroups {
     0.205
   );
 
-  // 1st -> Zolder fits strictly inside Zolder Overloop (X: 0.720 left knieschot..2.920 right wall, Z <= -3.985)
+  // 1st -> Zolder is a direct copy-paste right above Ground -> 1st (X: 0.408..2.940 m, frontZ: -3.960 m)
   const stairFfGroup = instantiateWhiteDoubleTurnStaircase3D(
     firstGroup,
     getMat,
@@ -384,12 +384,12 @@ export function buildHouseScene(): HouseSceneGroups {
     'stair_ff_to_sf',
     'Witte Dubbele Kwartslagtrap 1e Verdieping naar Zolder',
     'first',
-    0.720,
-    -3.985,
+    0.408,
+    -3.960,
     HOUSE_DIMENSIONS.firstFloorElevation.metres,
     HOUSE_DIMENSIONS.secondFloorElevation.metres,
-    2.920,
-    0.825,
+    2.940,
+    0.850,
     0.175
   );
 
@@ -2304,9 +2304,9 @@ function buildRoomSlab(
 
   if (room.id === 'room_ff_overloop' || room.id === 'room_sf_overloop') {
     const isFirstFloor = room.id === 'room_ff_overloop';
-    const stairMaxX = isFirstFloor ? 2.94 : 2.92;
+    const stairMaxX = 2.94;
     const stairMinZ = -4.81;
-    const exitMinX = isFirstFloor ? 2.09 : 2.095;
+    const exitMinX = 2.09;
     const exitMinZ = isFirstFloor ? -5.22 : -5.16;
 
     const shape = new THREE.Shape();
@@ -2436,13 +2436,12 @@ function buildStructuralSlabCollars(
   }
 
   // Second floor structural slab at Y2 = +5.70 m (strictly inside outer walls X: 0.40..5.57, Z: -10.06..-0.40,
-  // with stairwell opening inside Zolder Overloop at X: 0.72..2.92, Z: -4.81..-3.985 and exit pocket X: 2.095..2.92, Z: -5.16..-4.81)
+  // matching the 1st-floor stairwell opening at X: 0.40..2.94, Z: -4.81..-3.96 and exit pocket X: 2.09..2.94, Z: -5.16..-4.81)
   const sfParts: Array<[number, number, number, number]> = [
-    [0.40, -3.985, 5.57, -0.40],
+    [0.40, -3.96, 5.57, -0.40],
     [0.40, -10.06, 5.57, -5.16],
-    [0.40, -5.16, 0.72, -3.985],
-    [0.72, -5.16, 2.095, -4.81],
-    [2.92, -5.16, 5.57, -3.985],
+    [0.40, -5.16, 2.09, -4.81],
+    [2.94, -5.16, 5.57, -3.96],
   ];
   for (let i = 0; i < sfParts.length; i++) {
     const [x0, z0, x1, z1] = sfParts[i];
