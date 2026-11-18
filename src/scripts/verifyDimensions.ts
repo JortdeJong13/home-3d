@@ -249,20 +249,27 @@ assertClose(
 
 const targetKneeH = HOUSE_DIMENSIONS.zolderKneeWallHeight.metres; // 1.50 m
 const wallFrontX = walls.find((w) => w.id === 'sf_knieschot_front_right_x');
-assertClose(wallFrontX?.height ?? 0, targetKneeH, 0.001, 'Front corner knieschot (x) height is 1.50 m (flat top)');
-assertClose(wallFrontX?.start[0] ?? 0, 4.78, 0.001, 'Front corner knieschot (x) placed at X = 4.78 m (79 cm from party wall on VK-06)');
+assertClose(wallFrontX?.height ?? 0, targetKneeH, 0.001, 'Front corner knieschot (x) height is 1.50 m');
+assertClose(wallFrontX?.start[0] ?? 0, 4.828, 0.001, 'Front corner knieschot (x) outer face aligned to 1.50 m exterior wall line (X = 4.863 m)');
 
 const wallRearX = walls.find((w) => w.id === 'sf_knieschot_rear_right_x');
-assertClose(wallRearX?.height ?? 0, targetKneeH, 0.001, 'Rear corner knieschot (x) height is 1.50 m (flat top)');
-assertClose(wallRearX?.start[0] ?? 0, 4.78, 0.001, 'Rear corner knieschot (x) placed at X = 4.78 m (79 cm from party wall on VK-06)');
+assertClose(wallRearX?.height ?? 0, targetKneeH, 0.001, 'Rear corner knieschot (x) height is 1.50 m');
+assertClose(wallRearX?.start[0] ?? 0, 4.828, 0.001, 'Rear corner knieschot (x) outer face aligned to 1.50 m exterior wall line (X = 4.863 m)');
 
 const wallFrontZ = walls.find((w) => w.id === 'sf_knieschot_front_right_z');
-assertClose(wallFrontZ?.height ?? 0, targetKneeH, 0.001, 'Front corner knieschot (z) height is 1.50 m (flat top)');
-assertClose(wallFrontZ?.start[1] ?? 0, -1.975, 0.001, 'Front corner knieschot (z) placed at Z = -1.975 m (1.575 m from front inner wall on VK-06)');
+assertClose(wallFrontZ?.height ?? 0, targetKneeH, 0.001, 'Front corner knieschot (z) height is 1.50 m');
+assertClose(wallFrontZ?.start[1] ?? 0, -1.934, 0.001, 'Front corner knieschot (z) outer face aligned to 1.50 m roof contour (Z = -1.969 m)');
 
 const wallRearZ = walls.find((w) => w.id === 'sf_knieschot_rear_right_z');
-assertClose(wallRearZ?.height ?? 0, targetKneeH, 0.001, 'Rear corner knieschot (z) height is 1.50 m (flat top)');
-assertClose(wallRearZ?.start[1] ?? 0, -8.485, 0.001, 'Rear corner knieschot (z) placed at Z = -8.485 m (1.575 m from rear inner wall on VK-06)');
+assertClose(wallRearZ?.height ?? 0, targetKneeH, 0.001, 'Rear corner knieschot (z) height is 1.50 m');
+assertClose(wallRearZ?.start[1] ?? 0, -8.526, 0.001, 'Rear corner knieschot (z) outer face aligned to 1.50 m roof contour (Z = -8.491 m)');
+
+assertClose(
+  getZolderRoofUndersideY(4.863, -0.40) - Y2,
+  1.50,
+  0.002,
+  'Right corner knieschot outer face aligns to exact 1.50 m point on exterior gable wall'
+);
 
 // Verify analytical roof underside continuity along the diagonal Kielkeper (uX == uZ)
 const kielLeft = getZolderRoofUndersideY(4.4275, -2.725);
