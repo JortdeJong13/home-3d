@@ -95,7 +95,7 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
   // so colorDay is neutral white (#ffffff) and colorNight dims the texture.
   exterior_brick_main: {
     colorDay: '#ffffff',
-    colorNight: '#7d776d',
+    colorNight: '#706a61',
     roughness: 0.92,
     metalness: 0.0,
   },

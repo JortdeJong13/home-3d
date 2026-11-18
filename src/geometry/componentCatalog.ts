@@ -399,8 +399,8 @@ interface AsymmetricCasementConfig {
 
 const ASYMMETRIC_CASEMENT_WINDOWS: Partial<Record<OpeningPrefabId, AsymmetricCasementConfig>> = {
   window_living_front: { casementSide: 'right', mullionOffsetRatio: 0.17 },
-  window_living_side: { casementSide: 'left', mullionOffsetRatio: -0.14 },
-  window_bedroom_side: { casementSide: 'left', mullionOffsetRatio: -0.14 },
+  window_living_side: { casementSide: 'left', mullionOffsetRatio: 0 },
+  window_bedroom_side: { casementSide: 'left', mullionOffsetRatio: 0 },
 };
 
 /**

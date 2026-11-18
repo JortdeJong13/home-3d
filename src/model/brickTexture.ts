@@ -29,28 +29,28 @@ interface BrickTone {
  * cohesive with the soft architectural diorama aesthetic.
  */
 const BRICK_TONES: BrickTone[] = [
-  // Light cream-buff (~22%)
-  { r: 242, g: 229, b: 199, weight: 11 },
-  { r: 235, g: 218, b: 181, weight: 11 },
+  // Light cream-buff (~18%)
+  { r: 222, g: 204, b: 168, weight: 9 },
+  { r: 214, g: 193, b: 154, weight: 9 },
   // Warm golden-sand & ochre (~44%)
-  { r: 230, g: 206, b: 158, weight: 14 },
-  { r: 224, g: 196, b: 142, weight: 12 },
-  { r: 233, g: 212, b: 168, weight: 10 },
-  { r: 217, g: 187, b: 132, weight: 8 },
-  // Muted warm tan / biscuit (~22%)
-  { r: 205, g: 177, b: 132, weight: 12 },
-  { r: 194, g: 165, b: 122, weight: 10 },
-  // Darker toasted umber / brown-grey accents (~12%)
-  { r: 168, g: 138, b: 100, weight: 7 },
-  { r: 152, g: 123, b: 90, weight: 5 },
+  { r: 206, g: 179, b: 128, weight: 14 },
+  { r: 199, g: 169, b: 116, weight: 12 },
+  { r: 210, g: 185, b: 138, weight: 10 },
+  { r: 191, g: 160, b: 108, weight: 8 },
+  // Muted warm tan / biscuit (~24%)
+  { r: 178, g: 149, b: 106, weight: 13 },
+  { r: 166, g: 138, b: 96, weight: 11 },
+  // Darker toasted umber / brown-grey accents (~14%)
+  { r: 142, g: 114, b: 80, weight: 8 },
+  { r: 126, g: 100, b: 70, weight: 6 },
 ];
 
 const TOTAL_WEIGHT = BRICK_TONES.reduce((sum, t) => sum + t.weight, 0);
 
-// Light warm buff-grey mortar matching the reference facade
-const MORTAR_R = 216;
-const MORTAR_G = 210;
-const MORTAR_B = 198;
+// Warm buff-grey mortar matching the reference facade
+const MORTAR_R = 194;
+const MORTAR_G = 186;
+const MORTAR_B = 172;
 
 /** Deterministic integer hash in [0, 1) for seamless brick-grid variation. */
 function hash2D(ix: number, iy: number, seed = 0): number {
