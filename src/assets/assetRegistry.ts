@@ -2,7 +2,7 @@ import { AssetPrefabDefinition, PlacedAssetSpec } from './assetTypes';
 import { m } from '../model/units';
 import { frontDoorArchPrefab } from './items/frontDoorArch';
 import { heatPumpOutdoorPrefab } from './items/heatPumpOutdoor';
-import { rainPipeHwaPrefab } from './items/rainPipeHwa';
+import { rainPipeHwaPrefab, rainPipeHwaSectionPrefab } from './items/rainPipeHwa';
 
 /**
  * CENTRAL ASSET PREFAB CATALOG
@@ -16,6 +16,7 @@ export const ASSET_PREFABS: Record<string, AssetPrefabDefinition> = {
   front_entrance_portal: frontDoorArchPrefab,
   heat_pump_outdoor: heatPumpOutdoorPrefab,
   rain_pipe_hwa: rainPipeHwaPrefab,
+  rain_pipe_hwa_section: rainPipeHwaSectionPrefab,
 };
 
 /**
@@ -46,15 +47,43 @@ export const PLACED_ASSETS: PlacedAssetSpec[] = [
   },
   {
     id: 'gf_linkerzijgevel_regenpijp_voor',
-    prefabId: 'rain_pipe_hwa',
-    label: 'Regenpijp / HWA (Linkerzijgevel Voorhoek)',
+    prefabId: 'rain_pipe_hwa_section',
+    label: 'Regenpijp / HWA (Linkerzijgevel Voorhoek · Begane Grond)',
     floor: 'ground',
     positionXZ: [-0.07, -0.22],
     rotationDeg: 270,
     dimensionsOverride: {
-      height: m(6.13, 'verified_drawing', 'Verkooptekening VK-06 Linkerzijgevel: HWA regenpijp van peil tot goothoogte (+6.13 m)'),
+      height: m(2.60, 'verified_drawing', 'Begane grond hoogte (0.00 -> +2.60 m)'),
     },
     provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 linkerzijgevel: HWA regenpijp bij voorhoek',
+    source: 'Verkooptekening VK-06 linkerzijgevel: HWA regenpijp bij voorhoek (begane grond)',
+  },
+  {
+    id: 'ff_linkerzijgevel_regenpijp_voor',
+    prefabId: 'rain_pipe_hwa_section',
+    label: 'Regenpijp / HWA (Linkerzijgevel Voorhoek · 1e Verdieping)',
+    floor: 'first',
+    positionXZ: [-0.07, -0.22],
+    elevationOffsetY: -0.25,
+    rotationDeg: 270,
+    dimensionsOverride: {
+      height: m(2.85, 'verified_drawing', '1e verdieping incl. vloerrand (+2.60 -> +5.45 m)'),
+    },
+    provenance: 'verified_drawing',
+    source: 'Verkooptekening VK-06 linkerzijgevel: HWA regenpijp bij voorhoek (1e verdieping)',
+  },
+  {
+    id: 'sf_linkerzijgevel_regenpijp_voor',
+    prefabId: 'rain_pipe_hwa',
+    label: 'Regenpijp / HWA (Linkerzijgevel Voorhoek · Zolder / Goot)',
+    floor: 'second',
+    positionXZ: [-0.07, -0.22],
+    elevationOffsetY: -0.25,
+    rotationDeg: 270,
+    dimensionsOverride: {
+      height: m(0.68, 'verified_drawing', 'Zolder borstwering incl. vloerrand tot goothoogte (+5.45 -> +6.13 m)'),
+    },
+    provenance: 'verified_drawing',
+    source: 'Verkooptekening VK-06 linkerzijgevel: HWA regenpijp bij voorhoek (zolder tot goot +6.13 m)',
   },
 ];
