@@ -3566,6 +3566,92 @@ function buildPitchedRoofSystem(
     'neighbour_roof_grey'
   );
 
+  // 5a. Neighbour bnr. 56 Ceiling Lining & Perimeter Closure (connects grey roof shell cleanly to nb_sf_front/rear)
+  {
+    const nbInFrontZ = -0.61; // Tucked 1 cm inside nb_sf_front (Z: -0.62..-0.22)
+    const nbInRearZ = -9.85;  // Tucked 1 cm inside nb_sf_rear (Z: -10.24..-9.84)
+    const nbEavesFrontZ = nbFrontEavesZ - 0.005; // -0.225 m
+    const nbEavesRearZ = nbRearEavesZ + 0.005;   // -10.235 m
+    const nbEavesBotY = 6.135; // 1.5 cm above nb_sf_front/rear top (6.120 m)
+
+    const nbUnderY = (z: number) => getZolderRoofUndersideY(neighbourMaxX, z);
+    const nbShellInY = (z: number) => getZolderRoofTopY(neighbourMaxX, z) - tileThickness + 0.01;
+    const ptNbUnder = (x: number, z: number): [number, number, number] => [x, nbUnderY(z) + 0.04, z];
+
+    const nbCeilGeos = [
+      [ptNbUnder(nbStartX, nbInFrontZ), ptNbUnder(neighbourMaxX, nbInFrontZ), ptNbUnder(neighbourMaxX, nbRidgeZ), ptNbUnder(nbStartX, nbRidgeZ)],
+      [ptNbUnder(nbStartX, nbRidgeZ), ptNbUnder(neighbourMaxX, nbRidgeZ), ptNbUnder(neighbourMaxX, nbInRearZ), ptNbUnder(nbStartX, nbInRearZ)],
+    ].map((poly) => {
+      const { outerGeo, ceilingGeo } = buildRoofSlopeGeometries(poly, 0.04);
+      const merged = mergeGeometries([outerGeo, ceilingGeo], false);
+      outerGeo.dispose();
+      ceilingGeo.dispose();
+      return merged;
+    });
+
+    const nbClosurePos: number[] = [];
+    const pushNbQuad = (
+      a: [number, number, number],
+      b: [number, number, number],
+      c: [number, number, number],
+      d: [number, number, number]
+    ) => {
+      nbClosurePos.push(
+        a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2],
+        a[0], a[1], a[2], c[0], c[1], c[2], d[0], d[1], d[2]
+      );
+    };
+    const pushNbVert = (x0: number, z0: number, yBot0: number, x1: number, z1: number, yBot1: number) => {
+      pushNbQuad(
+        [x0, yBot0, z0],
+        [x1, yBot1, z1],
+        [x1, nbShellInY(z1), z1],
+        [x0, nbShellInY(z0), z0]
+      );
+    };
+
+    // Front & rear vertical closures along inner wall line (Z = nbInFrontZ, nbInRearZ)
+    pushNbVert(nbStartX, nbInFrontZ, nbUnderY(nbInFrontZ), neighbourMaxX, nbInFrontZ, nbUnderY(nbInFrontZ));
+    pushNbVert(neighbourMaxX, nbInRearZ, nbUnderY(nbInRearZ), nbStartX, nbInRearZ, nbUnderY(nbInRearZ));
+
+    // Front & rear horizontal eaves soffits (strictly above nb_sf_front/rear top 6.120 m, -Y outward)
+    pushNbQuad(
+      [nbStartX, nbEavesBotY, nbInFrontZ],
+      [neighbourMaxX, nbEavesBotY, nbInFrontZ],
+      [neighbourMaxX, nbEavesBotY, nbEavesFrontZ],
+      [nbStartX, nbEavesBotY, nbEavesFrontZ]
+    );
+    pushNbQuad(
+      [nbStartX, nbEavesBotY, nbEavesRearZ],
+      [neighbourMaxX, nbEavesBotY, nbEavesRearZ],
+      [neighbourMaxX, nbEavesBotY, nbInRearZ],
+      [nbStartX, nbEavesBotY, nbInRearZ]
+    );
+
+    // Right cutaway face (X = neighbourMaxX, +X outward) & Left party face (X = nbStartX, -X outward)
+    pushNbVert(neighbourMaxX, nbEavesFrontZ, nbEavesBotY, neighbourMaxX, nbInFrontZ, nbEavesBotY);
+    pushNbVert(neighbourMaxX, nbInFrontZ, nbUnderY(nbInFrontZ), neighbourMaxX, nbRidgeZ, nbUnderY(nbRidgeZ));
+    pushNbVert(neighbourMaxX, nbRidgeZ, nbUnderY(nbRidgeZ), neighbourMaxX, nbInRearZ, nbUnderY(nbInRearZ));
+    pushNbVert(neighbourMaxX, nbInRearZ, nbEavesBotY, neighbourMaxX, nbEavesRearZ, nbEavesBotY);
+
+    pushNbVert(nbStartX, nbEavesRearZ, nbEavesBotY, nbStartX, nbInRearZ, nbEavesBotY);
+    pushNbVert(nbStartX, nbInRearZ, nbUnderY(nbInRearZ), nbStartX, nbRidgeZ, nbUnderY(nbRidgeZ));
+    pushNbVert(nbStartX, nbRidgeZ, nbUnderY(nbRidgeZ), nbStartX, nbInFrontZ, nbUnderY(nbInFrontZ));
+    pushNbVert(nbStartX, nbInFrontZ, nbEavesBotY, nbStartX, nbEavesFrontZ, nbEavesBotY);
+
+    const nbClosureGeo = new THREE.BufferGeometry();
+    nbClosureGeo.setAttribute('position', new THREE.Float32BufferAttribute(nbClosurePos, 3));
+    nbClosureGeo.computeVertexNormals();
+    nbCeilGeos.push(nbClosureGeo);
+
+    const mergedNbCeil = mergeGeometries(nbCeilGeos, false);
+    nbCeilGeos.forEach((g) => g.dispose());
+    const nbCeilMesh = new THREE.Mesh(mergedNbCeil, getMat('neighbour_wall_grey'));
+    nbCeilMesh.castShadow = false;
+    nbCeilMesh.receiveShadow = true;
+    roofGroup.add(nbCeilMesh);
+  }
+
   // Neighbour bnr. 56 front-slope skylight (neutral greyscale context, visible in Render)
   const nbLangsAngle = Math.atan2(yRidge - yEavesTop, nbFrontEavesZ - nbRidgeZ);
   const nbSkZ = -2.25;
