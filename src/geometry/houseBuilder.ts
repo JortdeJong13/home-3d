@@ -814,10 +814,10 @@ function buildPlotAndEnvironment(
     const pt = evalPath(t);
     gravelShape.lineTo(pt.x + pt.nx * pathHalfW, pt.y + pt.ny * pathHalfW);
   }
-  // Quarter-circle of gravel connecting the berging rear gravel path (Z = -14.70) to the kitchen patio (Z = -13.80)
+  // Quarter-circle of gravel connecting the berging rear gravel path (Z = -14.70) to the kitchen patio (Z = -13.72, flush with berging rear)
   const patioCornerX = 0.33;
-  const patioRearY = 13.80; // -(-13.80)
-  const quarterR = -gravelRearZ - patioRearY; // 0.90 m
+  const patioRearY = 13.72; // -(-13.72)
+  const quarterR = -gravelRearZ - patioRearY; // 0.98 m
   const arcStartAngle = Math.PI / 2 - 0.28;
   gravelShape.quadraticCurveTo(
     0.36,
@@ -826,7 +826,6 @@ function buildPlotAndEnvironment(
     patioRearY + quarterR * Math.sin(arcStartAngle)
   );
   gravelShape.absarc(patioCornerX, patioRearY, quarterR, arcStartAngle, 0, true);
-  gravelShape.lineTo(patioCornerX, patioRearY);
   // Trace around the Berging footprint (X: -3.27..0.33 at Z: -12.86..-13.72, X: -3.27..0.00 at Z: -7.73..-12.86) so gravel never clips inside it
   gravelShape.lineTo(0.33, 13.72);
   gravelShape.lineTo(-3.27, 13.72);
@@ -867,31 +866,32 @@ function buildPlotAndEnvironment(
   plotGroup.add(gravelMesh);
 
   // Stone Patio directly behind Kitchen Double Doors B13: 14 individual tiles (staggered secondary assets).
-  // Area 5.39 x 0.94 m = 7 tiles of 77 cm (X: 0.33 -> 5.72 m) x 2 tiles of 47 cm (Z: -12.86 -> -13.80 m).
+  // Area 5.39 x 0.86 m = 7 tiles of 77 cm (X: 0.33 -> 5.72 m) x 2 tiles of 43 cm (Z: -12.86 -> -13.72 m, flush with berging rear).
   const PATIO_TILE_X = 0.77;
   const PATIO_TILE_Z = 0.47;
+  const KITCHEN_PATIO_TILE_Z = 0.43;
   const PATIO_JOINT = 0.015;
   const PATIO_X0 = 0.33;
   const PATIO_Z0 = -12.86;
   for (let row = 0; row < 2; row++) {
     for (let col = 0; col < 7; col++) {
       const id = `patio_tile_${row}_${col}`;
-      const tileGeo = new THREE.BoxGeometry(PATIO_TILE_X - PATIO_JOINT, 0.045, PATIO_TILE_Z - PATIO_JOINT);
+      const tileGeo = new THREE.BoxGeometry(PATIO_TILE_X - PATIO_JOINT, 0.045, KITCHEN_PATIO_TILE_Z - PATIO_JOINT);
       const tile = new THREE.Mesh(tileGeo, getMat('plot_patio_limestone'));
       tile.position.set(
         PATIO_X0 + (col + 0.5) * PATIO_TILE_X,
         0.01,
-        PATIO_Z0 - (row + 0.5) * PATIO_TILE_Z
+        PATIO_Z0 - (row + 0.5) * KITCHEN_PATIO_TILE_Z
       );
       registerMesh(
         tile,
         'plot_patio_limestone',
         {
           id,
-          label: 'Terrastegel achter Dubbele Tuindeuren (77 × 47 cm)',
-          dimensionsLabel: '0.77 × 0.47 m',
+          label: 'Terrastegel achter Dubbele Tuindeuren (77 × 43 cm)',
+          dimensionsLabel: '0.77 × 0.43 m',
           provenance: 'user_supplied',
-          source: 'Garden layout.png & User: terras 539 × 94 cm = 7 × 77 cm bij 2 × 47 cm',
+          source: 'Garden layout.png & User: terras 539 × 86 cm = 7 × 77 cm bij 2 × 43 cm (gelijk met achtergevel berging)',
           floor: 'ground',
           category: 'furniture',
         },
