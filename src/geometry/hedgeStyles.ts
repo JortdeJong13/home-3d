@@ -82,22 +82,23 @@ export function buildBushHedgeSegment(
 
   for (let ic = 0; ic < numBushes; ic++) {
     const tz = numBushes > 1 ? ic / (numBushes - 1) : 0.5;
-    const cz = -zSpan * 0.5 + tz * zSpan + (rand() - 0.5) * 0.03;
-    const cx = (rand() - 0.5) * width * 0.10;
-    const clusterH = height * (0.95 + rand() * 0.08);
+    const cz = -zSpan * 0.5 + tz * zSpan + (rand() - 0.5) * 0.02;
+    const cx = (rand() - 0.5) * width * 0.03;
+    const clusterH = height * (0.97 + rand() * 0.05);
     const ry = Math.max(0.20, clusterH - yFloor);
 
     for (let i = 0; i < numPuffs; i++) {
-      const a = (i / (numPuffs - 1)) * Math.PI * 2 + rand() * 0.6;
-      const dist = i === 0 ? 0 : 0.38 + rand() * 0.32;
-      const px = cx + Math.cos(a) * rx * dist;
-      const pz = cz + Math.sin(a) * rz * dist;
-      const r = (i === 0 ? 0.76 : 0.54 + rand() * 0.14) * Math.min(rx, rz);
-      const py = yFloor + ry * (i === 0 ? 0.50 : 0.36 + rand() * 0.18);
-      const yHalf = ry * (i === 0 ? 0.52 : 0.42 + rand() * 0.10);
+      const a = (i / (numPuffs - 1)) * Math.PI * 2 + rand() * 0.35;
+      const distX = i === 0 ? 0 : 0.12 + rand() * 0.12;
+      const distZ = i === 0 ? 0 : 0.26 + rand() * 0.20;
+      const px = cx + Math.cos(a) * rx * distX;
+      const pz = cz + Math.sin(a) * rz * distZ;
+      const r = (i === 0 ? 0.88 : 0.66 + rand() * 0.10) * Math.min(rx, rz);
+      const py = yFloor + ry * (i === 0 ? 0.50 : 0.40 + rand() * 0.14);
+      const yHalf = ry * (i === 0 ? 0.52 : 0.44 + rand() * 0.08);
 
       const puff = new THREE.IcosahedronGeometry(r, 1);
-      puff.scale(1.0 + rand() * 0.18, yHalf / Math.max(0.10, r), 1.0 + rand() * 0.18);
+      puff.scale(1.0 + rand() * 0.08, yHalf / Math.max(0.10, r), 1.02 + rand() * 0.12);
       puff.rotateY(rand() * Math.PI * 2);
       puff.translate(px, py, pz);
       mainGeos.push(puff);
