@@ -735,24 +735,31 @@ function buildPlotAndEnvironment(
   gravelShape.lineTo(leftBoundaryXAtZ(gravelRearZ) + 0.32, -gravelRearZ);
 
   // Curvy garden path branching perpendicularly from the gravel behind the berging (Z = -14.70)
-  // to the front edge of the rear lounge terrace (Z = -17.73)
+  // to the front edge of the rear lounge terrace (Z = -17.7375), with its left edge aligned flush
+  // with the lounge terrace left edge (X = 1.8775 -> center X = 2.3175 for pathHalfW = 0.44).
+  const pathHalfW = 0.44;
   const pathP0 = { x: -0.11, y: -gravelRearZ };
   const pathP1 = { x: -0.11, y: 15.70 };
-  const pathP2 = { x: 2.46, y: 16.75 };
-  const pathP3 = { x: 2.46, y: 17.73 };
+  const pathP2 = { x: 1.8775 + pathHalfW, y: 16.75 };
+  const pathP3 = { x: 1.8775 + pathHalfW, y: 17.7375 };
+  const waveAmp = -0.58;
   const evalPath = (t: number) => {
     const u = 1 - t;
-    const x = u * u * u * pathP0.x + 3 * u * u * t * pathP1.x + 3 * u * t * t * pathP2.x + t * t * t * pathP3.x;
+    const wave = waveAmp * Math.sin(Math.PI * t) * Math.sin(2 * Math.PI * t);
+    const dWave =
+      waveAmp *
+      (Math.PI * Math.cos(Math.PI * t) * Math.sin(2 * Math.PI * t) +
+        2 * Math.PI * Math.sin(Math.PI * t) * Math.cos(2 * Math.PI * t));
+    const x = u * u * u * pathP0.x + 3 * u * u * t * pathP1.x + 3 * u * t * t * pathP2.x + t * t * t * pathP3.x + wave;
     const y = u * u * u * pathP0.y + 3 * u * u * t * pathP1.y + 3 * u * t * t * pathP2.y + t * t * t * pathP3.y;
-    const dx = 3 * u * u * (pathP1.x - pathP0.x) + 6 * u * t * (pathP2.x - pathP1.x) + 3 * t * t * (pathP3.x - pathP2.x);
+    const dx = 3 * u * u * (pathP1.x - pathP0.x) + 6 * u * t * (pathP2.x - pathP1.x) + 3 * t * t * (pathP3.x - pathP2.x) + dWave;
     const dy = 3 * u * u * (pathP1.y - pathP0.y) + 6 * u * t * (pathP2.y - pathP1.y) + 3 * t * t * (pathP3.y - pathP2.y);
     const len = Math.hypot(dx, dy) || 1;
     // Normal pointing to the right (+X when moving toward +Y / rear)
     return { x, y, nx: dy / len, ny: -dx / len, angle: Math.atan2(dx, dy) };
   };
-  const pathHalfW = 0.44;
-  const pathSteps = 20;
-  const filletStartIdx = 3; // t = 0.15: blend smoothly into the berging gravel path & patio edge
+  const pathSteps = 24;
+  const filletStartIdx = 3; // t = 0.125: blend smoothly into the berging gravel path & patio edge
   const leftFilletPt = evalPath(filletStartIdx / pathSteps);
   gravelShape.lineTo(-1.05, -gravelRearZ);
   gravelShape.quadraticCurveTo(

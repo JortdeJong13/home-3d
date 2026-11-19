@@ -18,7 +18,7 @@ const isTouchDevice =
 
 const renderer = new THREE.WebGLRenderer({
   canvas,
-  antialias: !isTouchDevice,
+  antialias: true,
   alpha: true,
   powerPreference: 'high-performance',
 });
@@ -33,6 +33,7 @@ renderer.toneMappingExposure = 1.04;
 
 const scene = new THREE.Scene();
 const edgeBlur = new EdgeBlurPass(renderer);
+edgeBlur.enabled = !isTouchDevice;
 const lightingRig = createLightingRig(scene);
 const cameraController = new IsometricCameraController(canvas);
 
