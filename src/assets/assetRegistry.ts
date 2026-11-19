@@ -184,7 +184,7 @@ export const PLACED_ASSETS: PlacedAssetSpec[] = [
     prefabId: 'garden_bollard_light',
     label: 'Tuinverlichting Pad (Midden)',
     floor: 'ground',
-    positionXZ: [1.56, -16.22],
+    positionXZ: [1.92, -15.92],
     provenance: 'user_supplied',
     source: 'Back garden path bollard light along S-curve',
   },
