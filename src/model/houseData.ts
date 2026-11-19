@@ -429,7 +429,7 @@ export function getHouseWalls(): WallSpec[] {
         {
           id: 'gf_door_toilet',
           prefabId: 'door_inner_standard_b77b',
-          label: 'Toiletdeur B77b (93 × 231 cm)',
+          label: 'Toiletdeur B77b (98 × 220 cm)',
           offsetAlongWall: 0.85,
         },
       ],
@@ -712,7 +712,7 @@ export function getHouseWalls(): WallSpec[] {
         {
           id: 'ff_door_bedroom2',
           prefabId: 'door_inner_standard_b77b',
-          label: 'Deur Slaapkamer Voorzijde B77b (93 × 231 cm)',
+          label: 'Deur Slaapkamer Voorzijde B77b (98 × 220 cm)',
           offsetAlongWall: 2.95,
         },
       ],
@@ -750,7 +750,7 @@ export function getHouseWalls(): WallSpec[] {
         {
           id: 'ff_door_kast',
           prefabId: 'door_inner_standard_b77b',
-          label: 'Deur Inloopkast B77b (93 × 231 cm)',
+          label: 'Deur Inloopkast B77b (98 × 220 cm)',
           offsetAlongWall: 1.18,
         },
       ],
@@ -773,13 +773,13 @@ export function getHouseWalls(): WallSpec[] {
         {
           id: 'ff_door_badkamer',
           prefabId: 'door_inner_standard_b77b',
-          label: 'Badkamerdeur B77b (93 × 231 cm)',
+          label: 'Badkamerdeur B77b (98 × 220 cm)',
           offsetAlongWall: 1.45,
         },
         {
           id: 'ff_door_kantoor',
           prefabId: 'door_inner_standard_b77b',
-          label: 'Deur Kantoor B77b (93 × 231 cm)',
+          label: 'Deur Kantoor B77b (98 × 220 cm)',
           offsetAlongWall: 2.95,
         },
       ],
@@ -1106,8 +1106,8 @@ export function getHouseWalls(): WallSpec[] {
         {
           id: 'sf_door_overloop_to_zolder',
           prefabId: 'door_inner_standard_b77b',
-          label: 'Deur Overloop naar Zolder B77b (93 × 231 cm — 19.6 cm van achterwand)',
-          offsetAlongWall: 1.714, // Rear edge is 19.6 cm from inner rear wall (32.1 cm from outer corner)
+          label: 'Deur Overloop naar Zolder B77b (98 × 220 cm — 19.6 cm van achterwand)',
+          offsetAlongWall: 1.689, // Rear edge is 19.6 cm from inner rear wall (32.1 cm from outer corner)
         },
       ],
     },

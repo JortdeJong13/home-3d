@@ -55,9 +55,9 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
   // 1. Standard Interior Door (B77b stompe deur — shared across Toilet, Slaapkamer, Kast, Badkamer, Kantoor, Zolder)
   door_inner_standard_b77b: {
     prefabId: 'door_inner_standard_b77b',
-    defaultLabel: 'Standaard Binnendeur B77b (93 × 231 cm)',
-    width: 0.93,
-    height: 2.31,
+    defaultLabel: 'Standaard Binnendeur B77b (98 × 220 cm)',
+    width: 0.98,
+    height: 2.20,
     sillHeight: 0.00,
     frameMaterial: 'window_frame_cream',
     panelMaterial: 'door_interior_white',
