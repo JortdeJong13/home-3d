@@ -475,4 +475,27 @@ const checkRightXSlant = (id: string) => {
 checkRightXSlant('sf_knieschot_front_right_x');
 checkRightXSlant('sf_knieschot_rear_right_x');
 
+// Verify Overloop right wall follows the main Dwarskap ridge (X = 2.985 m) continuously
+{
+  const entry = house.meshRegistry.find((e) => e.mesh.userData.id === 'sf_int_overloop_right')!;
+  const mesh = entry.mesh as THREE.Mesh;
+  const pos = mesh.geometry.attributes.position;
+  const v = new THREE.Vector3();
+  let ridgeFrontY = -Infinity;
+  let ridgeMidY = -Infinity;
+  let ridgeRearY = -Infinity;
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld);
+    if (Math.abs(v.x - 2.985) < 0.002) {
+      if (Math.abs(v.z - -3.86) < 0.002) ridgeFrontY = Math.max(ridgeFrontY, v.y);
+      if (Math.abs(v.z - -5.23) < 0.002) ridgeMidY = Math.max(ridgeMidY, v.y);
+      if (Math.abs(v.z - -6.36) < 0.002) ridgeRearY = Math.max(ridgeRearY, v.y);
+    }
+  }
+  const expectedRidgeY = getZolderRoofUndersideY(2.985, -5.23) - 0.004;
+  assertClose(ridgeFrontY, expectedRidgeY, 0.002, 'Overloop right wall ridge crest at front (-3.86 m)');
+  assertClose(ridgeMidY, expectedRidgeY, 0.002, 'Overloop right wall ridge crest at Langskap junction (-5.23 m)');
+  assertClose(ridgeRearY, expectedRidgeY, 0.002, 'Overloop right wall ridge crest at rear (-6.36 m)');
+}
+
 console.log('\nALL DIMENSIONAL, PREFAB & 3D SCENE CHECKS PASSED SUCCESSFULLY.');

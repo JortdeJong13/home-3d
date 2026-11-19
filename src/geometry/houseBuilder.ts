@@ -2455,9 +2455,9 @@ function splitWallTopCapGeometry(
 }
 
 /**
- * Build a watertight prism geometry for a roof-clipped wall without openings, placing exact
- * break vertices along any roof ridge / valley (Kielkeper) intersections so mitered corners
- * triangulate cleanly onto flat planes without twisted or pinched quads.
+ * Build a watertight prism geometry for a roof-clipped wall (with optional rectangular openings),
+ * placing exact break vertices along any roof ridge / valley (Kielkeper) intersections so
+ * mitered corners and ridge junctions triangulate cleanly onto flat planes.
  */
 function buildClippedWallPrismGeometry(
   wall: WallSpec,
@@ -2465,7 +2465,8 @@ function buildClippedWallPrismGeometry(
   dx: number,
   dz: number,
   bottomY: number,
-  clipTopHeightAt: (u: number, lz: number) => number
+  clipTopHeightAt: (u: number, lz: number) => number,
+  openingRects: Array<{ u0: number; u1: number; v0: number; v1: number }> = []
 ): THREE.BufferGeometry {
   const halfT = wall.thickness / 2;
   const ux = dx / length;
@@ -2498,6 +2499,9 @@ function buildClippedWallPrismGeometry(
   const baseSteps = 24;
   for (let i = 0; i <= baseSteps; i++) {
     uCandidates.push((i / baseSteps) * length);
+  }
+  for (const op of openingRects) {
+    uCandidates.push(op.u0, op.u1);
   }
   for (const lz of [-halfT, 0, halfT]) {
     const sx = wall.start[0] + lz * nx;
@@ -2566,24 +2570,56 @@ function buildClippedWallPrismGeometry(
     }
   }
 
-  // Bottom surface (-Y)
-  pushTri(0, bottomY, -halfT, length, bottomY, -halfT, length, bottomY, halfT);
-  pushTri(0, bottomY, -halfT, length, bottomY, halfT, 0, bottomY, halfT);
-
-  // Front (+halfT) & Back (-halfT) faces
+  // Front (+halfT), Back (-halfT), Bottom (-Y), and opening sill/lintel faces
   const lastLz = lzBreaks.length - 1;
   for (let i = 0; i < uBreaks.length - 1; i++) {
     const u0 = uBreaks[i];
     const u1 = uBreaks[i + 1];
+    const uMid = 0.5 * (u0 + u1);
     const hf0 = heights[i][lastLz];
     const hf1 = heights[i + 1][lastLz];
-    pushTri(u0, bottomY, halfT, u1, bottomY, halfT, u1, hf1, halfT);
-    pushTri(u0, bottomY, halfT, u1, hf1, halfT, u0, hf0, halfT);
-
     const hb0 = heights[i][0];
     const hb1 = heights[i + 1][0];
-    pushTri(u1, bottomY, -halfT, u0, bottomY, -halfT, u0, hb0, -halfT);
-    pushTri(u1, bottomY, -halfT, u0, hb0, -halfT, u1, hb1, -halfT);
+    const op = openingRects.find((r) => uMid > r.u0 && uMid < r.u1);
+
+    if (!op) {
+      pushTri(u0, bottomY, halfT, u1, bottomY, halfT, u1, hf1, halfT);
+      pushTri(u0, bottomY, halfT, u1, hf1, halfT, u0, hf0, halfT);
+      pushTri(u1, bottomY, -halfT, u0, bottomY, -halfT, u0, hb0, -halfT);
+      pushTri(u1, bottomY, -halfT, u0, hb0, -halfT, u1, hb1, -halfT);
+      pushTri(u0, bottomY, -halfT, u1, bottomY, -halfT, u1, bottomY, halfT);
+      pushTri(u0, bottomY, -halfT, u1, bottomY, halfT, u0, bottomY, halfT);
+    } else {
+      if (op.v0 > bottomY + 1e-4) {
+        pushTri(u0, bottomY, halfT, u1, bottomY, halfT, u1, op.v0, halfT);
+        pushTri(u0, bottomY, halfT, u1, op.v0, halfT, u0, op.v0, halfT);
+        pushTri(u1, bottomY, -halfT, u0, bottomY, -halfT, u0, op.v0, -halfT);
+        pushTri(u1, bottomY, -halfT, u0, op.v0, -halfT, u1, op.v0, -halfT);
+        pushTri(u0, bottomY, -halfT, u1, bottomY, -halfT, u1, bottomY, halfT);
+        pushTri(u0, bottomY, -halfT, u1, bottomY, halfT, u0, bottomY, halfT);
+        // Sill (+Y)
+        pushTri(u0, op.v0, -halfT, u0, op.v0, halfT, u1, op.v0, halfT);
+        pushTri(u0, op.v0, -halfT, u1, op.v0, halfT, u1, op.v0, -halfT);
+      }
+      // Header above opening
+      pushTri(u0, op.v1, halfT, u1, op.v1, halfT, u1, hf1, halfT);
+      pushTri(u0, op.v1, halfT, u1, hf1, halfT, u0, hf0, halfT);
+      pushTri(u1, op.v1, -halfT, u0, op.v1, -halfT, u0, hb0, -halfT);
+      pushTri(u1, op.v1, -halfT, u0, hb0, -halfT, u1, hb1, -halfT);
+      // Lintel underside (-Y)
+      pushTri(u0, op.v1, -halfT, u1, op.v1, -halfT, u1, op.v1, halfT);
+      pushTri(u0, op.v1, -halfT, u1, op.v1, halfT, u0, op.v1, halfT);
+    }
+  }
+
+  // Opening vertical jambs
+  for (const op of openingRects) {
+    // Left jamb at u0 (+X normal)
+    pushTri(op.u0, op.v0, halfT, op.u0, op.v0, -halfT, op.u0, op.v1, -halfT);
+    pushTri(op.u0, op.v0, halfT, op.u0, op.v1, -halfT, op.u0, op.v1, halfT);
+    // Right jamb at u1 (-X normal)
+    pushTri(op.u1, op.v0, -halfT, op.u1, op.v0, halfT, op.u1, op.v1, halfT);
+    pushTri(op.u1, op.v0, -halfT, op.u1, op.v1, halfT, op.u1, op.v1, -halfT);
   }
 
   // Start (u = 0) & End (u = length) end-caps
@@ -2715,14 +2751,15 @@ function buildWallWithOpenings(
   }
 
   let baseWallGeo: THREE.BufferGeometry;
-  if (wall.clipToRoof && (!wall.openings || wall.openings.length === 0)) {
+  if (wall.clipToRoof) {
     baseWallGeo = buildClippedWallPrismGeometry(
       wall,
       length,
       dx,
       dz,
       bottomY,
-      clipTopHeightAt
+      clipTopHeightAt,
+      openingRects
     );
   } else {
     const extrudeGeo = new THREE.ExtrudeGeometry(shape, {
@@ -2730,23 +2767,6 @@ function buildWallWithOpenings(
       bevelEnabled: false,
     });
     extrudeGeo.translate(0, 0, -wall.thickness / 2);
-
-    if (wall.clipToRoof) {
-      // Slant the top cap across both length (u) and thickness (lz) so walls running parallel
-      // to the ridge follow the pitched roof underside in the width direction.
-      const pos = extrudeGeo.attributes.position;
-      for (let i = 0; i < pos.count; i++) {
-        const u = pos.getX(i);
-        const v = pos.getY(i);
-        const lz = pos.getZ(i);
-        const targetH = clipTopHeightAt(u, lz);
-        if (v > targetH) {
-          pos.setY(i, targetH);
-        }
-      }
-      pos.needsUpdate = true;
-      extrudeGeo.computeVertexNormals();
-    }
     baseWallGeo = extrudeGeo;
   }
 
