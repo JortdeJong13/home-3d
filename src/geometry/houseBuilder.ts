@@ -51,6 +51,9 @@ export interface StaggeredAssetEntry {
   baseY: number;
   /** Deterministic pseudo-random stagger ratio in [0, 1] so items drop at slightly different moments after the floor */
   staggerRatio: number;
+  /** Optional InstancedMesh target when this entry drives a single instance matrix */
+  instancedMesh?: THREE.InstancedMesh;
+  instanceIndex?: number;
 }
 
 export interface SeasonSurfaceUniforms {
@@ -316,13 +319,21 @@ roughnessFactor = mix(roughnessFactor, 0.92, snowMaskR);`
   const interiorLights: THREE.PointLight[] = [];
   const doorManager = new InteractiveDoorManager();
 
-  const registerStaggered = (id: string, object: THREE.Object3D, floor: FloorLayerId, baseY: number) => {
+  const registerStaggered = (
+    id: string,
+    object: THREE.Object3D,
+    floor: FloorLayerId,
+    baseY: number,
+    instancedTarget?: { mesh: THREE.InstancedMesh; index: number }
+  ) => {
     staggeredAssets.push({
       id,
       object,
       floor,
       baseY,
       staggerRatio: deterministicStaggerRatio(id),
+      instancedMesh: instancedTarget?.mesh,
+      instanceIndex: instancedTarget?.index,
     });
   };
 
@@ -548,7 +559,13 @@ function buildPlotAndEnvironment(
   groundGroup: THREE.Group,
   getMat: (id: MaterialId) => THREE.MeshStandardMaterial,
   registerMesh: RegisterMeshFn,
-  registerStaggered: (id: string, object: THREE.Object3D, floor: FloorLayerId, baseY: number) => void,
+  registerStaggered: (
+    id: string,
+    object: THREE.Object3D,
+    floor: FloorLayerId,
+    baseY: number,
+    instancedTarget?: { mesh: THREE.InstancedMesh; index: number }
+  ) => void,
   doorManager?: InteractiveDoorManager
 ): void {
   // Trapezoidal Owned Plot (User Supplied Measurements):
@@ -1141,32 +1158,40 @@ function buildPlotAndEnvironment(
   groundGroup.add(gatePivot);
   registerStaggered('garden_gate', gatePivot, 'ground', gateH / 2);
 
-  // Square Driveway Paver Tiles ("Oprit tegels") -> Staggered drop on Ground Floor!
+  // Square Driveway Paver Tiles ("Oprit tegels") -> Single InstancedMesh with staggered drop!
+  const paverCount = 14;
+  const padGeo = new THREE.BoxGeometry(1.30, 0.045, 1.35);
+  const padInstanced = new THREE.InstancedMesh(padGeo, getMat('plot_driveway_paver'), paverCount);
+  registerMesh(
+    padInstanced,
+    'plot_driveway_paver',
+    {
+      id: 'driveway_pavers',
+      label: 'Oprit Tegels (14× · 1.30 × 1.35 m)',
+      dimensionsLabel: '1.30 × 1.35 m',
+      provenance: 'verified_drawing',
+      source: 'Woning.jpg & VK-06 situatie (Onderdeel van Begane Grond opbouw)',
+      floor: 'ground',
+      category: 'furniture',
+    },
+    false,
+    true
+  );
+  groundGroup.add(padInstanced);
+
+  let paverIdx = 0;
   for (let row = 0; row < 7; row++) {
     for (let col = 0; col < 2; col++) {
       const id = `driveway_paver_${row}_${col}`;
-      const padGeo = new THREE.BoxGeometry(1.30, 0.045, 1.35);
-      const pad = new THREE.Mesh(padGeo, getMat('plot_driveway_paver'));
-      pad.position.set(-2.45 + col * 1.55, 0.01, -6.30 + row * 1.65);
-      registerMesh(
-        pad,
-        'plot_driveway_paver',
-        {
-          id,
-          label: 'Oprit Tegels (1.30 × 1.35 m)',
-          dimensionsLabel: '1.30 × 1.35 m',
-          provenance: 'verified_drawing',
-          source: 'Woning.jpg & VK-06 situatie (Onderdeel van Begane Grond opbouw)',
-          floor: 'ground',
-          category: 'furniture',
-        },
-        false,
-        true
-      );
-      groundGroup.add(pad);
-      registerStaggered(id, pad, 'ground', 0.01);
+      const proxy = new THREE.Object3D();
+      proxy.position.set(-2.45 + col * 1.55, 0.01, -6.30 + row * 1.65);
+      proxy.updateMatrix();
+      padInstanced.setMatrixAt(paverIdx, proxy.matrix);
+      registerStaggered(id, proxy, 'ground', 0.01, { mesh: padInstanced, index: paverIdx });
+      paverIdx++;
     }
   }
+  padInstanced.instanceMatrix.needsUpdate = true;
 
   // 4. BUSH-CLUSTER ARCHITECTURAL DIORAMA HEDGES ALONG LEFT & FRONT BOUNDARIES
   // Left boundary splits at the Garden Gate ("Tuinpoort", Z = -13.72 m):
@@ -3912,7 +3937,13 @@ function buildPlacedAssets(
   furnitureGroups: Record<FloorLayerId, THREE.Group>,
   getMat: (id: MaterialId) => THREE.MeshStandardMaterial,
   registerMesh: RegisterMeshFn,
-  registerStaggered: (id: string, object: THREE.Object3D, floor: FloorLayerId, baseY: number) => void,
+  registerStaggered: (
+    id: string,
+    object: THREE.Object3D,
+    floor: FloorLayerId,
+    baseY: number,
+    instancedTarget?: { mesh: THREE.InstancedMesh; index: number }
+  ) => void,
   doorManager?: InteractiveDoorManager
 ) {
   const floorBaseY: Record<FloorLayerId, number> = {

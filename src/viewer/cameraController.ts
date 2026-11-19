@@ -153,7 +153,15 @@ export class IsometricCameraController {
     this.transitionToPreset('default_iso');
   }
 
-  public update(dt: number) {
+  private prevPos = new THREE.Vector3();
+  private prevTarget = new THREE.Vector3();
+  private prevZoom = -1;
+
+  public update(dt: number): boolean {
+    this.prevPos.copy(this.camera.position);
+    this.prevTarget.copy(this.controls.target);
+    this.prevZoom = this.camera.zoom;
+
     if (this.animActive) {
       this.animProgress = Math.min(1, this.animProgress + dt * 2.1);
       // Smooth quintic ease-out
@@ -180,5 +188,13 @@ export class IsometricCameraController {
     // Clamp pan target softly within house bounds
     this.controls.target.clamp(this.minTarget, this.maxTarget);
     this.controls.update();
+
+    return (
+      this.animActive ||
+      this.autoRotate ||
+      this.prevPos.distanceToSquared(this.camera.position) > 1e-8 ||
+      this.prevTarget.distanceToSquared(this.controls.target) > 1e-8 ||
+      Math.abs(this.prevZoom - this.camera.zoom) > 1e-5
+    );
   }
 }

@@ -42,8 +42,12 @@ export function createLightingRig(scene: THREE.Scene): SceneLightingRig {
   sunLight.position.set(-14, 24, 15);
   sunLight.target.position.set(1.2, 1.5, -6.5);
   sunLight.castShadow = true;
-  sunLight.shadow.mapSize.width = 2048;
-  sunLight.shadow.mapSize.height = 2048;
+  const isTouchDevice =
+    typeof window !== 'undefined' &&
+    (window.matchMedia?.('(pointer: coarse)').matches || /iPad|iPhone|Android/i.test(navigator.userAgent));
+  const shadowRes = isTouchDevice ? 1024 : 2048;
+  sunLight.shadow.mapSize.width = shadowRes;
+  sunLight.shadow.mapSize.height = shadowRes;
   sunLight.shadow.camera.near = 2;
   sunLight.shadow.camera.far = 60;
   const d = 17.5;

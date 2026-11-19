@@ -889,6 +889,18 @@ export class WeatherSystem {
   }
 
   /**
+   * Returns true when any seasonal particle or rain-ripple effect is visibly animating.
+   */
+  hasActiveWeather(seasonWeights: SeasonWeights, nightFactor: number): boolean {
+    return (
+      seasonWeights.autumn > 0.003 ||
+      seasonWeights.winter > 0.003 ||
+      seasonWeights.spring > 0.003 ||
+      (seasonWeights.summer > 0.003 && nightFactor > 0.32)
+    );
+  }
+
+  /**
    * Update seasonal weather animation state and render airborne particles cleanly over the diorama.
    */
   updateAndRender(

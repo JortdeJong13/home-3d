@@ -110,9 +110,11 @@ export class InteractiveDoorManager {
   /**
    * Smoothly interpolate pivot rotation angles toward their target using
    * frame-rate-independent exponential damping.
+   * Returns true if any door pivot changed angle this frame.
    */
-  public update(dt: number): void {
+  public update(dt: number): boolean {
     const lambda = 1 - Math.exp(-dt * 5.7);
+    let moved = false;
 
     for (const door of this.doors) {
       const wantOpen = door.isHovered || door.isPinned;
@@ -123,8 +125,10 @@ export class InteractiveDoorManager {
 
         if (Math.abs(diff) > 0.0005) {
           pivot.currentAngle += diff * lambda;
+          moved = true;
         } else if (pivot.currentAngle !== target) {
           pivot.currentAngle = target;
+          moved = true;
         } else {
           continue;
         }
@@ -138,5 +142,6 @@ export class InteractiveDoorManager {
         }
       }
     }
+    return moved;
   }
 }

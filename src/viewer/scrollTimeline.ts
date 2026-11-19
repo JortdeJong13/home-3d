@@ -138,30 +138,43 @@ export function applyScrollProgressToScene(groups: HouseSceneGroups, progress: n
     roof: rf.localT,
   };
 
+  const dirtyInstancedMeshes = new Set<THREE.InstancedMesh>();
+
   for (const item of groups.staggeredAssets) {
     const segRange = FLOOR_SEGMENT_RANGES[item.floor as keyof typeof FLOOR_SEGMENT_RANGES];
     if (!segRange) {
       item.object.position.y = item.baseY;
       item.object.visible = true;
-      continue;
-    }
-    const localT = floorLocalT[item.floor] ?? 1.0;
-    // Each item follows closely behind the floor (starting between 8% and 26% of the floor's segment)
-    const itemStart = 0.08 + item.staggerRatio * 0.18;
-    const itemDuration = 0.74;
-
-    if (localT <= itemStart + 0.001) {
-      item.object.visible = false;
-      item.object.position.y = item.baseY + STAGGER_DROP_HEIGHT_METRES;
-    } else if (localT >= itemStart + itemDuration - 0.001) {
-      item.object.visible = true;
-      item.object.position.y = item.baseY;
     } else {
-      const itemT = (localT - itemStart) / itemDuration;
-      const easedItemT = 1 - Math.pow(1 - itemT, 2.5);
-      item.object.visible = true;
-      item.object.position.y = item.baseY + (1 - easedItemT) * STAGGER_DROP_HEIGHT_METRES;
+      const localT = floorLocalT[item.floor] ?? 1.0;
+      // Each item follows closely behind the floor (starting between 8% and 26% of the floor's segment)
+      const itemStart = 0.08 + item.staggerRatio * 0.18;
+      const itemDuration = 0.74;
+
+      if (localT <= itemStart + 0.001) {
+        item.object.visible = false;
+        item.object.position.y = item.baseY + STAGGER_DROP_HEIGHT_METRES;
+      } else if (localT >= itemStart + itemDuration - 0.001) {
+        item.object.visible = true;
+        item.object.position.y = item.baseY;
+      } else {
+        const itemT = (localT - itemStart) / itemDuration;
+        const easedItemT = 1 - Math.pow(1 - itemT, 2.5);
+        item.object.visible = true;
+        item.object.position.y = item.baseY + (1 - easedItemT) * STAGGER_DROP_HEIGHT_METRES;
+      }
     }
+
+    if (item.instancedMesh !== undefined && item.instanceIndex !== undefined) {
+      item.object.scale.setScalar(item.object.visible ? 1 : 0);
+      item.object.updateMatrix();
+      item.instancedMesh.setMatrixAt(item.instanceIndex, item.object.matrix);
+      dirtyInstancedMeshes.add(item.instancedMesh);
+    }
+  }
+
+  for (const mesh of dirtyInstancedMeshes) {
+    mesh.instanceMatrix.needsUpdate = true;
   }
 
   // Determine active floor stop for UI synchronization

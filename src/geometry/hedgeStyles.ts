@@ -73,7 +73,7 @@ export function buildBushHedgeSegment(
 
   const mainGeos: THREE.BufferGeometry[] = [];
   const yFloor = soilMatId ? 0.035 : 0.01;
-  const stepZ = Math.min(0.26, Math.max(0.18, width * 0.68));
+  const stepZ = Math.min(0.34, Math.max(0.24, width * 0.85));
   const numClusters = Math.max(3, Math.round(length / stepZ) + 1);
   const zSpan = Math.max(0.05, length - width * 0.68);
 
@@ -86,7 +86,7 @@ export function buildBushHedgeSegment(
     if (!isTall) {
       // Low hedge (0.75–0.90 m): exact Option 1 single-core bush-cluster recipe
       const coreR = Math.min(width * 0.42, clusterH * 0.34) * (0.94 + rand() * 0.14);
-      const corePuff = new THREE.IcosahedronGeometry(coreR, 1);
+      const corePuff = new THREE.IcosahedronGeometry(coreR, 0);
       corePuff.scale(0.92 + rand() * 0.14, (clusterH * 0.44) / Math.max(0.12, coreR), 1.15 + rand() * 0.25);
       corePuff.rotateY(rand() * Math.PI * 2);
       corePuff.rotateX((rand() - 0.5) * 0.25);
@@ -102,7 +102,7 @@ export function buildBushHedgeSegment(
         const pz = cz + (rand() - 0.5) * stepZ * 0.95;
 
         const r = Math.min(width * 0.34, clusterH * 0.24) * (0.78 + rand() * 0.34);
-        const puff = new THREE.IcosahedronGeometry(r, 1);
+        const puff = new THREE.IcosahedronGeometry(r, 0);
         puff.scale(0.84 + rand() * 0.26, 0.80 + rand() * 0.34, 0.95 + rand() * 0.32);
         puff.rotateX(rand() * Math.PI);
         puff.rotateY(rand() * Math.PI * 2);
@@ -118,7 +118,7 @@ export function buildBushHedgeSegment(
       for (let k = 0; k < numCores; k++) {
         const kt = numCores > 1 ? k / (numCores - 1) : 0.5;
         const coreR = width * (0.38 + rand() * 0.08) * (1 - Math.max(0, kt - 0.65) * 0.25);
-        const corePuff = new THREE.IcosahedronGeometry(coreR, 1);
+        const corePuff = new THREE.IcosahedronGeometry(coreR, 0);
         corePuff.scale(0.90 + rand() * 0.12, coreRadiusY / Math.max(0.12, coreR), 1.15 + rand() * 0.25);
         corePuff.rotateY(rand() * Math.PI * 2);
         corePuff.rotateX((rand() - 0.5) * 0.22);
@@ -139,7 +139,7 @@ export function buildBushHedgeSegment(
         const pz = cz + (rand() - 0.5) * stepZ * 1.05;
 
         const r = width * 0.34 * (0.78 + rand() * 0.36);
-        const puff = new THREE.IcosahedronGeometry(r, 1);
+        const puff = new THREE.IcosahedronGeometry(r, 0);
         puff.scale(
           0.84 + rand() * 0.24,
           (0.90 + rand() * 0.34) * vScaleBoost,

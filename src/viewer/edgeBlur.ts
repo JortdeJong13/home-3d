@@ -31,9 +31,13 @@ export class EdgeBlurPass {
   private size = new THREE.Vector2();
 
   constructor(private renderer: THREE.WebGLRenderer) {
+    const isTouchDevice =
+      typeof window !== 'undefined' &&
+      (window.matchMedia?.('(pointer: coarse)').matches || /iPad|iPhone|Android/i.test(navigator.userAgent));
+
     this.target = new THREE.WebGLRenderTarget(4, 4, {
       type: THREE.HalfFloatType,
-      samples: 4,
+      samples: isTouchDevice ? 0 : 2,
       depthBuffer: true,
     });
     this.target.depthTexture = new THREE.DepthTexture(4, 4);
@@ -199,7 +203,7 @@ export class EdgeBlurPass {
     this.renderer.getDrawingBufferSize(this.size);
     if (this.target.width !== this.size.x || this.target.height !== this.size.y) {
       this.target.setSize(this.size.x, this.size.y);
-      this.depthTarget.setSize(this.size.x, this.size.y);
+      this.depthTarget.setSize(Math.max(2, Math.floor(this.size.x * 0.5)), Math.max(2, Math.floor(this.size.y * 0.5)));
       this.material.uniforms.uTexel.value.set(1 / this.size.x, 1 / this.size.y);
       this.material.uniforms.uMaxBlurPx.value = Math.max(6, this.size.y * 0.016);
     }

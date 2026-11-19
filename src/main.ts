@@ -12,16 +12,22 @@ import { SEASON_ORDER, SeasonId, SeasonWeights, createSeasonWeights } from './mo
 // 1. INITIALISE THREE.JS SCENE & SOFT ARCHITECTURAL DIORAMA RENDERER
 // =============================================================================
 const canvas = document.getElementById('webgl-canvas') as HTMLCanvasElement;
+const isTouchDevice =
+  typeof window !== 'undefined' &&
+  (window.matchMedia?.('(pointer: coarse)').matches || /iPad|iPhone|Android/i.test(navigator.userAgent));
+
 const renderer = new THREE.WebGLRenderer({
   canvas,
-  antialias: true,
+  antialias: !isTouchDevice,
   alpha: true,
   powerPreference: 'high-performance',
 });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, isTouchDevice ? 1.25 : 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.autoUpdate = false;
+renderer.shadowMap.needsUpdate = true;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.04;
 
@@ -147,14 +153,70 @@ window.addEventListener('wheel', () => {
   scrollAnimId++;
   programmaticTargetIndex = null;
 }, { passive: true });
-window.addEventListener('touchstart', () => {
+window.addEventListener('touchstart', (e) => {
+  if ((e.target as Element | null)?.closest?.('#floor-selector')) return;
   scrollAnimId++;
   programmaticTargetIndex = null;
 }, { passive: true });
 
-// Manual Floor Selector Dots (Section 5.4)
+// Manual Floor Selector Dots (Section 5.4) + Touch/Pointer Swipe-to-Step
+const floorSelectorEl = document.getElementById('floor-selector');
+let suppressSelectorClick = false;
+
+if (floorSelectorEl) {
+  let swipePointerId: number | null = null;
+  let swipeStartY = 0;
+
+  const getCurrentStopIndex = (): number => {
+    if (programmaticTargetIndex !== null) return programmaticTargetIndex;
+    let closestIdx = 0;
+    let closestDist = Infinity;
+    for (let i = 0; i < FLOOR_STOPS.length; i++) {
+      const d = Math.abs(rawScrollProgress - FLOOR_STOPS[i].progress);
+      if (d < closestDist) {
+        closestDist = d;
+        closestIdx = i;
+      }
+    }
+    return closestIdx;
+  };
+
+  floorSelectorEl.addEventListener('pointerdown', (e) => {
+    swipePointerId = e.pointerId;
+    swipeStartY = e.clientY;
+  });
+
+  window.addEventListener('pointerup', (e) => {
+    if (swipePointerId !== e.pointerId) return;
+    const dy = e.clientY - swipeStartY;
+    swipePointerId = null;
+
+    if (Math.abs(dy) > 24) {
+      suppressSelectorClick = true;
+      setTimeout(() => {
+        suppressSelectorClick = false;
+      }, 80);
+      const currentIdx = getCurrentStopIndex();
+      const nextIdx = dy > 0
+        ? Math.min(FLOOR_STOPS.length - 1, currentIdx + 1)
+        : Math.max(0, currentIdx - 1);
+      const stop = FLOOR_STOPS[nextIdx];
+      if (stop) {
+        animateScrollTo(stop.progress * getMaxScrollPx(), nextIdx);
+      }
+    }
+  });
+
+  window.addEventListener('pointercancel', (e) => {
+    if (swipePointerId === e.pointerId) {
+      swipePointerId = null;
+    }
+  });
+}
+
 for (const btn of floorDotBtns) {
   btn.addEventListener('click', () => {
+    if (suppressSelectorClick) return;
     const idx = Number(btn.dataset.stopIndex ?? 0);
     const stop = FLOOR_STOPS[idx];
     if (!stop) return;
@@ -274,8 +336,10 @@ canvas.addEventListener('click', (e) => {
 });
 
 window.addEventListener('resize', () => {
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isTouchDevice ? 1.25 : 1.5));
   renderer.setSize(window.innerWidth, window.innerHeight);
   cameraController.handleResize(window.innerWidth, window.innerHeight);
+  needsRender = true;
 });
 
 // =============================================================================
@@ -284,6 +348,7 @@ window.addEventListener('resize', () => {
 let lastTime = performance.now();
 let lastTrackedStopIndex = -1;
 let lastUiScrollProgress = -1;
+let needsRender = true;
 applyDayNightState(lightingRig, houseGroups, 0, celestialRotorEl, currentSeasonWeights);
 applyScrollProgressToScene(houseGroups, 0);
 
@@ -295,19 +360,24 @@ function animate(now: number) {
 
   // 1. Smoothly damp scroll progress toward actual scroll bar position
   const diffScroll = rawScrollProgress - smoothedScrollProgress;
+  let scrollChanged = false;
   if (Math.abs(diffScroll) > 0.0001) {
     smoothedScrollProgress += diffScroll * (1 - Math.exp(-dt * 4.8));
-  } else {
+    scrollChanged = true;
+  } else if (smoothedScrollProgress !== rawScrollProgress) {
     smoothedScrollProgress = rawScrollProgress;
+    scrollChanged = true;
   }
 
-  const activeStop = applyScrollProgressToScene(houseGroups, smoothedScrollProgress);
+  const activeStop = scrollChanged
+    ? applyScrollProgressToScene(houseGroups, smoothedScrollProgress)
+    : undefined;
 
   // 2. Smoothly animate interactive doors & assets
-  houseGroups.doorManager.update(dt);
+  const doorsMoved = houseGroups.doorManager.update(dt);
 
   // Sync Floor Selector UI only when scroll progress changes
-  if (Math.abs(smoothedScrollProgress - lastUiScrollProgress) > 0.0001) {
+  if (activeStop && Math.abs(smoothedScrollProgress - lastUiScrollProgress) > 0.0001) {
     lastUiScrollProgress = smoothedScrollProgress;
     if (selectorFillEl) {
       const clampedProgress = Math.max(0, Math.min(1, smoothedScrollProgress));
@@ -356,8 +426,19 @@ function animate(now: number) {
   const cycle = ((currentNightPhase % 2) + 2) % 2;
   const nightFactor = cycle <= 1 ? cycle : 2 - cycle;
 
-  // 4. Update Camera Controls, Sky, Diorama & Seasonal Weather
-  cameraController.update(dt);
+  // 4. Update Camera Controls & skip heavy GPU passes when completely idle
+  const cameraMoved = cameraController.update(dt);
+  const weatherActive = weatherSystem.hasActiveWeather(currentSeasonWeights, nightFactor);
+
+  if (scrollChanged || doorsMoved || lightingDirty) {
+    renderer.shadowMap.needsUpdate = true;
+  }
+
+  if (!needsRender && !scrollChanged && !doorsMoved && !lightingDirty && !cameraMoved && !weatherActive) {
+    return;
+  }
+  needsRender = false;
+
   skyRenderer.update(currentNightPhase, currentSeasonWeights);
   edgeBlur.render(scene, cameraController.camera);
   weatherSystem.updateAndRender(
