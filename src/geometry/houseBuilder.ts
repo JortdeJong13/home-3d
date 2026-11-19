@@ -2455,6 +2455,160 @@ function splitWallTopCapGeometry(
 }
 
 /**
+ * Build a watertight prism geometry for a roof-clipped wall without openings, placing exact
+ * break vertices along any roof ridge / valley (Kielkeper) intersections so mitered corners
+ * triangulate cleanly onto flat planes without twisted or pinched quads.
+ */
+function buildClippedWallPrismGeometry(
+  wall: WallSpec,
+  length: number,
+  dx: number,
+  dz: number,
+  bottomY: number,
+  clipTopHeightAt: (u: number, lz: number) => number
+): THREE.BufferGeometry {
+  const halfT = wall.thickness / 2;
+  const ux = dx / length;
+  const uz = dz / length;
+  const nx = -dz / length;
+  const nz = dx / length;
+
+  const { ridgeX, rightPartyX, nbRidgeZ, nbFrontEavesZ } = ROOF_SPEC;
+  const spanX = rightPartyX - ridgeX;
+  const spanZ = nbFrontEavesZ - nbRidgeZ;
+  const foldLines: Array<[number, number, number]> = [
+    [1, 0, -ridgeX],
+    [0, 1, -nbRidgeZ],
+    [spanZ, -spanX, -spanZ * ridgeX + spanX * nbRidgeZ],
+    [spanZ, spanX, -spanZ * ridgeX - spanX * nbRidgeZ],
+  ];
+
+  const dedupeSorted = (vals: number[]): number[] => {
+    const sorted = [...vals].sort((a, b) => a - b);
+    const out: number[] = [];
+    for (const v of sorted) {
+      if (out.length === 0 || v - out[out.length - 1] > 1e-4) {
+        out.push(v);
+      }
+    }
+    return out;
+  };
+
+  const uCandidates: number[] = [];
+  const baseSteps = 24;
+  for (let i = 0; i <= baseSteps; i++) {
+    uCandidates.push((i / baseSteps) * length);
+  }
+  for (const lz of [-halfT, 0, halfT]) {
+    const sx = wall.start[0] + lz * nx;
+    const sz = wall.start[1] + lz * nz;
+    for (const [a, b, c] of foldLines) {
+      const denom = a * ux + b * uz;
+      if (Math.abs(denom) > 1e-6) {
+        const u = -(a * sx + b * sz + c) / denom;
+        if (u > 1e-4 && u < length - 1e-4) {
+          uCandidates.push(u);
+        }
+      }
+    }
+  }
+  const uBreaks = dedupeSorted(uCandidates);
+
+  const lzCandidates: number[] = [-halfT, halfT];
+  for (const u of uBreaks) {
+    const px = wall.start[0] + u * ux;
+    const pz = wall.start[1] + u * uz;
+    for (const [a, b, c] of foldLines) {
+      const denom = a * nx + b * nz;
+      if (Math.abs(denom) > 1e-6) {
+        const lz = -(a * px + b * pz + c) / denom;
+        if (lz > -halfT + 1e-4 && lz < halfT - 1e-4) {
+          lzCandidates.push(lz);
+        }
+      }
+    }
+  }
+  const lzBreaks = dedupeSorted(lzCandidates);
+
+  const heights: number[][] = uBreaks.map((u) =>
+    lzBreaks.map((lz) => clipTopHeightAt(u, lz))
+  );
+
+  const pos: number[] = [];
+  const pushTri = (
+    ax: number, ay: number, az: number,
+    bx: number, by: number, bz: number,
+    cx: number, cy: number, cz: number
+  ) => {
+    pos.push(ax, ay, az, bx, by, bz, cx, cy, cz);
+  };
+
+  // Top surface (+Y) with exact roof-crease diagonal selection
+  for (let i = 0; i < uBreaks.length - 1; i++) {
+    const u0 = uBreaks[i];
+    const u1 = uBreaks[i + 1];
+    for (let j = 0; j < lzBreaks.length - 1; j++) {
+      const lz0 = lzBreaks[j];
+      const lz1 = lzBreaks[j + 1];
+      const hA = heights[i][j];
+      const hB = heights[i + 1][j];
+      const hC = heights[i + 1][j + 1];
+      const hD = heights[i][j + 1];
+      const hCenter = clipTopHeightAt(0.5 * (u0 + u1), 0.5 * (lz0 + lz1));
+      const splitAC = Math.abs(0.5 * (hA + hC) - hCenter) <= Math.abs(0.5 * (hB + hD) - hCenter);
+      if (splitAC) {
+        pushTri(u0, hA, lz0, u0, hD, lz1, u1, hC, lz1);
+        pushTri(u0, hA, lz0, u1, hC, lz1, u1, hB, lz0);
+      } else {
+        pushTri(u1, hB, lz0, u0, hA, lz0, u0, hD, lz1);
+        pushTri(u1, hB, lz0, u0, hD, lz1, u1, hC, lz1);
+      }
+    }
+  }
+
+  // Bottom surface (-Y)
+  pushTri(0, bottomY, -halfT, length, bottomY, -halfT, length, bottomY, halfT);
+  pushTri(0, bottomY, -halfT, length, bottomY, halfT, 0, bottomY, halfT);
+
+  // Front (+halfT) & Back (-halfT) faces
+  const lastLz = lzBreaks.length - 1;
+  for (let i = 0; i < uBreaks.length - 1; i++) {
+    const u0 = uBreaks[i];
+    const u1 = uBreaks[i + 1];
+    const hf0 = heights[i][lastLz];
+    const hf1 = heights[i + 1][lastLz];
+    pushTri(u0, bottomY, halfT, u1, bottomY, halfT, u1, hf1, halfT);
+    pushTri(u0, bottomY, halfT, u1, hf1, halfT, u0, hf0, halfT);
+
+    const hb0 = heights[i][0];
+    const hb1 = heights[i + 1][0];
+    pushTri(u1, bottomY, -halfT, u0, bottomY, -halfT, u0, hb0, -halfT);
+    pushTri(u1, bottomY, -halfT, u0, hb0, -halfT, u1, hb1, -halfT);
+  }
+
+  // Start (u = 0) & End (u = length) end-caps
+  const lastU = uBreaks.length - 1;
+  for (let j = 0; j < lzBreaks.length - 1; j++) {
+    const lz0 = lzBreaks[j];
+    const lz1 = lzBreaks[j + 1];
+    const hs0 = heights[0][j];
+    const hs1 = heights[0][j + 1];
+    pushTri(0, bottomY, lz0, 0, bottomY, lz1, 0, hs1, lz1);
+    pushTri(0, bottomY, lz0, 0, hs1, lz1, 0, hs0, lz0);
+
+    const he0 = heights[lastU][j];
+    const he1 = heights[lastU][j + 1];
+    pushTri(length, bottomY, lz1, length, bottomY, lz0, length, he0, lz0);
+    pushTri(length, bottomY, lz1, length, he0, lz0, length, he1, lz1);
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.computeVertexNormals();
+  return geo;
+}
+
+/**
  * Build a wall (rectangular, roof-clipped trapezoidal, or gable-peaked) with exact openings
  * resolved from the centralized `OPENING_PREFABS` catalog (`src/geometry/componentCatalog.ts`).
  */
@@ -2560,33 +2714,46 @@ function buildWallWithOpenings(
     }
   }
 
-  const extrudeGeo = new THREE.ExtrudeGeometry(shape, {
-    depth: wall.thickness,
-    bevelEnabled: false,
-  });
-  extrudeGeo.translate(0, 0, -wall.thickness / 2);
+  let baseWallGeo: THREE.BufferGeometry;
+  if (wall.clipToRoof && (!wall.openings || wall.openings.length === 0)) {
+    baseWallGeo = buildClippedWallPrismGeometry(
+      wall,
+      length,
+      dx,
+      dz,
+      bottomY,
+      clipTopHeightAt
+    );
+  } else {
+    const extrudeGeo = new THREE.ExtrudeGeometry(shape, {
+      depth: wall.thickness,
+      bevelEnabled: false,
+    });
+    extrudeGeo.translate(0, 0, -wall.thickness / 2);
 
-  if (wall.clipToRoof) {
-    // Slant the top cap across both length (u) and thickness (lz) so walls running parallel
-    // to the ridge (e.g. left knieschot) follow the pitched roof underside in the width direction.
-    const pos = extrudeGeo.attributes.position;
-    for (let i = 0; i < pos.count; i++) {
-      const u = pos.getX(i);
-      const v = pos.getY(i);
-      const lz = pos.getZ(i);
-      const targetH = clipTopHeightAt(u, lz);
-      if (v > targetH) {
-        pos.setY(i, targetH);
+    if (wall.clipToRoof) {
+      // Slant the top cap across both length (u) and thickness (lz) so walls running parallel
+      // to the ridge follow the pitched roof underside in the width direction.
+      const pos = extrudeGeo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const u = pos.getX(i);
+        const v = pos.getY(i);
+        const lz = pos.getZ(i);
+        const targetH = clipTopHeightAt(u, lz);
+        if (v > targetH) {
+          pos.setY(i, targetH);
+        }
       }
+      pos.needsUpdate = true;
+      extrudeGeo.computeVertexNormals();
     }
-    pos.needsUpdate = true;
-    extrudeGeo.computeVertexNormals();
+    baseWallGeo = extrudeGeo;
   }
 
   const matId = wall.isExterior ? wall.exteriorMaterial : wall.interiorMaterial;
-  let mainWallGeo: THREE.BufferGeometry = extrudeGeo;
+  let mainWallGeo: THREE.BufferGeometry = baseWallGeo;
   if (matId === 'exterior_brick_main') {
-    const split = splitWallTopCapGeometry(extrudeGeo, openingRects);
+    const split = splitWallTopCapGeometry(baseWallGeo, openingRects);
     mainWallGeo = split.mainGeo;
     applyWorldBrickUVs(mainWallGeo, 0, wall.baseY, 0);
     if (split.topCapGeo) {
