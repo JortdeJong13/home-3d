@@ -31,6 +31,7 @@ export type MaterialId =
   | 'window_glass_day'
   | 'window_glass_unlit'
   | 'door_exterior_sage'
+  | 'door_interior_white'
   | 'door_interior_wood'
   | 'stair_wood_oak'
   | 'plot_grass_lawn'
@@ -265,6 +266,14 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     colorNight: '#49614e',
     roughness: 0.85,
     metalness: 0.02,
+  },
+  door_interior_white: {
+    colorDay: '#fafaf8',
+    colorNight: '#e2dacb',
+    roughness: 0.48,
+    metalness: 0.02,
+    emissiveNight: '#ffcf96',
+    emissiveIntensityNight: 0.10,
   },
   door_interior_wood: {
     colorDay: '#d1b08a',

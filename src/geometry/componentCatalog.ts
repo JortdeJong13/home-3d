@@ -60,7 +60,7 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
     height: 2.31,
     sillHeight: 0.00,
     frameMaterial: 'window_frame_cream',
-    panelMaterial: 'interior_wall_plaster',
+    panelMaterial: 'door_interior_white',
     provenance: 'verified_drawing',
     source: 'Tekening woonwensen 55.1–55.3 (Optie B77b stompe binnendeuren)',
   },
@@ -404,6 +404,97 @@ function createVerticalWindowHandle(
     hGroup.add(tip);
   }
   return hGroup;
+}
+
+/**
+ * Build a smooth rounded brushed-metal interior door handle on a circular rosette,
+ * with an optional edge latch forend plate & latch bolt.
+ */
+function createRoundedRosetteLeverHandle(params: {
+  leafThickness: number;
+  handleMat: THREE.Material;
+  leverDirection?: 1 | -1;
+  latchEdgeOffset?: number;
+}): THREE.Group {
+  const { leafThickness, handleMat, leverDirection = -1, latchEdgeOffset } = params;
+  const group = new THREE.Group();
+
+  const rosetteDepth = 0.008;
+  const tubeRadius = 0.0095;
+  const zBase = leafThickness / 2 + 0.002;
+  const zBendStart = leafThickness / 2 + 0.026;
+  const zGrip = leafThickness / 2 + 0.056;
+  const bendRadius = 0.030;
+  const gripEndX = leverDirection * 0.125;
+
+  const tipGeo = new THREE.SphereGeometry(tubeRadius, 14, 10);
+
+  for (const side of [1, -1] as const) {
+    // Chamfered round rosette
+    const rosetteGeo = new THREE.CylinderGeometry(0.024, 0.027, rosetteDepth, 24);
+    rosetteGeo.rotateX((side * Math.PI) / 2);
+    const rosette = new THREE.Mesh(rosetteGeo, handleMat);
+    rosette.position.set(0, 0, side * (leafThickness / 2 + rosetteDepth / 2 - 0.001));
+    group.add(rosette);
+
+    // Continuous smooth curved tubular lever
+    const path = new THREE.CurvePath<THREE.Vector3>();
+    path.add(
+      new THREE.LineCurve3(
+        new THREE.Vector3(0, 0, side * zBase),
+        new THREE.Vector3(0, 0, side * zBendStart)
+      )
+    );
+    path.add(
+      new THREE.QuadraticBezierCurve3(
+        new THREE.Vector3(0, 0, side * zBendStart),
+        new THREE.Vector3(0, 0, side * zGrip),
+        new THREE.Vector3(leverDirection * bendRadius, 0, side * zGrip)
+      )
+    );
+    path.add(
+      new THREE.LineCurve3(
+        new THREE.Vector3(leverDirection * bendRadius, 0, side * zGrip),
+        new THREE.Vector3(gripEndX, 0, side * zGrip)
+      )
+    );
+
+    const leverGeo = new THREE.TubeGeometry(path, 24, tubeRadius, 16, false);
+    group.add(new THREE.Mesh(leverGeo, handleMat));
+
+    const tip = new THREE.Mesh(tipGeo, handleMat);
+    tip.position.set(gripEndX, 0, side * zGrip);
+    group.add(tip);
+  }
+
+  // Brushed-metal latch forend plate & latch bolt on the latch edge
+  if (latchEdgeOffset !== undefined) {
+    const forendW = 0.020;
+    const forendStraightH = 0.145;
+    const forendBody = new THREE.Mesh(
+      new THREE.BoxGeometry(0.002, forendStraightH, forendW),
+      handleMat
+    );
+    forendBody.position.set(latchEdgeOffset, 0, 0);
+    group.add(forendBody);
+
+    const capGeo = new THREE.CylinderGeometry(forendW / 2, forendW / 2, 0.002, 12);
+    capGeo.rotateZ(Math.PI / 2);
+    for (const endY of [forendStraightH / 2, -forendStraightH / 2]) {
+      const cap = new THREE.Mesh(capGeo, handleMat);
+      cap.position.set(latchEdgeOffset, endY, 0);
+      group.add(cap);
+    }
+
+    const latchBolt = new THREE.Mesh(
+      new THREE.BoxGeometry(0.010, 0.026, 0.012),
+      handleMat
+    );
+    latchBolt.position.set(latchEdgeOffset + 0.004, 0, 0);
+    group.add(latchBolt);
+  }
+
+  return group;
 }
 
 /**
@@ -806,11 +897,20 @@ export function instantiateOpeningPrefab3D(
       leaf.position.set(innerW / 2, 0, 0);
       pivot.add(leaf);
 
-      const handle = new THREE.Mesh(
-        new THREE.BoxGeometry(0.11, 0.02, 0.09),
-        getMat('roof_tile_anthracite')
-      );
-      handle.position.set(innerW - 0.08, -0.12 - (-frameThick / 2), 0);
+      const handleMat = new THREE.MeshStandardMaterial({
+        color: '#c2c7ce',
+        roughness: 0.30,
+        metalness: 0.72,
+        name: 'door_handle_steel',
+      });
+      const latchBackset = 0.065;
+      const handle = createRoundedRosetteLeverHandle({
+        leafThickness,
+        handleMat,
+        leverDirection: -1,
+        latchEdgeOffset: latchBackset,
+      });
+      handle.position.set(innerW - latchBackset, -0.12 - (-frameThick / 2), 0);
       pivot.add(handle);
     }
 
