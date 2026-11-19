@@ -68,9 +68,9 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
   // 2. Special Ground Floor Living Room Door (B72 — oak frame with 4 glass panels, as in Eetkamer 3.png)
   door_inner_living_glass_b72: {
     prefabId: 'door_inner_living_glass_b72',
-    defaultLabel: 'Houten Glasdeur Hal naar Woonkamer B72 (93 × 231 cm)',
-    width: 0.93,
-    height: 2.31,
+    defaultLabel: 'Houten Glasdeur Hal naar Woonkamer B72 (98 × 220 cm)',
+    width: 0.98,
+    height: 2.20,
     sillHeight: 0.00,
     frameMaterial: 'door_interior_white',
     panelMaterial: 'window_glass_day',
@@ -1014,38 +1014,48 @@ export function instantiateOpeningPrefab3D(
 
     case 'door_inner_living_glass_b72': {
       const stileW = 0.075;
+      const railH = 0.055;
+      const leafThick = 0.045;
       const pivot = new THREE.Group();
       pivot.position.set(-innerW / 2, -frameThick / 2, frameCenterZ);
 
       const leftStile = new THREE.Mesh(
-        new THREE.BoxGeometry(stileW, innerH, 0.045),
+        new THREE.BoxGeometry(stileW, innerH, leafThick),
         getMat('door_interior_wood')
       );
       leftStile.position.set(stileW / 2, 0, 0);
       pivot.add(leftStile);
 
       const rightStile = new THREE.Mesh(
-        new THREE.BoxGeometry(stileW, innerH, 0.045),
+        new THREE.BoxGeometry(stileW, innerH, leafThick),
         getMat('door_interior_wood')
       );
       rightStile.position.set(innerW - stileW / 2, 0, 0);
       pivot.add(rightStile);
 
-      const railHeights = [-innerH * 0.46, -innerH * 0.22, innerH * 0.04, innerH * 0.28, innerH * 0.47];
-      for (const ry of railHeights) {
+      // 4 equal glass panes separated by 5 evenly spaced horizontal rails
+      const paneW = innerW - stileW * 2;
+      const paneH = (innerH - 5 * railH) / 4;
+
+      for (let i = 0; i < 5; i++) {
+        const ry = -innerH / 2 + railH / 2 + i * (paneH + railH);
         const rail = new THREE.Mesh(
-          new THREE.BoxGeometry(innerW - stileW * 2, 0.045, 0.045),
+          new THREE.BoxGeometry(paneW, railH, leafThick),
           getMat('door_interior_wood')
         );
-        rail.position.set(innerW / 2, ry - (-frameThick / 2), 0);
+        rail.position.set(innerW / 2, ry, 0);
         pivot.add(rail);
       }
 
-      const glassPane = new THREE.Mesh(
-        new THREE.BoxGeometry(innerW - stileW * 2, innerH - 0.08, 0.02),
-        getMat('window_glass_day')
-      );
-      glassPane.position.set(innerW / 2, 0, 0);
+      const paneGeos: THREE.BufferGeometry[] = [];
+      for (let j = 0; j < 4; j++) {
+        const py = -innerH / 2 + railH + paneH / 2 + j * (paneH + railH);
+        const pGeo = new THREE.BoxGeometry(paneW, paneH, 0.016);
+        pGeo.translate(innerW / 2, py, 0);
+        paneGeos.push(pGeo);
+      }
+      const mergedPaneGeo = mergeGeometries(paneGeos, false);
+      const glassPane = new THREE.Mesh(mergedPaneGeo, getMat('window_glass_day'));
       registerMesh(
         glassPane,
         'window_glass_day',
@@ -1068,8 +1078,8 @@ export function instantiateOpeningPrefab3D(
         metalness: 0.0,
         name: 'door_handle_matte_white',
       });
-      const handle = createVerticalWhitePullHandle(0.045, whiteHandleMat);
-      handle.position.set(innerW - stileW / 2, -0.08 - (-frameThick / 2), 0);
+      const handle = createVerticalWhitePullHandle(leafThick, whiteHandleMat);
+      handle.position.set(innerW - stileW / 2, 0, 0);
       pivot.add(handle);
       group.add(pivot);
 
