@@ -73,11 +73,11 @@ export function buildBushHedgeSegment(
 
   const mainGeos: THREE.BufferGeometry[] = [];
   const yFloor = soilMatId ? 0.035 : 0.01;
-  const stepZ = Math.min(0.32, Math.max(0.22, width * 0.78));
+  const stepZ = Math.min(0.54, Math.max(0.42, width * 1.35));
   const numBushes = Math.max(3, Math.round(length / stepZ) + 1);
-  const zSpan = Math.max(0.05, length - width * 0.65);
+  const zSpan = Math.max(0.05, length - width * 0.75);
   const rx = width * 0.85;
-  const rz = Math.max(rx * 1.10, stepZ * 1.05);
+  const rz = Math.max(rx * 1.15, stepZ * 0.85);
   const numPuffs = 5;
 
   for (let ic = 0; ic < numBushes; ic++) {
