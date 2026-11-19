@@ -283,12 +283,20 @@ void main() {`
           .replace(
             '#include <beginnormal_vertex>',
             `#include <beginnormal_vertex>
-vSeasonWorldNormal = normalize((modelMatrix * vec4(objectNormal, 0.0)).xyz);`
+#ifdef USE_INSTANCING
+vSeasonWorldNormal = normalize((modelMatrix * instanceMatrix * vec4(objectNormal, 0.0)).xyz);
+#else
+vSeasonWorldNormal = normalize((modelMatrix * vec4(objectNormal, 0.0)).xyz);
+#endif`
           )
           .replace(
             '#include <project_vertex>',
             `#include <project_vertex>
-vHouseWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;`
+#ifdef USE_INSTANCING
+vHouseWorldPos = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;
+#else
+vHouseWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;
+#endif`
           );
 
         shader.fragmentShader = shader.fragmentShader
@@ -336,7 +344,11 @@ void main() {`
           .replace(
             '#include <project_vertex>',
             `#include <project_vertex>
-vHouseWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;`
+#ifdef USE_INSTANCING
+vHouseWorldPos = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;
+#else
+vHouseWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;
+#endif`
           );
 
         shader.fragmentShader = shader.fragmentShader
