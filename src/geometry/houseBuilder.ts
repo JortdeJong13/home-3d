@@ -243,15 +243,20 @@ export function buildHouseScene(): HouseSceneGroups {
     });
 
     const weatherSurf = MATERIAL_SURFACE_WEATHER[id];
-    const maskedLightsBegin = THREE.ShaderChunk.lights_fragment_begin.replace(
-      'getPointLightInfo( pointLight, geometryPosition, directLight );',
-      `getPointLightInfo( pointLight, geometryPosition, directLight );
-    float zMinInterior = (vHouseWorldPos.y < 2.85) ? -12.51 : -10.11;
-    float inHouseInterior = step(0.35, vHouseWorldPos.x) * step(vHouseWorldPos.x, 5.62)
-                          * step(-0.05, vHouseWorldPos.y)
-                          * step(zMinInterior, vHouseWorldPos.z) * step(vHouseWorldPos.z, -0.35);
-    directLight.color *= inHouseInterior;`
-    );
+    const maskedLightsBegin = THREE.ShaderChunk.lights_fragment_begin
+      .replace(
+        '#if ( NUM_POINT_LIGHTS > 0 ) && defined( RE_Direct )',
+        `#if ( NUM_POINT_LIGHTS > 0 ) && defined( RE_Direct )
+	float zMinInterior = (vHouseWorldPos.y < 2.85) ? -12.51 : -10.11;
+	float inHouseInterior = step(0.35, vHouseWorldPos.x) * step(vHouseWorldPos.x, 5.62)
+		* step(-0.05, vHouseWorldPos.y)
+		* step(zMinInterior, vHouseWorldPos.z) * step(vHouseWorldPos.z, -0.35);`
+      )
+      .replace(
+        'getPointLightInfo( pointLight, geometryPosition, directLight );',
+        `getPointLightInfo( pointLight, geometryPosition, directLight );
+		directLight.color *= inHouseInterior;`
+      );
 
     if (weatherSurf) {
       const snowStrength = weatherSurf.snow ?? 0;
