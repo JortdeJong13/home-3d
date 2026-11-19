@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "verify": "npx tsx src/scripts/verifyDimensions.ts",
     "asset:dev": "vite --open /asset-viewer.html",
-    "asset:build": "tsc --noEmit && vite build --config vite.asset.config.ts && cp dist-asset/asset-viewer.html ./asset-viewer-standalone.html"
+    "asset:build": "tsc --noEmit && vite build --config vite.asset.config.ts && cp dist-asset/asset-viewer.html ./asset-viewer-standalone.html",
+    "deploy": "git push && ssh home-server \"cd ~/GitHub/home-3d && git pull\""
   },
   "dependencies": {
     "three": "^0.170.0"
