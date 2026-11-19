@@ -444,4 +444,14 @@ const stairCheekBox = getBoundsById('sf_wall_left_eaves_stair_cheek');
 assertClose(stairCheekBox.min.x, 0.40, 0.002, 'Stairwell cheek wall starts at outer wall inner face (0.40 m)');
 assertClose(stairCheekBox.max.x, 0.65, 0.002, 'Stairwell cheek wall meets rear knieschot outer face cleanly (0.65 m)');
 
+// Verify Right-Side Corner Knieschotten meet cleanly at X = 4.863 m without overlap
+const frontRightXBox = getBoundsById('sf_knieschot_front_right_x');
+const frontRightZBox = getBoundsById('sf_knieschot_front_right_z');
+const rearRightXBox = getBoundsById('sf_knieschot_rear_right_x');
+const rearRightZBox = getBoundsById('sf_knieschot_rear_right_z');
+assertClose(frontRightXBox.min.z, -1.969, 0.002, 'Front-right corner knieschot (x) extends cleanly to room-side corner (-1.969 m)');
+assertClose(frontRightZBox.min.x, 4.863, 0.002, 'Front-right corner knieschot (z) starts flush at outer face of _x (4.863 m)');
+assertClose(rearRightXBox.max.z, -8.491, 0.002, 'Rear-right corner knieschot (x) extends cleanly to room-side corner (-8.491 m)');
+assertClose(rearRightZBox.min.x, 4.863, 0.002, 'Rear-right corner knieschot (z) starts flush at outer face of _x (4.863 m)');
+
 console.log('\nALL DIMENSIONAL, PREFAB & 3D SCENE CHECKS PASSED SUCCESSFULLY.');
