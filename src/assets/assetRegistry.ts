@@ -1,6 +1,7 @@
 import { AssetPrefabDefinition, PlacedAssetSpec } from './assetTypes';
 import { m } from '../model/units';
 import { frontDoorArchPrefab } from './items/frontDoorArch';
+import { standardInteriorDoorPrefab } from './items/standardInteriorDoor';
 import { heatPumpOutdoorPrefab } from './items/heatPumpOutdoor';
 import { rainPipeHwaPrefab, rainPipeHwaSectionPrefab } from './items/rainPipeHwa';
 import { loungeCornerSofaPrefab } from './items/loungeCornerSofa';
@@ -20,6 +21,7 @@ import { diningTableOakPrefab } from './items/diningTableOak';
  */
 export const ASSET_PREFABS: Record<string, AssetPrefabDefinition> = {
   front_entrance_portal: frontDoorArchPrefab,
+  standard_interior_door: standardInteriorDoorPrefab,
   heat_pump_outdoor: heatPumpOutdoorPrefab,
   rain_pipe_hwa: rainPipeHwaPrefab,
   rain_pipe_hwa_section: rainPipeHwaSectionPrefab,
