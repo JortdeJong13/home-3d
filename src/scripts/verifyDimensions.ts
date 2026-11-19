@@ -250,25 +250,25 @@ assertClose(
 const targetKneeH = HOUSE_DIMENSIONS.zolderKneeWallHeight.metres; // 1.50 m
 const wallFrontX = walls.find((w) => w.id === 'sf_knieschot_front_right_x');
 assertClose(wallFrontX?.height ?? 0, targetKneeH, 0.001, 'Front corner knieschot (x) height is 1.50 m');
-assertClose(wallFrontX?.start[0] ?? 0, 4.828, 0.001, 'Front corner knieschot (x) outer face aligned to 1.50 m exterior wall line (X = 4.863 m)');
+assertClose(wallFrontX?.start[0] ?? 0, 4.898, 0.001, 'Front corner knieschot (x) room face aligned to 1.50 m roof line (X = 4.863 m, centerline 4.898 m)');
 
 const wallRearX = walls.find((w) => w.id === 'sf_knieschot_rear_right_x');
 assertClose(wallRearX?.height ?? 0, targetKneeH, 0.001, 'Rear corner knieschot (x) height is 1.50 m');
-assertClose(wallRearX?.start[0] ?? 0, 4.828, 0.001, 'Rear corner knieschot (x) outer face aligned to 1.50 m exterior wall line (X = 4.863 m)');
+assertClose(wallRearX?.start[0] ?? 0, 4.898, 0.001, 'Rear corner knieschot (x) room face aligned to 1.50 m roof line (X = 4.863 m, centerline 4.898 m)');
 
 const wallFrontZ = walls.find((w) => w.id === 'sf_knieschot_front_right_z');
 assertClose(wallFrontZ?.height ?? 0, targetKneeH, 0.001, 'Front corner knieschot (z) height is 1.50 m');
-assertClose(wallFrontZ?.start[1] ?? 0, -1.934, 0.001, 'Front corner knieschot (z) outer face aligned to 1.50 m roof contour (Z = -1.969 m)');
+assertClose(wallFrontZ?.start[1] ?? 0, -1.934, 0.001, 'Front corner knieschot (z) room face aligned to 1.50 m roof contour (Z = -1.969 m)');
 
 const wallRearZ = walls.find((w) => w.id === 'sf_knieschot_rear_right_z');
 assertClose(wallRearZ?.height ?? 0, targetKneeH, 0.001, 'Rear corner knieschot (z) height is 1.50 m');
-assertClose(wallRearZ?.start[1] ?? 0, -8.526, 0.001, 'Rear corner knieschot (z) outer face aligned to 1.50 m roof contour (Z = -8.491 m)');
+assertClose(wallRearZ?.start[1] ?? 0, -8.526, 0.001, 'Rear corner knieschot (z) room face aligned to 1.50 m roof contour (Z = -8.491 m)');
 
 assertClose(
   getZolderRoofUndersideY(4.863, -0.40) - Y2,
   1.50,
   0.002,
-  'Right corner knieschot outer face aligns to exact 1.50 m point on exterior gable wall'
+  'Right corner knieschot room face aligns to exact 1.50 m point on exterior gable wall'
 );
 
 // Verify analytical roof underside continuity along the diagonal Kielkeper (uX == uZ)
@@ -444,14 +444,35 @@ const stairCheekBox = getBoundsById('sf_wall_left_eaves_stair_cheek');
 assertClose(stairCheekBox.min.x, 0.40, 0.002, 'Stairwell cheek wall starts at outer wall inner face (0.40 m)');
 assertClose(stairCheekBox.max.x, 0.65, 0.002, 'Stairwell cheek wall meets rear knieschot outer face cleanly (0.65 m)');
 
-// Verify Right-Side Corner Knieschotten meet cleanly at X = 4.863 m without overlap
+// Verify Right-Side Corner Knieschotten meet cleanly at X = 4.863 m without overlap and slant under the roof
 const frontRightXBox = getBoundsById('sf_knieschot_front_right_x');
 const frontRightZBox = getBoundsById('sf_knieschot_front_right_z');
 const rearRightXBox = getBoundsById('sf_knieschot_rear_right_x');
 const rearRightZBox = getBoundsById('sf_knieschot_rear_right_z');
-assertClose(frontRightXBox.min.z, -1.969, 0.002, 'Front-right corner knieschot (x) extends cleanly to room-side corner (-1.969 m)');
-assertClose(frontRightZBox.min.x, 4.863, 0.002, 'Front-right corner knieschot (z) starts flush at outer face of _x (4.863 m)');
-assertClose(rearRightXBox.max.z, -8.491, 0.002, 'Rear-right corner knieschot (x) extends cleanly to room-side corner (-8.491 m)');
-assertClose(rearRightZBox.min.x, 4.863, 0.002, 'Rear-right corner knieschot (z) starts flush at outer face of _x (4.863 m)');
+assertClose(frontRightXBox.min.x, 4.863, 0.002, 'Front-right corner knieschot (x) room face aligns to 1.50 m contour (4.863 m)');
+assertClose(frontRightXBox.min.z, -1.899, 0.002, 'Front-right corner knieschot (x) stops flush at eaves face of _z (-1.899 m)');
+assertClose(frontRightZBox.min.x, 4.863, 0.002, 'Front-right corner knieschot (z) starts flush at room face of _x (4.863 m)');
+assertClose(rearRightXBox.min.x, 4.863, 0.002, 'Rear-right corner knieschot (x) room face aligns to 1.50 m contour (4.863 m)');
+assertClose(rearRightXBox.max.z, -8.561, 0.002, 'Rear-right corner knieschot (x) stops flush at eaves face of _z (-8.561 m)');
+assertClose(rearRightZBox.min.x, 4.863, 0.002, 'Rear-right corner knieschot (z) starts flush at room face of _x (4.863 m)');
+
+const checkRightXSlant = (id: string) => {
+  const entry = house.meshRegistry.find((e) => e.mesh.userData.id === id)!;
+  const mesh = entry.mesh as THREE.Mesh;
+  const pos = mesh.geometry.attributes.position;
+  const v = new THREE.Vector3();
+  let maxYRoom = -Infinity;
+  let maxYEaves = -Infinity;
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld);
+    if (v.z < -1.80 && v.z > -8.66) continue; // Check pure Dwarskap span away from Kielkeper valley
+    if (Math.abs(v.x - 4.863) < 0.002) maxYRoom = Math.max(maxYRoom, v.y);
+    if (Math.abs(v.x - 4.933) < 0.002) maxYEaves = Math.max(maxYEaves, v.y);
+  }
+  assertClose(maxYRoom, getZolderRoofUndersideY(4.863, -0.40) - 0.004, 0.002, `${id} room face (X=4.863) slants to 1.50 m roof underside`);
+  assertClose(maxYEaves, getZolderRoofUndersideY(4.933, -0.40) - 0.004, 0.002, `${id} eaves face (X=4.933) slants to Dwarskap roof underside`);
+};
+checkRightXSlant('sf_knieschot_front_right_x');
+checkRightXSlant('sf_knieschot_rear_right_x');
 
 console.log('\nALL DIMENSIONAL, PREFAB & 3D SCENE CHECKS PASSED SUCCESSFULLY.');

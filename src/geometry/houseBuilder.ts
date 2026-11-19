@@ -2496,7 +2496,7 @@ function buildWallWithOpenings(
     shape.lineTo(wall.gablePeak.offsetAlongWall, wall.gablePeak.peakHeight);
     shape.lineTo(0, wall.height);
   } else if (wall.clipToRoof) {
-    const steps = 16;
+    const steps = 32;
     const halfT = wall.thickness / 2;
     for (let i = steps; i >= 0; i--) {
       const u = (i / steps) * length;
