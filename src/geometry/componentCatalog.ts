@@ -72,7 +72,7 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
     width: 0.93,
     height: 2.31,
     sillHeight: 0.00,
-    frameMaterial: 'door_interior_wood',
+    frameMaterial: 'door_interior_white',
     panelMaterial: 'window_glass_day',
     provenance: 'verified_drawing',
     source: 'Tekening woonwensen 55.1 (B72) & Eetkamer 3.png render',
@@ -492,6 +492,69 @@ function createRoundedRosetteLeverHandle(params: {
     );
     latchBolt.position.set(latchEdgeOffset + 0.004, 0, 0);
     group.add(latchBolt);
+  }
+
+  return group;
+}
+
+/**
+ * Build a vertical matte-white pull handle on an elongated pill-shaped backplate
+ * for the oak 4-light glass living-room door (B72).
+ */
+function createVerticalWhitePullHandle(
+  leafThickness: number,
+  handleMat: THREE.Material
+): THREE.Group {
+  const group = new THREE.Group();
+
+  const plateW = 0.032;
+  const plateR = plateW / 2;
+  const plateStraightH = 0.24;
+  const plateDepth = 0.006;
+
+  const plateShape = new THREE.Shape();
+  plateShape.absarc(0, plateStraightH / 2, plateR, 0, Math.PI, false);
+  plateShape.absarc(0, -plateStraightH / 2, plateR, Math.PI, Math.PI * 2, false);
+  plateShape.closePath();
+
+  const plateGeo = new THREE.ExtrudeGeometry(plateShape, {
+    depth: plateDepth,
+    bevelEnabled: false,
+    curveSegments: 14,
+  });
+
+  const gripOffsetY = 0.072;
+  const standoffDepth = 0.028;
+  const barThickness = 0.016;
+  const gripHeight = gripOffsetY * 2 + barThickness;
+
+  for (const side of [1, -1] as const) {
+    const zFace = side * (leafThickness / 2);
+
+    const plate = new THREE.Mesh(plateGeo, handleMat);
+    plate.position.set(0, 0, side === 1 ? zFace : zFace - plateDepth);
+    group.add(plate);
+
+    const zStandoff = side * (leafThickness / 2 + plateDepth + standoffDepth / 2);
+    for (const sy of [gripOffsetY, -gripOffsetY]) {
+      const standoff = new THREE.Mesh(
+        new THREE.BoxGeometry(barThickness, barThickness, standoffDepth),
+        handleMat
+      );
+      standoff.position.set(0, sy, zStandoff);
+      group.add(standoff);
+    }
+
+    const gripBar = new THREE.Mesh(
+      new THREE.BoxGeometry(barThickness, gripHeight, barThickness),
+      handleMat
+    );
+    gripBar.position.set(
+      0,
+      0,
+      side * (leafThickness / 2 + plateDepth + standoffDepth + barThickness / 2)
+    );
+    group.add(gripBar);
   }
 
   return group;
@@ -999,9 +1062,14 @@ export function instantiateOpeningPrefab3D(
       );
       pivot.add(glassPane);
 
-      const handleGeo = new THREE.BoxGeometry(0.11, 0.02, 0.09);
-      const handle = new THREE.Mesh(handleGeo, getMat('roof_tile_anthracite'));
-      handle.position.set(innerW - 0.08, -0.12 - (-frameThick / 2), 0);
+      const whiteHandleMat = new THREE.MeshStandardMaterial({
+        color: '#f4f4f2',
+        roughness: 0.82,
+        metalness: 0.0,
+        name: 'door_handle_matte_white',
+      });
+      const handle = createVerticalWhitePullHandle(0.045, whiteHandleMat);
+      handle.position.set(innerW - stileW / 2, -0.08 - (-frameThick / 2), 0);
       pivot.add(handle);
       group.add(pivot);
 
