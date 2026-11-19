@@ -38,12 +38,7 @@ export function buildDecorativeBrickArchMeshes(
 
   // Slightly deeper derivative of exterior_arch_brick for the recessed tympanum & right pier
   const archBrickMat = getMat('exterior_arch_brick');
-  const infillMat = new THREE.MeshStandardMaterial({
-    color: archBrickMat.color.clone().multiplyScalar(0.88),
-    roughness: archBrickMat.roughness,
-    metalness: archBrickMat.metalness,
-    name: 'arch_tympanum_brick',
-  });
+  const infillMat = getMat('exterior_arch_brick_infill');
 
   // 1. Continuous Outer U-Shaped Arch Border: Horizontal bricks on legs + radial voussoirs on arch
   const borderShape = new THREE.Shape();

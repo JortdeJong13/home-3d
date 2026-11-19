@@ -243,6 +243,16 @@ export function buildHouseScene(): HouseSceneGroups {
     });
 
     const weatherSurf = MATERIAL_SURFACE_WEATHER[id];
+    const maskedLightsBegin = THREE.ShaderChunk.lights_fragment_begin.replace(
+      'getPointLightInfo( pointLight, geometryPosition, directLight );',
+      `getPointLightInfo( pointLight, geometryPosition, directLight );
+    float zMinInterior = (vHouseWorldPos.y < 2.85) ? -12.51 : -10.11;
+    float inHouseInterior = step(0.35, vHouseWorldPos.x) * step(vHouseWorldPos.x, 5.62)
+                          * step(-0.05, vHouseWorldPos.y)
+                          * step(zMinInterior, vHouseWorldPos.z) * step(vHouseWorldPos.z, -0.35);
+    directLight.color *= inHouseInterior;`
+    );
+
     if (weatherSurf) {
       const snowStrength = weatherSurf.snow ?? 0;
       const wetStrength = weatherSurf.wet ?? 0;
@@ -250,7 +260,7 @@ export function buildHouseScene(): HouseSceneGroups {
         ? seasonUniforms.uSnowColorNeighbour
         : seasonUniforms.uSnowColorOwned;
 
-      mat.customProgramCacheKey = () => 'season-surface-v1';
+      mat.customProgramCacheKey = () => 'house-mat-season-v1';
       mat.onBeforeCompile = (shader) => {
         shader.uniforms.uSeasonSnow = seasonUniforms.uSeasonSnow;
         shader.uniforms.uSeasonWet = seasonUniforms.uSeasonWet;
@@ -262,7 +272,7 @@ export function buildHouseScene(): HouseSceneGroups {
           .replace(
             'void main() {',
             `varying vec3 vSeasonWorldNormal;
-varying vec3 vSeasonWorldPos;
+varying vec3 vHouseWorldPos;
 void main() {`
           )
           .replace(
@@ -273,7 +283,7 @@ vSeasonWorldNormal = normalize((modelMatrix * vec4(objectNormal, 0.0)).xyz);`
           .replace(
             '#include <project_vertex>',
             `#include <project_vertex>
-vSeasonWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;`
+vHouseWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;`
           );
 
         shader.fragmentShader = shader.fragmentShader
@@ -285,14 +295,14 @@ uniform vec3 uSnowColor;
 uniform float uSnowStrength;
 uniform float uWetStrength;
 varying vec3 vSeasonWorldNormal;
-varying vec3 vSeasonWorldPos;
+varying vec3 vHouseWorldPos;
 void main() {`
           )
           .replace(
             '#include <color_fragment>',
             `#include <color_fragment>
 float sUp = smoothstep(0.32, 0.78, vSeasonWorldNormal.y);
-float sNoise = 0.5 + 0.5 * sin(vSeasonWorldPos.x * 1.9 + sin(vSeasonWorldPos.z * 1.4) * 1.2) * cos(vSeasonWorldPos.z * 1.7);
+float sNoise = 0.5 + 0.5 * sin(vHouseWorldPos.x * 1.9 + sin(vHouseWorldPos.z * 1.4) * 1.2) * cos(vHouseWorldPos.z * 1.7);
 float snowMask = clamp(uSeasonSnow * uSnowStrength * sUp * (0.86 + 0.14 * sNoise), 0.0, 1.0);
 diffuseColor.rgb = mix(diffuseColor.rgb, uSnowColor, snowMask);
 float wetMask = clamp(uSeasonWet * uWetStrength * sUp, 0.0, 1.0);
@@ -306,7 +316,31 @@ float wetMaskR = clamp(uSeasonWet * uWetStrength * sUpR, 0.0, 1.0);
 float snowMaskR = clamp(uSeasonSnow * uSnowStrength * sUpR, 0.0, 1.0);
 roughnessFactor = mix(roughnessFactor, 0.68, wetMaskR);
 roughnessFactor = mix(roughnessFactor, 0.92, snowMaskR);`
+          )
+          .replace('#include <lights_fragment_begin>', maskedLightsBegin);
+      };
+    } else {
+      mat.customProgramCacheKey = () => 'house-mat-interior-clip-v1';
+      mat.onBeforeCompile = (shader) => {
+        shader.vertexShader = shader.vertexShader
+          .replace(
+            'void main() {',
+            `varying vec3 vHouseWorldPos;
+void main() {`
+          )
+          .replace(
+            '#include <project_vertex>',
+            `#include <project_vertex>
+vHouseWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;`
           );
+
+        shader.fragmentShader = shader.fragmentShader
+          .replace(
+            'void main() {',
+            `varying vec3 vHouseWorldPos;
+void main() {`
+          )
+          .replace('#include <lights_fragment_begin>', maskedLightsBegin);
       };
     }
 

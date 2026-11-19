@@ -11,6 +11,7 @@ export type MaterialId =
   | 'exterior_brick_main'
   | 'exterior_brick_plinth'
   | 'exterior_arch_brick'
+  | 'exterior_arch_brick_infill'
   | 'interior_wall_plaster'
   | 'floor_living_oak'
   | 'floor_hall_warm'
@@ -115,6 +116,12 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
   },
   exterior_arch_brick: {
     ...SHARED_TERRACOTTA_BRICK,
+  },
+  exterior_arch_brick_infill: {
+    colorDay: '#9f5944',
+    colorNight: '#583026',
+    roughness: SHARED_TERRACOTTA_BRICK.roughness,
+    metalness: SHARED_TERRACOTTA_BRICK.metalness,
   },
 
   // Interior Walls (Warm powdery off-white plaster)
