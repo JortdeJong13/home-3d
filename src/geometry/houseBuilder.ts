@@ -3314,17 +3314,18 @@ function buildPitchedRoofSystem(
   );
 
   // 4. Slim Interior White Ceiling Lining (strictly inside exterior walls: X 0.40..5.57, Z -10.06..-0.40)
-  //    Matches getZolderRoofUndersideY(x, z) cleanly with zero exterior wall clipping!
+  //    plus perimeter closure walls connecting the ceiling lining up to the outer roof tile shell so
+  //    lifting the roof halfway during scroll reveals a sealed white ceiling assembly with no open cavity.
   {
     const inMinX = 0.40;
-    const inMaxX = 5.57;
-    const inFrontZ = -0.40;
-    const inRearZ = -10.06;
-    // Exact Z where diagonal kielkeper (uX == uZ) intersects X = 5.57 m
+    const inMaxX = 5.58;   // Tucked 1 cm inside 30 cm party wall (behind inner plaster face at X = 5.577)
+    const inFrontZ = -0.39; // Tucked 1 cm inside 40 cm front gable (behind inner plaster face at Z = -0.393)
+    const inRearZ = -10.07; // Tucked 1 cm inside 40 cm rear gable (behind inner plaster face at Z = -10.067)
+    // Exact Z where diagonal kielkeper (uX == uZ) intersects X = inMaxX
     const uXIn = (inMaxX - ridgeX) / (rightPartyX - ridgeX);
     const spanZ = nbFrontEavesZ - nbRidgeZ;
-    const kielFrontZ = nbRidgeZ + uXIn * spanZ; // -0.741 m
-    const kielRearZ = nbRidgeZ - uXIn * spanZ;  // -9.719 m
+    const kielFrontZ = nbRidgeZ + uXIn * spanZ;
+    const kielRearZ = nbRidgeZ - uXIn * spanZ;
 
     const ptUnder = (x: number, z: number): [number, number, number] => [
       x,
@@ -3353,6 +3354,72 @@ function buildPitchedRoofSystem(
       ceilingGeo.dispose();
       return merged;
     });
+
+    // Build perimeter edge closure connecting ceiling underside up into the 10 cm outer roof tile shell
+    const closurePos: number[] = [];
+    const pushQuad = (
+      a: [number, number, number],
+      b: [number, number, number],
+      c: [number, number, number],
+      d: [number, number, number]
+    ) => {
+      closurePos.push(
+        a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2],
+        a[0], a[1], a[2], c[0], c[1], c[2], d[0], d[1], d[2]
+      );
+    };
+    const yShellIn = (x: number, z: number) => getZolderRoofTopY(x, z) - tileThickness + 0.01;
+    const pushVerticalClosureSeg = (
+      x0: number, z0: number, yBot0: number,
+      x1: number, z1: number, yBot1: number
+    ) => {
+      pushQuad(
+        [x0, yBot0, z0],
+        [x1, yBot1, z1],
+        [x1, yShellIn(x1, z1), z1],
+        [x0, yShellIn(x0, z0), z0]
+      );
+    };
+
+    const eavesLeftX = 0.005;
+    const eavesLeftBotY = 6.135; // 1.5 cm above sf_wall_left_outer top (6.120 m), meeting tile underside
+    const yUnderLeft = getZolderRoofUndersideY(inMinX, inFrontZ);
+
+    // Front gable closure (Z = inFrontZ, +Z outward)
+    pushVerticalClosureSeg(eavesLeftX, inFrontZ, eavesLeftBotY, inMinX, inFrontZ, yUnderLeft);
+    pushVerticalClosureSeg(inMinX, inFrontZ, yUnderLeft, ridgeX, inFrontZ, getZolderRoofUndersideY(ridgeX, inFrontZ));
+    pushVerticalClosureSeg(ridgeX, inFrontZ, getZolderRoofUndersideY(ridgeX, inFrontZ), inMaxX, inFrontZ, getZolderRoofUndersideY(inMaxX, inFrontZ));
+
+    // Rear gable closure (Z = inRearZ, -Z outward)
+    pushVerticalClosureSeg(inMaxX, inRearZ, getZolderRoofUndersideY(inMaxX, inRearZ), ridgeX, inRearZ, getZolderRoofUndersideY(ridgeX, inRearZ));
+    pushVerticalClosureSeg(ridgeX, inRearZ, getZolderRoofUndersideY(ridgeX, inRearZ), inMinX, inRearZ, yUnderLeft);
+    pushVerticalClosureSeg(inMinX, inRearZ, yUnderLeft, eavesLeftX, inRearZ, eavesLeftBotY);
+
+    // Left eaves closure (X = inMinX vertical + bottom soffit out to eavesLeftX, -X/-Y outward)
+    pushVerticalClosureSeg(inMinX, inRearZ, yUnderLeft, inMinX, inFrontZ, yUnderLeft);
+    pushQuad(
+      [eavesLeftX, eavesLeftBotY, inRearZ],
+      [inMinX, yUnderLeft, inRearZ],
+      [inMinX, yUnderLeft, inFrontZ],
+      [eavesLeftX, eavesLeftBotY, inFrontZ]
+    );
+
+    // Right party-wall line closure (X = inMaxX following Dwarskap/Kielkeper/Langskap contour, +X outward)
+    const rightZBreaks = [inFrontZ, kielFrontZ, nbRidgeZ, kielRearZ, inRearZ];
+    for (let i = 0; i < rightZBreaks.length - 1; i++) {
+      const z0 = rightZBreaks[i];
+      const z1 = rightZBreaks[i + 1];
+      pushVerticalClosureSeg(
+        inMaxX, z0, getZolderRoofUndersideY(inMaxX, z0),
+        inMaxX, z1, getZolderRoofUndersideY(inMaxX, z1)
+      );
+    }
+
+    const closureGeo = new THREE.BufferGeometry();
+    closureGeo.setAttribute('position', new THREE.Float32BufferAttribute(closurePos, 3));
+    closureGeo.computeVertexNormals();
+    ceilGeos.push(closureGeo);
+
     const mergedCeil = mergeGeometries(ceilGeos, false);
     ceilGeos.forEach((g) => g.dispose());
     const ceilMesh = new THREE.Mesh(mergedCeil, getMat('interior_wall_plaster'));
