@@ -421,4 +421,27 @@ assertClose(stairFfBox.min.x, 0.408, 0.002, '1st->Zolder stair left edge aligns 
 assertClose(stairFfBox.max.x, 2.940, 0.002, '1st->Zolder stair right edge aligns to Zolder Overloop right wall (2.940 m)');
 assertClose(stairFfBox.max.z, -3.960, 0.002, '1st->Zolder stair front edge aligns directly above Ground->1st (-3.960 m)');
 
+// Verify Left Knieschot Slants in Width (X) Direction & Stair Cheek Stops at X = 0.65 m
+const checkSlantedKnieschot = (id: string) => {
+  const entry = house.meshRegistry.find((e) => e.mesh.userData.id === id);
+  if (!entry) throw new Error(`Missing mesh "${id}"`);
+  const mesh = entry.mesh as THREE.Mesh;
+  const pos = mesh.geometry.attributes.position;
+  const v = new THREE.Vector3();
+  let maxYAtOuter = -Infinity;
+  let maxYAtInner = -Infinity;
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld);
+    if (Math.abs(v.x - 0.65) < 0.002) maxYAtOuter = Math.max(maxYAtOuter, v.y);
+    if (Math.abs(v.x - 0.72) < 0.002) maxYAtInner = Math.max(maxYAtInner, v.y);
+  }
+  assertClose(maxYAtOuter, getZolderRoofUndersideY(0.65) - 0.004, 0.002, `${id} outer edge (X=0.65) slants to roof underside`);
+  assertClose(maxYAtInner, getZolderRoofUndersideY(0.72) - 0.004, 0.002, `${id} inner edge (X=0.72) slants to roof underside`);
+};
+checkSlantedKnieschot('sf_wall_left_eaves');
+checkSlantedKnieschot('sf_wall_left_eaves_rear');
+const stairCheekBox = getBoundsById('sf_wall_left_eaves_stair_cheek');
+assertClose(stairCheekBox.min.x, 0.40, 0.002, 'Stairwell cheek wall starts at outer wall inner face (0.40 m)');
+assertClose(stairCheekBox.max.x, 0.65, 0.002, 'Stairwell cheek wall meets rear knieschot outer face cleanly (0.65 m)');
+
 console.log('\nALL DIMENSIONAL, PREFAB & 3D SCENE CHECKS PASSED SUCCESSFULLY.');

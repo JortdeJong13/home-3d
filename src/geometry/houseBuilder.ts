@@ -2483,19 +2483,29 @@ function buildWallWithOpenings(
   shape.moveTo(0, bottomY);
   shape.lineTo(length, bottomY);
 
+  const clipTopHeightAt = (u: number, lz: number): number => {
+    const t = length > 0 ? u / length : 0;
+    const worldX = wall.start[0] + t * dx + lz * (-dz / length);
+    const worldZ = wall.start[1] + t * dz + lz * (dx / length);
+    const maxH = getZolderRoofUndersideY(worldX, worldZ) - wall.baseY - 0.004;
+    return Math.min(wall.height, maxH);
+  };
+
   if (wall.gablePeak) {
     shape.lineTo(length, wall.height);
     shape.lineTo(wall.gablePeak.offsetAlongWall, wall.gablePeak.peakHeight);
     shape.lineTo(0, wall.height);
   } else if (wall.clipToRoof) {
     const steps = 16;
+    const halfT = wall.thickness / 2;
     for (let i = steps; i >= 0; i--) {
-      const t = i / steps;
-      const u = t * length;
-      const worldX = wall.start[0] + t * dx;
-      const worldZ = wall.start[1] + t * dz;
-      const maxH = getZolderRoofUndersideY(worldX, worldZ) - wall.baseY - 0.004;
-      shape.lineTo(u, Math.min(wall.height, maxH));
+      const u = (i / steps) * length;
+      const topH = Math.max(
+        clipTopHeightAt(u, -halfT),
+        clipTopHeightAt(u, 0),
+        clipTopHeightAt(u, halfT)
+      );
+      shape.lineTo(u, topH);
     }
   } else {
     shape.lineTo(length, wall.height);
@@ -2556,6 +2566,23 @@ function buildWallWithOpenings(
   });
   extrudeGeo.translate(0, 0, -wall.thickness / 2);
 
+  if (wall.clipToRoof) {
+    // Slant the top cap across both length (u) and thickness (lz) so walls running parallel
+    // to the ridge (e.g. left knieschot) follow the pitched roof underside in the width direction.
+    const pos = extrudeGeo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const u = pos.getX(i);
+      const v = pos.getY(i);
+      const lz = pos.getZ(i);
+      const targetH = clipTopHeightAt(u, lz);
+      if (v > targetH) {
+        pos.setY(i, targetH);
+      }
+    }
+    pos.needsUpdate = true;
+    extrudeGeo.computeVertexNormals();
+  }
+
   const matId = wall.isExterior ? wall.exteriorMaterial : wall.interiorMaterial;
   let mainWallGeo: THREE.BufferGeometry = extrudeGeo;
   if (matId === 'exterior_brick_main') {
@@ -2603,8 +2630,9 @@ function buildWallWithOpenings(
       innerShape.lineTo(peakU, innerGableH(peakU));
       innerShape.lineTo(startTrim, innerGableH(startTrim));
     } else {
-      innerShape.lineTo(length - endTrim, wall.height);
-      innerShape.lineTo(startTrim, wall.height);
+      const innerTopH = Math.max(0.05, wall.height - 0.004);
+      innerShape.lineTo(length - endTrim, innerTopH);
+      innerShape.lineTo(startTrim, innerTopH);
     }
     innerShape.closePath();
     for (const h of shape.holes) {
@@ -3104,6 +3132,8 @@ function buildPitchedRoofSystem(
   // Positioned ~3-4 tile courses above the bakgoot matching the exterior render & VK-06
   const winX0 = 0.72;
   const winX1 = 1.34;
+  // Horizontal top reveal (bovendagkant) shifts upper ceiling cutout up-slope so ceiling never blocks the window
+  const ceilWinX1 = winX1 + (verticalThickness - tileThickness) * (leftRunX / leftRiseY);
   const winZ0 = -8.60;
   const winZ1 = -7.70;
   const yWallOuter = getZolderRoofTopY(leftWallOuterX); // 6.23 m
@@ -3166,11 +3196,11 @@ function buildPitchedRoofSystem(
     const skGroup = new THREE.Group();
     const skSlopeLen = Math.hypot(winX1 - winX0, yWin1 - yWin0);
     const skWidthZ = winZ1 - winZ0;
-    const perpThick = verticalThickness * Math.cos(leftAngle);
     skGroup.position.set((winX0 + winX1) / 2, (yWin0 + yWin1) / 2, (winZ0 + winZ1) / 2);
     skGroup.rotation.z = leftAngle;
 
     const frameT = 0.045;
+    const sashDepth = 0.06;
     const flashMat = getMat('roof_tile_anthracite');
     const sashMat = getMat('window_frame_cream');
 
@@ -3187,11 +3217,11 @@ function buildPitchedRoofSystem(
     addSkPart(0.065, flashH, skWidthZ + 0.12, -skSlopeLen / 2 - 0.01, 0.015, 0, flashMat);
     addSkPart(0.065, flashH, skWidthZ + 0.12, skSlopeLen / 2 + 0.01, 0.015, 0, flashMat);
 
-    // White interior reveal shaft + sash frame
-    addSkPart(skSlopeLen, perpThick, frameT, 0, -perpThick / 2, -skWidthZ / 2 + frameT / 2, sashMat);
-    addSkPart(skSlopeLen, perpThick, frameT, 0, -perpThick / 2, skWidthZ / 2 - frameT / 2, sashMat);
-    addSkPart(frameT, perpThick, skWidthZ - frameT * 2, -skSlopeLen / 2 + frameT / 2, -perpThick / 2, 0, sashMat);
-    addSkPart(frameT, perpThick, skWidthZ - frameT * 2, skSlopeLen / 2 - frameT / 2, -perpThick / 2, 0, sashMat);
+    // Slim perimeter sash frame around glass pane (does not protrude across ceiling opening)
+    addSkPart(skSlopeLen, sashDepth, frameT, 0, -sashDepth / 2, -skWidthZ / 2 + frameT / 2, sashMat);
+    addSkPart(skSlopeLen, sashDepth, frameT, 0, -sashDepth / 2, skWidthZ / 2 - frameT / 2, sashMat);
+    addSkPart(frameT, sashDepth, skWidthZ - frameT * 2, -skSlopeLen / 2 + frameT / 2, -sashDepth / 2, 0, sashMat);
+    addSkPart(frameT, sashDepth, skWidthZ - frameT * 2, skSlopeLen / 2 - frameT / 2, -sashDepth / 2, 0, sashMat);
 
     const glassMesh = new THREE.Mesh(
       new THREE.BoxGeometry(skSlopeLen - frameT * 2, 0.018, skWidthZ - frameT * 2),
@@ -3214,6 +3244,80 @@ function buildPitchedRoofSystem(
     );
     skGroup.add(glassMesh);
     roofGroup.add(skGroup);
+
+    // World-aligned interior reveal shaft (vertical lower dagkant + horizontal upper dagkant + trapezoidal cheeks)
+    // bridging the skylight frame cleanly down to the ceiling cutout [winX0..ceilWinX1] with zero obstruction.
+    const yBotCeil = getZolderRoofUndersideY(winX0, winZ0);
+    const yTopInner = yWin1 - tileThickness; // Horizontal top dagkant meets ceiling underside at ceilWinX1
+    const yWin0Top = yWin0 - 0.025;
+    const yWin1Top = yWin1 - 0.025;
+    const shaftPos: number[] = [];
+    const pushShaftTri = (a: [number, number, number], b: [number, number, number], c: [number, number, number]) => {
+      shaftPos.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]);
+    };
+    const pushShaftQuad = (
+      a: [number, number, number],
+      b: [number, number, number],
+      c: [number, number, number],
+      d: [number, number, number]
+    ) => {
+      pushShaftTri(a, b, c);
+      pushShaftTri(a, c, d);
+    };
+
+    // Lower vertical wall (X = winX0, +X normal; starts at yBotCeil + 0.04 above ceilMesh's 4 cm cut face)
+    pushShaftQuad(
+      [winX0, yBotCeil + 0.04, winZ1],
+      [winX0, yBotCeil + 0.04, winZ0],
+      [winX0, yWin0Top, winZ0],
+      [winX0, yWin0Top, winZ1]
+    );
+    // Upper horizontal soffit (Y = yTopInner, -Y normal)
+    pushShaftQuad(
+      [winX1, yTopInner, winZ0],
+      [ceilWinX1, yTopInner, winZ0],
+      [ceilWinX1, yTopInner, winZ1],
+      [winX1, yTopInner, winZ1]
+    );
+    // Short vertical riser at upper frame edge (X = winX1, -X normal)
+    pushShaftQuad(
+      [winX1, yTopInner, winZ0],
+      [winX1, yTopInner, winZ1],
+      [winX1, yWin1Top, winZ1],
+      [winX1, yWin1Top, winZ0]
+    );
+    // Front cheek (Z = winZ1, -Z normal)
+    pushShaftQuad(
+      [winX0, yBotCeil, winZ1],
+      [winX0, yWin0Top, winZ1],
+      [winX1, yTopInner, winZ1],
+      [ceilWinX1, yTopInner, winZ1]
+    );
+    pushShaftTri(
+      [winX0, yWin0Top, winZ1],
+      [winX1, yWin1Top, winZ1],
+      [winX1, yTopInner, winZ1]
+    );
+    // Rear cheek (Z = winZ0, +Z normal)
+    pushShaftQuad(
+      [winX0, yBotCeil, winZ0],
+      [ceilWinX1, yTopInner, winZ0],
+      [winX1, yTopInner, winZ0],
+      [winX0, yWin0Top, winZ0]
+    );
+    pushShaftTri(
+      [winX0, yWin0Top, winZ0],
+      [winX1, yTopInner, winZ0],
+      [winX1, yWin1Top, winZ0]
+    );
+
+    const shaftGeo = new THREE.BufferGeometry();
+    shaftGeo.setAttribute('position', new THREE.Float32BufferAttribute(shaftPos, 3));
+    shaftGeo.computeVertexNormals();
+    const shaftMesh = new THREE.Mesh(shaftGeo, getMat('interior_wall_plaster'));
+    shaftMesh.castShadow = false;
+    shaftMesh.receiveShadow = true;
+    roofGroup.add(shaftMesh);
   }
 
   // 1b. Single Curved Roof Exhaust Pipe (Ontluchtingspijp on lower left slope, matching render)
@@ -3338,7 +3442,7 @@ function buildPitchedRoofSystem(
       [ptUnder(inMinX, inFrontZ), ptUnder(ridgeX, inFrontZ), ptUnder(ridgeX, winZ1), ptUnder(inMinX, winZ1)],
       [ptUnder(inMinX, winZ0), ptUnder(ridgeX, winZ0), ptUnder(ridgeX, inRearZ), ptUnder(inMinX, inRearZ)],
       [ptUnder(inMinX, winZ1), ptUnder(winX0, winZ1), ptUnder(winX0, winZ0), ptUnder(inMinX, winZ0)],
-      [ptUnder(winX1, winZ1), ptUnder(ridgeX, winZ1), ptUnder(ridgeX, winZ0), ptUnder(winX1, winZ0)],
+      [ptUnder(ceilWinX1, winZ1), ptUnder(ridgeX, winZ1), ptUnder(ridgeX, winZ0), ptUnder(ceilWinX1, winZ0)],
       // Right Dwarskap front & rear wings
       [ptUnder(ridgeX, inFrontZ), ptUnder(inMaxX, inFrontZ), ptUnder(inMaxX, kielFrontZ), ptUnder(ridgeX, nbRidgeZ)],
       [ptUnder(ridgeX, nbRidgeZ), ptUnder(inMaxX, kielRearZ), ptUnder(inMaxX, inRearZ), ptUnder(ridgeX, inRearZ)],

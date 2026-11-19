@@ -961,7 +961,7 @@ export function getHouseWalls(): WallSpec[] {
       label: 'Kopwand Linker Knieschot bij Trapgat (1.00 m hoog onder dakvoet)',
       floor: 'second',
       start: [0.40, -4.845],
-      end: [0.72, -4.845],
+      end: [0.65, -4.845],
       thickness: 0.07,
       baseY: Y2,
       height: 1.00,
@@ -969,7 +969,7 @@ export function getHouseWalls(): WallSpec[] {
       exteriorMaterial: 'interior_wall_plaster',
       interiorMaterial: 'interior_wall_plaster',
       provenance: 'calculated',
-      source: 'Closes eaves storage cavity cleanly behind the Zolder stairwell opening at Z = -4.81 m',
+      source: 'Closes eaves storage cavity (X: 0.40..0.65 m) cleanly behind the Zolder stairwell opening at Z = -4.81 m',
     },
 
     // 3b. Front-Right Corner Knieschotten (1.50 m high, outer face aligned to exact 1.50 m roof/gable contour: X = 4.863 m, Z = -1.969 m)
