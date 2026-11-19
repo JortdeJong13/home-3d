@@ -9,6 +9,17 @@ import {
   evaluateSeasonalMaterial,
 } from '../model/seasons';
 
+const _daySunColor = new THREE.Color(0, 0, 0);
+const _duskSunColor = new THREE.Color(0, 0, 0);
+const _nightMoonColor = new THREE.Color(0, 0, 0);
+const _dayHemiSky = new THREE.Color(0, 0, 0);
+const _nightHemiSky = new THREE.Color(0, 0, 0);
+const _dayHemiGround = new THREE.Color(0, 0, 0);
+const _nightHemiGround = new THREE.Color(0, 0, 0);
+const _dayAmb = new THREE.Color(0, 0, 0);
+const _nightAmb = new THREE.Color(0, 0, 0);
+const _scratchColor = new THREE.Color();
+
 export interface SceneLightingRig {
   hemiLight: THREE.HemisphereLight;
   ambientLight: THREE.AmbientLight;
@@ -83,16 +94,16 @@ export function applyDayNightState(
   rig.sunLight.position.set(sunX, Math.max(8, sunY), sunZ);
 
   // 3. Blend seasonal lighting parameters cleanly
-  const daySunColor = new THREE.Color(0, 0, 0);
-  const duskSunColor = new THREE.Color(0, 0, 0);
-  const nightMoonColor = new THREE.Color(0, 0, 0);
-  const dayHemiSky = new THREE.Color(0, 0, 0);
-  const nightHemiSky = new THREE.Color(0, 0, 0);
-  const dayHemiGround = new THREE.Color(0, 0, 0);
-  const nightHemiGround = new THREE.Color(0, 0, 0);
-  const dayAmb = new THREE.Color(0, 0, 0);
-  const nightAmb = new THREE.Color(0, 0, 0);
-  const scratchColor = new THREE.Color();
+  const daySunColor = _daySunColor.setRGB(0, 0, 0);
+  const duskSunColor = _duskSunColor.setRGB(0, 0, 0);
+  const nightMoonColor = _nightMoonColor.setRGB(0, 0, 0);
+  const dayHemiSky = _dayHemiSky.setRGB(0, 0, 0);
+  const nightHemiSky = _nightHemiSky.setRGB(0, 0, 0);
+  const dayHemiGround = _dayHemiGround.setRGB(0, 0, 0);
+  const nightHemiGround = _nightHemiGround.setRGB(0, 0, 0);
+  const dayAmb = _dayAmb.setRGB(0, 0, 0);
+  const nightAmb = _nightAmb.setRGB(0, 0, 0);
+  const scratchColor = _scratchColor;
   const addScaledColor = (dst: THREE.Color, src: THREE.Color, w: number) => {
     dst.r += src.r * w;
     dst.g += src.g * w;

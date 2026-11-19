@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
+const UP_AXIS = new THREE.Vector3(0, 1, 0);
+
 export interface CameraPreset {
   id: 'default_iso' | 'garden_iso' | 'front_street' | 'top_plan';
   label: string;
@@ -169,7 +171,7 @@ export class IsometricCameraController {
     if (this.autoRotate && !this.animActive) {
       this.camera.position
         .sub(this.controls.target)
-        .applyAxisAngle(new THREE.Vector3(0, 1, 0), -this.autoRotateSpeed * dt)
+        .applyAxisAngle(UP_AXIS, -this.autoRotateSpeed * dt)
         .add(this.controls.target);
     }
     // Frame-rate independent damping (dampingFactor is defined per 60 Hz frame)

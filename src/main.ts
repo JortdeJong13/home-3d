@@ -283,6 +283,7 @@ window.addEventListener('resize', () => {
 // =============================================================================
 let lastTime = performance.now();
 let lastTrackedStopIndex = -1;
+let lastUiScrollProgress = -1;
 applyDayNightState(lightingRig, houseGroups, 0, celestialRotorEl, currentSeasonWeights);
 applyScrollProgressToScene(houseGroups, 0);
 
@@ -305,24 +306,27 @@ function animate(now: number) {
   // 2. Smoothly animate interactive doors & assets
   houseGroups.doorManager.update(dt);
 
-  // Sync Floor Selector UI
-  if (selectorFillEl) {
-    const clampedProgress = Math.max(0, Math.min(1, smoothedScrollProgress));
-    selectorFillEl.style.height = `${(clampedProgress * 100).toFixed(1)}%`;
-  }
-  if (scrollHintEl) {
-    scrollHintEl.classList.toggle('hidden', smoothedScrollProgress > 0.05);
-  }
-  for (const btn of floorDotBtns) {
-    const idx = Number(btn.dataset.stopIndex ?? -1);
-    btn.classList.toggle('active', idx === activeStop.index);
-  }
-  if (lastTrackedStopIndex === -1) {
-    lastTrackedStopIndex = activeStop.index;
-  } else if (activeStop.index !== lastTrackedStopIndex) {
-    lastTrackedStopIndex = activeStop.index;
-    if (programmaticTargetIndex === null) {
-      showFloorLabel(activeStop.index, 1800);
+  // Sync Floor Selector UI only when scroll progress changes
+  if (Math.abs(smoothedScrollProgress - lastUiScrollProgress) > 0.0001) {
+    lastUiScrollProgress = smoothedScrollProgress;
+    if (selectorFillEl) {
+      const clampedProgress = Math.max(0, Math.min(1, smoothedScrollProgress));
+      selectorFillEl.style.height = `${(clampedProgress * 100).toFixed(1)}%`;
+    }
+    if (scrollHintEl) {
+      scrollHintEl.classList.toggle('hidden', smoothedScrollProgress > 0.05);
+    }
+    for (const btn of floorDotBtns) {
+      const idx = Number(btn.dataset.stopIndex ?? -1);
+      btn.classList.toggle('active', idx === activeStop.index);
+    }
+    if (lastTrackedStopIndex === -1) {
+      lastTrackedStopIndex = activeStop.index;
+    } else if (activeStop.index !== lastTrackedStopIndex) {
+      lastTrackedStopIndex = activeStop.index;
+      if (programmaticTargetIndex === null) {
+        showFloorLabel(activeStop.index, 1800);
+      }
     }
   }
 
