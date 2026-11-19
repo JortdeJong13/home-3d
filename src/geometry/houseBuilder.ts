@@ -775,7 +775,19 @@ function buildPlotAndEnvironment(
     const pt = evalPath(t);
     gravelShape.lineTo(pt.x + pt.nx * pathHalfW, pt.y + pt.ny * pathHalfW);
   }
-  gravelShape.quadraticCurveTo(0.33, -gravelRearZ + 0.10, 0.33, 13.80);
+  // Quarter-circle of gravel connecting the berging rear gravel path (Z = -14.70) to the kitchen patio (Z = -13.80)
+  const patioCornerX = 0.33;
+  const patioRearY = 13.80; // -(-13.80)
+  const quarterR = -gravelRearZ - patioRearY; // 0.90 m
+  const arcStartAngle = Math.PI / 2 - 0.28;
+  gravelShape.quadraticCurveTo(
+    0.36,
+    -gravelRearZ + 0.02,
+    patioCornerX + quarterR * Math.cos(arcStartAngle),
+    patioRearY + quarterR * Math.sin(arcStartAngle)
+  );
+  gravelShape.absarc(patioCornerX, patioRearY, quarterR, arcStartAngle, 0, true);
+  gravelShape.lineTo(patioCornerX, patioRearY);
   // Trace around the Berging footprint (X: -3.27..0.33 at Z: -12.86..-13.72, X: -3.27..0.00 at Z: -7.73..-12.86) so gravel never clips inside it
   gravelShape.lineTo(0.33, 13.72);
   gravelShape.lineTo(-3.27, 13.72);
