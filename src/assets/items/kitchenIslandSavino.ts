@@ -1,0 +1,726 @@
+import * as THREE from 'three';
+import { AssetPrefabDefinition } from '../assetTypes';
+import { cm } from '../../model/units';
+
+const TEX_SIZE = 512;
+
+function hash2(ix: number, iy: number, seed = 0): number {
+  let n = Math.imul(ix, 374761393) + Math.imul(iy, 668265263) + Math.imul(seed, 1442695041);
+  n = (n ^ (n >>> 13)) >>> 0;
+  n = Math.imul(n, 1274126177) >>> 0;
+  return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
+}
+
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+
+function smoothstep(edge0: number, edge1: number, x: number): number {
+  const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
+
+function periodicNoise2D(x: number, y: number, px: number, py: number, seed: number): number {
+  const ix = Math.floor(x);
+  const iy = Math.floor(y);
+  const fx = x - ix;
+  const fy = y - iy;
+  const ux = fx * fx * (3 - 2 * fx);
+  const uy = fy * fy * (3 - 2 * fy);
+
+  const x0 = ((ix % px) + px) % px;
+  const x1 = (x0 + 1) % px;
+  const y0 = ((iy % py) + py) % py;
+  const y1 = (y0 + 1) % py;
+
+  const a = hash2(x0, y0, seed);
+  const b = hash2(x1, y0, seed);
+  const c = hash2(x0, y1, seed);
+  const d = hash2(x1, y1, seed);
+
+  return lerp(lerp(a, b, ux), lerp(c, d, ux), uy);
+}
+
+let cachedMarbleTexture: THREE.DataTexture | null = null;
+
+/**
+ * Generates a soft, creamy off-white marble/quartzite countertop DataTexture with
+ * delicate warm-greige veining matching Keuken rose groot.webp.
+ */
+function getCountertopMarbleTexture(): THREE.DataTexture {
+  if (cachedMarbleTexture) return cachedMarbleTexture;
+
+  const data = new Uint8Array(TEX_SIZE * TEX_SIZE * 4);
+  for (let py = 0; py < TEX_SIZE; py++) {
+    const v = py / TEX_SIZE;
+    for (let px = 0; px < TEX_SIZE; px++) {
+      const u = px / TEX_SIZE;
+
+      const n1 = periodicNoise2D(u * 4, v * 4, 4, 4, 17);
+      const n2 = periodicNoise2D(u * 8, v * 8, 8, 8, 43);
+      const n3 = periodicNoise2D(u * 16, v * 16, 16, 16, 79);
+
+      // Soft diagonal wispy marble veins
+      const veinField = Math.sin((u * 2.2 + v * 1.4 + n1 * 1.3 + n2 * 0.45) * Math.PI * 2);
+      const vein = (1.0 - smoothstep(0.0, 0.24, Math.abs(veinField))) * 0.65;
+      const cloud = (n1 * 0.6 + n2 * 0.3 + n3 * 0.1 - 0.5) * 0.25;
+      const t = Math.max(0, Math.min(1, vein * 0.65 + cloud + 0.12));
+
+      // Creamy off-white (#f4f1ea) with soft warm-greige veins (#dfd7cb)
+      const r = Math.round(lerp(244, 223, t));
+      const g = Math.round(lerp(241, 215, t));
+      const b = Math.round(lerp(234, 203, t));
+
+      const idx = (py * TEX_SIZE + px) * 4;
+      data[idx] = r;
+      data[idx + 1] = g;
+      data[idx + 2] = b;
+      data[idx + 3] = 255;
+    }
+  }
+
+  const tex = new THREE.DataTexture(data, TEX_SIZE, TEX_SIZE, THREE.RGBAFormat);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.generateMipmaps = true;
+  tex.anisotropy = 8;
+  tex.needsUpdate = true;
+  cachedMarbleTexture = tex;
+  return tex;
+}
+
+/**
+ * Creates a 2D plan shape for the Savino Chabrier island:
+ * - X spans [-halfW, +halfW]
+ * - Y spans [-halfD, +halfD], which after rotateX(-PI/2) maps:
+ *     +halfD -> -Z (dining/showcase side, with signature rounded corners!)
+ *     -halfD -> +Z (working/cooking side, with crisp straight corners!)
+ */
+function createIslandPlanShape(halfW: number, halfD: number, diningCornerR: number): THREE.Shape {
+  const r = Math.min(diningCornerR, halfW * 0.45, halfD * 0.45);
+  const s = new THREE.Shape();
+  s.moveTo(-halfW, -halfD);
+  s.lineTo(halfW, -halfD);
+  s.lineTo(halfW, halfD - r);
+  s.absarc(halfW - r, halfD - r, r, 0, Math.PI / 2, false);
+  s.lineTo(-halfW + r, halfD);
+  s.absarc(-halfW + r, halfD - r, r, Math.PI / 2, Math.PI, false);
+  s.closePath();
+  return s;
+}
+
+/**
+ * Extrudes a vertical 2D plan shape cleanly to Y: [yBottom, yBottom + height].
+ */
+function extrudePlanY(
+  shape: THREE.Shape,
+  height: number,
+  yBottom: number,
+  widthForUV: number,
+  depthForUV: number
+): THREE.BufferGeometry {
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth: height,
+    bevelEnabled: false,
+    curveSegments: 16,
+  });
+  geo.rotateX(-Math.PI / 2);
+  geo.translate(0, yBottom, 0);
+
+  // Clean planar top/bottom UVs for marble veining
+  const pos = geo.getAttribute('position');
+  const uv = geo.getAttribute('uv');
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const z = pos.getZ(i);
+    uv.setXY(i, (x + widthForUV / 2) / widthForUV, (z + depthForUV / 2) / depthForUV);
+  }
+  uv.needsUpdate = true;
+  geo.computeVertexNormals();
+  return geo;
+}
+
+/**
+ * Superkeukens Savino Chabrier — Kitchen Island (Kook- & Spoeleiland)
+ *
+ * Dimensions: 252 cm (L) × 108 cm (W) × 97 cm (H countertop)
+ * - Soft matte sand-greige (zandgrijs) fronts & signature rounded organic corners on the dining (-Z) side
+ * - Creamy off-white marble-look countertop (3 cm thick) with recessed bronze/copper undermount sink
+ * - Mirrored working (+Z) layout per Leidingschema 47359_1_1:
+ *     Left  (90 cm): Induction cooktop with downdraft extractor + 2 sliding drawers
+ *     Mid   (60 cm): Built-in dishwasher (drop-down door, simple low-poly tub)
+ *     Right (90 cm): Bronze/copper undermount sink & matching bronze tap + 2 hinged doors
+ * - Dining/showcase (-Z) side: 4 sleek full-height vertical cabinet doors between rounded end cheeks
+ */
+export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
+  prefabId: 'kitchen_island_savino',
+  defaultLabel: 'Keukeneiland Savino Chabrier (252 × 108 × 97 cm)',
+  defaultDimensions: {
+    width: cm(252, 'user_supplied', 'User spec & Leidingschema 47359_1_1: 60 + 900 + 600 + 900 + 60 = 2520 mm'),
+    depth: cm(108, 'user_supplied', 'User specification: Kitchen island width 108 cm'),
+    height: cm(97, 'user_supplied', 'User specification: Kitchen island countertop height 97 cm'),
+  },
+  build3D: ({ width, depth, height, registerInteractiveDoor }) => {
+    const group = new THREE.Group();
+    const marbleMap = getCountertopMarbleTexture();
+
+    // --- Materials (matched to Keuken rose groot.webp & diorama style) ---
+    const greigeFrontMat = new THREE.MeshStandardMaterial({
+      color: '#cbc2b7', // Soft warm sand-greige (zandgrijs)
+      roughness: 0.84,
+      metalness: 0.0,
+    });
+    const greigePlinthMat = new THREE.MeshStandardMaterial({
+      color: '#b8afa4',
+      roughness: 0.88,
+      metalness: 0.0,
+    });
+    const greigeRecessMat = new THREE.MeshStandardMaterial({
+      color: '#ada498',
+      roughness: 0.88,
+      metalness: 0.0,
+    });
+    const countertopMat = new THREE.MeshStandardMaterial({
+      color: '#ffffff',
+      map: marbleMap,
+      roughness: 0.56,
+      metalness: 0.02,
+    });
+    const interiorWhiteMat = new THREE.MeshStandardMaterial({
+      color: '#f2efe9',
+      roughness: 0.90,
+      metalness: 0.0,
+    });
+    const stainlessTubMat = new THREE.MeshStandardMaterial({
+      color: '#c8ccd0',
+      roughness: 0.42,
+      metalness: 0.48,
+    });
+    const rackGreyMat = new THREE.MeshStandardMaterial({
+      color: '#8e949c',
+      roughness: 0.58,
+      metalness: 0.25,
+    });
+
+    // Bronze / warm brushed copper sink & tap (matches Keuken rose groot.webp)
+    const bronzeSinkMat = new THREE.MeshStandardMaterial({
+      color: '#a86b4c',
+      roughness: 0.36,
+      metalness: 0.54,
+    });
+    const bronzeTapMat = new THREE.MeshStandardMaterial({
+      color: '#ba7d5c',
+      roughness: 0.32,
+      metalness: 0.60,
+    });
+
+    // Matte-black induction cooktop + downdraft extractor
+    const cooktopGlassMat = new THREE.MeshStandardMaterial({
+      color: '#1b1d20',
+      roughness: 0.22,
+      metalness: 0.14,
+    });
+    const cooktopGrilleMat = new THREE.MeshStandardMaterial({
+      color: '#2c3035',
+      roughness: 0.52,
+      metalness: 0.20,
+    });
+    const cooktopZoneRingMat = new THREE.MeshStandardMaterial({
+      color: '#4f555e',
+      roughness: 0.45,
+      metalness: 0.1,
+    });
+
+    const triggerMat = new THREE.MeshBasicMaterial({
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+    });
+
+    // --- Parametric Dimensions ---
+    const halfW = width / 2; // 1.26 m
+    const halfD = depth / 2; // 0.54 m
+    const diningCornerR = 0.14; // 14 cm organic rounded corners on dining (-Z) side
+    const plinthH = 0.100; // 10 cm toe-kick
+    const topThick = 0.030; // 3 cm marble-look countertop
+    const topBottomY = height - topThick; // 0.940 m
+    const gripGrooveH = 0.032; // 3.2 cm recessed greeploos rail under countertop on working (+Z) side
+    const workDoorTopY = topBottomY - gripGrooveH; // 0.908 m
+    const workDoorH = workDoorTopY - plinthH; // 0.808 m
+    const diningDoorH = topBottomY - plinthH; // 0.840 m
+
+    const endCheekW = 0.060; // 60 mm side cheeks on working (+Z) side -> 60 + 900 + 600 + 900 + 60 = 2520 mm
+    const doorThick = 0.020;
+    const doorGap = 0.003;
+
+    // Sink & cooktop center coordinates (mirrored: cooktop on LEFT -X, sink on RIGHT +X when facing +Z)
+    const cookColCenterX = -halfW + endCheekW + 0.45; // -0.75 m
+    const dwColCenterX = 0.0; // 0.00 m (60 cm centered)
+    const sinkColCenterX = halfW - endCheekW - 0.45; // +0.75 m
+    const applianceZ = 0.14; // slightly toward working (+Z) side
+
+    const sinkInnerW = 0.52;
+    const sinkInnerD = 0.40;
+    const sinkDepthY = 0.18;
+
+    // 1. Recessed Toe-Kick Plinth (Y: 0.00..0.10 m)
+    const plinthInset = 0.055;
+    const plinthShape = createIslandPlanShape(
+      halfW - plinthInset,
+      halfD - plinthInset,
+      Math.max(0.04, diningCornerR - plinthInset * 0.7)
+    );
+    const plinthMesh = new THREE.Mesh(
+      extrudePlanY(plinthShape, plinthH, 0, width, depth),
+      greigePlinthMat
+    );
+    plinthMesh.name = 'island_plinth';
+    group.add(plinthMesh);
+
+    // 2. Countertop with Real Recessed Sink Cutout (Y: 0.94..0.97 m)
+    const topShape = createIslandPlanShape(halfW, halfD, diningCornerR);
+    // Punch sink opening hole in 2D shape (remember y_shape = -z_world)
+    const holeX0 = sinkColCenterX - sinkInnerW / 2;
+    const holeX1 = sinkColCenterX + sinkInnerW / 2;
+    const holeY0 = -(applianceZ + sinkInnerD / 2);
+    const holeY1 = -(applianceZ - sinkInnerD / 2);
+    const sinkHole = new THREE.Path();
+    sinkHole.moveTo(holeX0, holeY0);
+    sinkHole.lineTo(holeX1, holeY0);
+    sinkHole.lineTo(holeX1, holeY1);
+    sinkHole.lineTo(holeX0, holeY1);
+    sinkHole.closePath();
+    topShape.holes.push(sinkHole);
+
+    const countertopMesh = new THREE.Mesh(
+      extrudePlanY(topShape, topThick, topBottomY, width, depth),
+      countertopMat
+    );
+    countertopMesh.name = 'island_countertop_marble';
+    group.add(countertopMesh);
+
+    // 3. Signature Rounded Sand-Greige End Caps / Cheeks (left & right ends, Y: 0.10..0.94 m)
+    // Left end cap spans X: [-halfW, -halfW + diningCornerR], right end cap spans [+halfW - diningCornerR, +halfW]
+    // On the working (+Z) side, the cabinet fronts start at ±(halfW - endCheekW) = ±1.20 m,
+    // so we cut out the 8 cm front-cabinet overlap zone to avoid any Z-fighting with the outer doors!
+    const buildEndCheek = (side: -1 | 1) => {
+      const r = diningCornerR;
+      const xOuter = side * halfW;
+      const xInnerDining = side * (halfW - r); // ±1.12 m (where dining doors start)
+      const xInnerWork = side * (halfW - endCheekW); // ±1.20 m (where working doors start)
+      const yWork = -halfD; // maps to +Z
+      const yDining = halfD; // maps to -Z
+      const yMidSplit = 0.0; // Z = 0 split line inside island
+
+      const s = new THREE.Shape();
+      if (side === -1) {
+        s.moveTo(xOuter, yWork);
+        s.lineTo(xInnerWork, yWork);
+        s.lineTo(xInnerWork, yMidSplit);
+        s.lineTo(xInnerDining, yMidSplit);
+        s.lineTo(xInnerDining, yDining);
+        s.absarc(xInnerDining, yDining - r, r, Math.PI / 2, Math.PI, false);
+        s.closePath();
+      } else {
+        s.moveTo(xInnerWork, yWork);
+        s.lineTo(xOuter, yWork);
+        s.lineTo(xOuter, yDining - r);
+        s.absarc(xInnerDining, yDining - r, r, 0, Math.PI / 2, false);
+        s.lineTo(xInnerDining, yMidSplit);
+        s.lineTo(xInnerWork, yMidSplit);
+        s.closePath();
+      }
+
+      const mesh = new THREE.Mesh(
+        extrudePlanY(s, diningDoorH, plinthH, width, depth),
+        greigeFrontMat
+      );
+      mesh.name = side < 0 ? 'island_end_cheek_left' : 'island_end_cheek_right';
+      group.add(mesh);
+    };
+    buildEndCheek(-1);
+    buildEndCheek(1);
+
+    // 4. Simple Low-Poly Central Carcass Core (separates working +Z side from dining -Z side)
+    const coreW = width - 2 * endCheekW; // 2.40 m
+    const coreDivider = new THREE.Mesh(
+      new THREE.BoxGeometry(coreW, diningDoorH, 0.024),
+      interiorWhiteMat
+    );
+    coreDivider.name = 'island_center_spine';
+    coreDivider.position.set(0, plinthH + diningDoorH / 2, -0.04);
+    group.add(coreDivider);
+
+    // Simple bottom floor deck inside the island (Y: 0.10..0.118 m)
+    const floorDeck = new THREE.Mesh(
+      new THREE.BoxGeometry(width - 2 * diningCornerR, 0.018, depth - 2 * doorThick - 0.01),
+      interiorWhiteMat
+    );
+    floorDeck.position.set(0, plinthH + 0.009, 0);
+    group.add(floorDeck);
+
+    // Recessed greeploos grip rail along the working (+Z) side directly beneath the countertop
+    const gripRail = new THREE.Mesh(
+      new THREE.BoxGeometry(coreW, gripGrooveH, 0.04),
+      greigeRecessMat
+    );
+    gripRail.name = 'island_working_grip_rail';
+    gripRail.position.set(0, topBottomY - gripGrooveH / 2, halfD - doorThick - 0.02);
+    group.add(gripRail);
+
+    // Two simple vertical dividers on the working (+Z) side separating 90 | 60 | 90 cm zones
+    const workZoneDepth = halfD - doorThick - (-0.028); // from center spine to behind doors
+    const workZoneCenterZ = (-0.028 + (halfD - doorThick)) / 2;
+    for (const divX of [-0.30, 0.30]) {
+      const wDiv = new THREE.Mesh(
+        new THREE.BoxGeometry(0.018, workDoorH, workZoneDepth),
+        interiorWhiteMat
+      );
+      wDiv.position.set(divX, plinthH + workDoorH / 2, workZoneCenterZ);
+      group.add(wDiv);
+    }
+
+    // 5. WORKING SIDE (+Z) INTERACTIVE FRONTS (Low-poly interiors!)
+    const workFrontZ = halfD; // +0.54 m
+    const workDoorCenterZ = workFrontZ - doorThick / 2;
+
+    // 5a. LEFT (90 cm, cooktop): Two horizontal sliding drawers (simple low-poly box interior)
+    const drawerW = 0.90 - doorGap;
+    const drawerH = (workDoorH - doorGap) / 2;
+    const drawerSpecs = [
+      { id: 'drawer_cook_lower', bottomY: plinthH, h: drawerH },
+      { id: 'drawer_cook_upper', bottomY: plinthH + drawerH + doorGap, h: drawerH },
+    ];
+    for (const ds of drawerSpecs) {
+      const slideGroup = new THREE.Group();
+      slideGroup.name = `pivot_${ds.id}`;
+      slideGroup.position.set(cookColCenterX, ds.bottomY + ds.h / 2, workDoorCenterZ);
+      group.add(slideGroup);
+
+      const frontMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(drawerW, ds.h, doorThick),
+        greigeFrontMat
+      );
+      frontMesh.name = ds.id;
+      slideGroup.add(frontMesh);
+
+      // Minimal low-poly drawer tray box (single box behind front)
+      const boxD = 0.42;
+      const boxH = ds.h * 0.62;
+      const drawerBox = new THREE.Mesh(
+        new THREE.BoxGeometry(drawerW - 0.04, boxH, boxD),
+        interiorWhiteMat
+      );
+      drawerBox.position.set(0, -ds.h * 0.14, -doorThick / 2 - boxD / 2);
+      slideGroup.add(drawerBox);
+
+      const trigger = new THREE.Mesh(
+        new THREE.BoxGeometry(drawerW, ds.h, doorThick + 0.04),
+        triggerMat
+      );
+      trigger.userData.isInteractiveTrigger = true;
+      trigger.position.set(cookColCenterX, ds.bottomY + ds.h / 2, workDoorCenterZ + 0.01);
+      group.add(trigger);
+
+      registerInteractiveDoor?.({
+        subId: ds.id,
+        pivots: [
+          {
+            group: slideGroup,
+            openAngle: 0.34, // 34 cm slide-out distance along +Z
+            closedAngle: 0,
+            currentAngle: 0,
+            onUpdate: (dist) => {
+              slideGroup.position.z = workDoorCenterZ + dist;
+            },
+          },
+        ],
+        triggerMeshes: [trigger, frontMesh],
+      });
+    }
+
+    // 5b. MIDDLE (60 cm): Built-in Dishwasher (bottom-hinged drop-down door, simple low-poly tub)
+    const dwW = 0.60 - doorGap;
+    const dwPivot = new THREE.Group();
+    dwPivot.name = 'pivot_island_dishwasher';
+    dwPivot.position.set(dwColCenterX, plinthH, workFrontZ - doorThick / 2);
+    group.add(dwPivot);
+
+    const dwDoor = new THREE.Mesh(
+      new THREE.BoxGeometry(dwW, workDoorH, doorThick),
+      greigeFrontMat
+    );
+    dwDoor.name = 'island_dishwasher_door';
+    dwDoor.position.set(0, workDoorH / 2, 0);
+    dwPivot.add(dwDoor);
+
+    // Simple low-poly stainless inner door panel + minimal tub & 2 flat rack planes
+    const dwInnerDoor = new THREE.Mesh(
+      new THREE.BoxGeometry(dwW - 0.03, workDoorH - 0.04, 0.006),
+      stainlessTubMat
+    );
+    dwInnerDoor.position.set(0, workDoorH / 2, -doorThick / 2 - 0.003);
+    dwPivot.add(dwInnerDoor);
+
+    // Simple low-poly stainless tub back & two flat rack shelves inside
+    const dwTubBack = new THREE.Mesh(
+      new THREE.BoxGeometry(dwW - 0.03, workDoorH - 0.04, 0.012),
+      stainlessTubMat
+    );
+    dwTubBack.position.set(dwColCenterX, plinthH + workDoorH / 2, -0.018);
+    group.add(dwTubBack);
+
+    for (const rackRelY of [0.28, 0.66]) {
+      const rackPlane = new THREE.Mesh(
+        new THREE.BoxGeometry(dwW - 0.08, 0.014, 0.40),
+        rackGreyMat
+      );
+      rackPlane.position.set(dwColCenterX, plinthH + workDoorH * rackRelY, 0.24);
+      group.add(rackPlane);
+    }
+
+    const dwTrigger = new THREE.Mesh(
+      new THREE.BoxGeometry(dwW, workDoorH, doorThick + 0.04),
+      triggerMat
+    );
+    dwTrigger.userData.isInteractiveTrigger = true;
+    dwTrigger.position.set(dwColCenterX, plinthH + workDoorH / 2, workDoorCenterZ + 0.01);
+    group.add(dwTrigger);
+
+    registerInteractiveDoor?.({
+      subId: 'island_dishwasher',
+      pivots: [
+        {
+          group: dwPivot,
+          openAngle: Math.PI * 0.36, // ~65° tilt-down outward
+          closedAngle: 0,
+          currentAngle: 0,
+          onUpdate: (angle) => {
+            dwPivot.rotation.x = angle;
+          },
+        },
+      ],
+      triggerMeshes: [dwTrigger, dwDoor],
+    });
+
+    // 5c. RIGHT (90 cm, sink cabinet): Two 45 cm hinged doors (simple low-poly interior)
+    const sinkDoorW = 0.45 - doorGap;
+    const sinkDoorConfigs: Array<{ id: string; xCenter: number; hinge: 'left' | 'right' }> = [
+      { id: 'island_sink_door_left', xCenter: sinkColCenterX - 0.225, hinge: 'left' },
+      { id: 'island_sink_door_right', xCenter: sinkColCenterX + 0.225, hinge: 'right' },
+    ];
+    for (const sc of sinkDoorConfigs) {
+      const hingeX = sc.hinge === 'left' ? sc.xCenter - sinkDoorW / 2 : sc.xCenter + sinkDoorW / 2;
+      const pivot = new THREE.Group();
+      pivot.name = `pivot_${sc.id}`;
+      pivot.position.set(hingeX, plinthH + workDoorH / 2, workFrontZ);
+      group.add(pivot);
+
+      const dMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(sinkDoorW, workDoorH, doorThick),
+        greigeFrontMat
+      );
+      dMesh.name = sc.id;
+      dMesh.position.set(sc.hinge === 'left' ? sinkDoorW / 2 : -sinkDoorW / 2, 0, -doorThick / 2);
+      pivot.add(dMesh);
+
+      const trigger = new THREE.Mesh(
+        new THREE.BoxGeometry(sinkDoorW, workDoorH, doorThick + 0.04),
+        triggerMat
+      );
+      trigger.userData.isInteractiveTrigger = true;
+      trigger.position.set(sc.xCenter, plinthH + workDoorH / 2, workDoorCenterZ + 0.01);
+      group.add(trigger);
+
+      registerInteractiveDoor?.({
+        subId: sc.id,
+        pivots: [
+          {
+            group: pivot,
+            openAngle: sc.hinge === 'left' ? -Math.PI * 0.42 : Math.PI * 0.42,
+            closedAngle: 0,
+            currentAngle: 0,
+          },
+        ],
+        triggerMeshes: [trigger, dMesh],
+      });
+    }
+
+    // 6. DINING / SHOWCASE SIDE (-Z): 4 Sleek Full-Height Sand-Greige Vertical Doors
+    // Spans between the two 14 cm rounded end cheeks: X in [-1.12, +1.12] (2.24 m / 4 = 56 cm each)
+    const diningSpanW = width - 2 * diningCornerR; // 2.24 m
+    const diningDoorCount = 4;
+    const diningColW = diningSpanW / diningDoorCount; // 0.56 m
+    const diningDoorW = diningColW - doorGap;
+    const diningFrontZ = -halfD; // -0.54 m
+    const diningHingeSides: Array<'left' | 'right'> = ['left', 'right', 'left', 'right'];
+
+    // Simple low-poly single shelf on dining side
+    const diningShelf = new THREE.Mesh(
+      new THREE.BoxGeometry(diningSpanW - 0.02, 0.016, 0.36),
+      interiorWhiteMat
+    );
+    diningShelf.position.set(0, plinthH + diningDoorH * 0.5, -0.28);
+    group.add(diningShelf);
+
+    for (let i = 0; i < diningDoorCount; i++) {
+      const colLeftX = -diningSpanW / 2 + i * diningColW + doorGap / 2;
+      const colRightX = colLeftX + diningDoorW;
+      const side = diningHingeSides[i];
+      const hingeX = side === 'left' ? colLeftX : colRightX;
+
+      // Facing -Z: pivot at front outer edge (diningFrontZ = -halfD), door extends in +Z into cabinet
+      const pivot = new THREE.Group();
+      pivot.name = `pivot_island_dining_door_${i + 1}`;
+      pivot.position.set(hingeX, plinthH + diningDoorH / 2, diningFrontZ);
+      group.add(pivot);
+
+      const dMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(diningDoorW, diningDoorH, doorThick),
+        greigeFrontMat
+      );
+      dMesh.name = `island_dining_door_${i + 1}`;
+      dMesh.position.set(side === 'left' ? diningDoorW / 2 : -diningDoorW / 2, 0, doorThick / 2);
+      pivot.add(dMesh);
+
+      const trigger = new THREE.Mesh(
+        new THREE.BoxGeometry(diningDoorW, diningDoorH, doorThick + 0.04),
+        triggerMat
+      );
+      trigger.userData.isInteractiveTrigger = true;
+      trigger.position.set(
+        (colLeftX + colRightX) / 2,
+        plinthH + diningDoorH / 2,
+        diningFrontZ + doorThick / 2 - 0.01
+      );
+      group.add(trigger);
+
+      // Facing -Z: left-hinged door (+X span) swings outward toward -Z with +angle; right-hinged (-X span) with -angle
+      const openAngle = side === 'left' ? Math.PI * 0.42 : -Math.PI * 0.42;
+      registerInteractiveDoor?.({
+        subId: `island_dining_door_${i + 1}`,
+        pivots: [{ group: pivot, openAngle, closedAngle: 0, currentAngle: 0 }],
+        triggerMeshes: [trigger, dMesh],
+      });
+    }
+
+    // 7. INDUCTION COOKTOP WITH DOWNDRAFT EXTRACTOR (LEFT, -X side, flush on countertop)
+    const cookW = 0.80;
+    const cookD = 0.52;
+    const cookThick = 0.004;
+    const cooktopMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(cookW, cookThick, cookD),
+      cooktopGlassMat
+    );
+    cooktopMesh.name = 'island_induction_cooktop';
+    cooktopMesh.position.set(cookColCenterX, height + cookThick / 2 - 0.002, applianceZ);
+    group.add(cooktopMesh);
+
+    // Central downdraft extractor vent grille
+    const ventMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(0.11, 0.003, 0.36),
+      cooktopGrilleMat
+    );
+    ventMesh.name = 'island_cooktop_extractor';
+    ventMesh.position.set(cookColCenterX, height + 0.001, applianceZ);
+    group.add(ventMesh);
+
+    // 4 subtle induction zone rings (2 left, 2 right of central extractor)
+    const zoneRingGeo = new THREE.RingGeometry(0.072, 0.078, 24);
+    zoneRingGeo.rotateX(-Math.PI / 2);
+    for (const zx of [-0.22, 0.22]) {
+      for (const zz of [-0.11, 0.11]) {
+        const ring = new THREE.Mesh(zoneRingGeo, cooktopZoneRingMat);
+        ring.position.set(cookColCenterX + zx, height + 0.0025, applianceZ + zz);
+        group.add(ring);
+      }
+    }
+
+    // 8. BRONZE / COPPER UNDERMOUNT SINK & MATCHING TAP (RIGHT, +X side)
+    const sinkWallT = 0.008;
+    const sinkTopY = topBottomY + 0.002; // tucked right under the marble cutout lip
+    const sinkBotY = sinkTopY - sinkDepthY;
+    const sinkCenterY = (sinkTopY + sinkBotY) / 2;
+
+    // 4 basin walls + bottom + bronze strainer
+    const sinkBot = new THREE.Mesh(
+      new THREE.BoxGeometry(sinkInnerW + 2 * sinkWallT, sinkWallT, sinkInnerD + 2 * sinkWallT),
+      bronzeSinkMat
+    );
+    sinkBot.name = 'island_bronze_sink_bottom';
+    sinkBot.position.set(sinkColCenterX, sinkBotY + sinkWallT / 2, applianceZ);
+    group.add(sinkBot);
+
+    for (const s of [-1, 1]) {
+      const sideWall = new THREE.Mesh(
+        new THREE.BoxGeometry(sinkWallT, sinkDepthY, sinkInnerD + 2 * sinkWallT),
+        bronzeSinkMat
+      );
+      sideWall.position.set(
+        sinkColCenterX + s * (sinkInnerW / 2 + sinkWallT / 2),
+        sinkCenterY,
+        applianceZ
+      );
+      group.add(sideWall);
+
+      const fbWall = new THREE.Mesh(
+        new THREE.BoxGeometry(sinkInnerW, sinkDepthY, sinkWallT),
+        bronzeSinkMat
+      );
+      fbWall.position.set(
+        sinkColCenterX,
+        sinkCenterY,
+        applianceZ + s * (sinkInnerD / 2 + sinkWallT / 2)
+      );
+      group.add(fbWall);
+    }
+
+    // Subtle brushed-bronze drain strainer in sink bottom
+    const drainMesh = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.042, 0.042, 0.004, 16),
+      bronzeTapMat
+    );
+    drainMesh.position.set(sinkColCenterX, sinkBotY + sinkWallT + 0.002, applianceZ);
+    group.add(drainMesh);
+
+    // Matching Brushed Bronze/Copper Quooker Square-Arch Tap behind sink
+    const tapX = sinkColCenterX;
+    const tapZ = applianceZ - sinkInnerD / 2 - 0.065; // 6.5 cm behind sink edge
+    const tapGroup = new THREE.Group();
+    tapGroup.name = 'island_bronze_tap';
+    tapGroup.position.set(tapX, height, tapZ);
+    group.add(tapGroup);
+
+    // Base collar
+    const tapBase = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.025, 0.016, 16), bronzeTapMat);
+    tapBase.position.y = 0.008;
+    tapGroup.add(tapBase);
+
+    // Vertical stem (26 cm tall)
+    const tapStemH = 0.25;
+    const tapStem = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.013, tapStemH, 16), bronzeTapMat);
+    tapStem.position.y = tapStemH / 2;
+    tapGroup.add(tapStem);
+
+    // Smooth curved elbow + horizontal spout reaching over sink (+Z)
+    const spoutCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, tapStemH - 0.005, 0),
+      new THREE.Vector3(0, tapStemH + 0.035, 0.025),
+      new THREE.Vector3(0, tapStemH + 0.040, 0.14),
+      new THREE.Vector3(0, tapStemH + 0.012, 0.185),
+    ]);
+    const spoutMesh = new THREE.Mesh(new THREE.TubeGeometry(spoutCurve, 14, 0.010, 12, false), bronzeTapMat);
+    tapGroup.add(spoutMesh);
+
+    // Side control lever
+    const leverStem = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.055, 10), bronzeTapMat);
+    leverStem.rotation.z = -Math.PI / 2;
+    leverStem.position.set(0.032, 0.065, 0);
+    tapGroup.add(leverStem);
+
+    return group;
+  },
+};

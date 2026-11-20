@@ -192,21 +192,20 @@ export const kitchenTallCabinetWallPrefab: AssetPrefabDefinition = {
       metalness: 0.0,
     });
 
-    // Warm taupe-sand interior cabinet lining so open cabinets clearly read as deep
-    // cabinetry rather than blending into the white plaster nis walls
+    // Clean bright white cabinet interior (subtle tonal steps so shelves remain legible)
     const interiorBackMat = new THREE.MeshStandardMaterial({
-      color: '#b8aa98',
-      roughness: 0.88,
+      color: '#ece9e3',
+      roughness: 0.90,
       metalness: 0.0,
     });
     const interiorDividerMat = new THREE.MeshStandardMaterial({
-      color: '#c4b7a5',
-      roughness: 0.86,
+      color: '#f1eee8',
+      roughness: 0.88,
       metalness: 0.0,
     });
     const interiorShelfMat = new THREE.MeshStandardMaterial({
-      color: '#d4c7b4',
-      roughness: 0.85,
+      color: '#f6f4ef',
+      roughness: 0.86,
       metalness: 0.0,
     });
 
