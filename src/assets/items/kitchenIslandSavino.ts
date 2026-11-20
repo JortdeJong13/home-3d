@@ -234,21 +234,21 @@ export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
       metalness: 0.0,
     });
 
-    // Matte-black induction cooktop + downdraft extractor
+    // Matte-black SaphirMatt-style induction cooktop + recessed horizontal intake vent
     const cooktopGlassMat = new THREE.MeshStandardMaterial({
-      color: '#1b1d20',
-      roughness: 0.22,
-      metalness: 0.14,
+      color: '#232529',
+      roughness: 0.44,
+      metalness: 0.08,
     });
     const cooktopGrilleMat = new THREE.MeshStandardMaterial({
-      color: '#2c3035',
-      roughness: 0.52,
-      metalness: 0.20,
+      color: '#17191c',
+      roughness: 0.62,
+      metalness: 0.14,
     });
-    const cooktopZoneRingMat = new THREE.MeshStandardMaterial({
-      color: '#4f555e',
-      roughness: 0.45,
-      metalness: 0.1,
+    const cooktopVentWellMat = new THREE.MeshStandardMaterial({
+      color: '#0f1012',
+      roughness: 0.85,
+      metalness: 0.05,
     });
 
     const triggerMat = new THREE.MeshBasicMaterial({
@@ -665,35 +665,103 @@ export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
       });
     }
 
-    // 7. INDUCTION COOKTOP WITH DOWNDRAFT EXTRACTOR (LEFT, -X side, flush on countertop)
-    const cookW = 0.80;
-    const cookD = 0.52;
-    const cookThick = 0.004;
-    const cooktopMesh = new THREE.Mesh(
-      new THREE.BoxGeometry(cookW, cookThick, cookD),
-      cooktopGlassMat
-    );
-    cooktopMesh.name = 'island_induction_cooktop';
-    cooktopMesh.position.set(cookColCenterX, height + cookThick / 2 - 0.002, cookZ);
-    group.add(cooktopMesh);
+    // 7. MATTE-BLACK INDUCTION COOKTOP WITH CENTRAL HORIZONTAL ROUNDED INTAKE VENT (LEFT, -X side)
+    {
+      const cookW = 0.80;
+      const cookD = 0.52;
+      const cookThick = 0.004;
+      const cookR = 0.005;
+      const ventW = 0.34; // horizontal intake vent running along X
+      const ventD = 0.074;
+      const ventR = 0.011; // slightly rounded corners on intake vent
 
-    // Central downdraft extractor vent grille
-    const ventMesh = new THREE.Mesh(
-      new THREE.BoxGeometry(0.11, 0.003, 0.36),
-      cooktopGrilleMat
-    );
-    ventMesh.name = 'island_cooktop_extractor';
-    ventMesh.position.set(cookColCenterX, height + 0.001, cookZ);
-    group.add(ventMesh);
+      const makeRoundedRect = (w: number, d: number, r: number): THREE.Shape => {
+        const hw = w / 2;
+        const hd = d / 2;
+        const rr = Math.min(r, hw * 0.45, hd * 0.45);
+        const s = new THREE.Shape();
+        s.moveTo(-hw + rr, -hd);
+        s.lineTo(hw - rr, -hd);
+        s.absarc(hw - rr, -hd + rr, rr, -Math.PI / 2, 0, false);
+        s.lineTo(hw, hd - rr);
+        s.absarc(hw - rr, hd - rr, rr, 0, Math.PI / 2, false);
+        s.lineTo(-hw + rr, hd);
+        s.absarc(-hw + rr, hd - rr, rr, Math.PI / 2, Math.PI, false);
+        s.lineTo(-hw, -hd + rr);
+        s.absarc(-hw + rr, -hd + rr, rr, Math.PI, (3 * Math.PI) / 2, false);
+        s.closePath();
+        return s;
+      };
 
-    // 4 subtle induction zone rings (2 left, 2 right of central extractor)
-    const zoneRingGeo = new THREE.RingGeometry(0.072, 0.078, 24);
-    zoneRingGeo.rotateX(-Math.PI / 2);
-    for (const zx of [-0.22, 0.22]) {
-      for (const zz of [-0.11, 0.11]) {
-        const ring = new THREE.Mesh(zoneRingGeo, cooktopZoneRingMat);
-        ring.position.set(cookColCenterX + zx, height + 0.0025, cookZ + zz);
-        group.add(ring);
+      const makeRoundedHole = (w: number, d: number, r: number): THREE.Path => {
+        const hw = w / 2;
+        const hd = d / 2;
+        const rr = Math.min(r, hw * 0.45, hd * 0.45);
+        const p = new THREE.Path();
+        p.moveTo(-hw + rr, -hd);
+        p.lineTo(hw - rr, -hd);
+        p.absarc(hw - rr, -hd + rr, rr, -Math.PI / 2, 0, false);
+        p.lineTo(hw, hd - rr);
+        p.absarc(hw - rr, hd - rr, rr, 0, Math.PI / 2, false);
+        p.lineTo(-hw + rr, hd);
+        p.absarc(-hw + rr, hd - rr, rr, Math.PI / 2, Math.PI, false);
+        p.lineTo(-hw, -hd + rr);
+        p.absarc(-hw + rr, -hd + rr, rr, Math.PI, (3 * Math.PI) / 2, false);
+        p.closePath();
+        return p;
+      };
+
+      // Sleek matte-black ceramic glass plate with punched horizontal rounded vent opening
+      const cookShape = makeRoundedRect(cookW, cookD, cookR);
+      cookShape.holes.push(makeRoundedHole(ventW, ventD, ventR));
+      const cookGeo = new THREE.ExtrudeGeometry(cookShape, {
+        depth: cookThick,
+        bevelEnabled: true,
+        bevelThickness: 0.0008,
+        bevelSize: 0.0008,
+        bevelSegments: 2,
+        curveSegments: 10,
+      });
+      cookGeo.rotateX(-Math.PI / 2);
+      const cooktopMesh = new THREE.Mesh(cookGeo, cooktopGlassMat);
+      cooktopMesh.name = 'island_induction_cooktop';
+      cooktopMesh.position.set(cookColCenterX, height, cookZ);
+      group.add(cooktopMesh);
+
+      // Dark recessed intake well floor right beneath the vent opening
+      const wellGeo = new THREE.ExtrudeGeometry(makeRoundedRect(ventW + 0.004, ventD + 0.004, ventR), {
+        depth: 0.0015,
+        bevelEnabled: false,
+        curveSegments: 10,
+      });
+      wellGeo.rotateX(-Math.PI / 2);
+      const wellMesh = new THREE.Mesh(wellGeo, cooktopVentWellMat);
+      wellMesh.name = 'island_cooktop_vent_well';
+      wellMesh.position.set(cookColCenterX, height + 0.0002, cookZ);
+      group.add(wellMesh);
+
+      // Slim matte-black intake grille trim frame with rounded corners + 2 subtle recessed louver slats
+      const trimShape = makeRoundedRect(ventW + 0.006, ventD + 0.006, ventR + 0.001);
+      trimShape.holes.push(makeRoundedHole(ventW - 0.012, ventD - 0.012, Math.max(0.004, ventR - 0.004)));
+      const trimGeo = new THREE.ExtrudeGeometry(trimShape, {
+        depth: 0.0022,
+        bevelEnabled: false,
+        curveSegments: 10,
+      });
+      trimGeo.rotateX(-Math.PI / 2);
+      const trimMesh = new THREE.Mesh(trimGeo, cooktopGrilleMat);
+      trimMesh.name = 'island_cooktop_extractor_rim';
+      trimMesh.position.set(cookColCenterX, height + 0.0024, cookZ);
+      group.add(trimMesh);
+
+      // Subtle recessed horizontal intake louver slats inside the well
+      for (const lz of [-0.016, 0.0, 0.016]) {
+        const slat = new THREE.Mesh(
+          new THREE.BoxGeometry(ventW - 0.020, 0.0015, 0.005),
+          cooktopGrilleMat
+        );
+        slat.position.set(cookColCenterX, height + 0.0024, cookZ + lz);
+        group.add(slat);
       }
     }
 
