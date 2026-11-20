@@ -119,7 +119,7 @@ export const ROOF_SPEC = {
   leftWallOuterX: 0.00,
   leftTileEdgeX: -0.04,
   rightPartyX: 5.87,
-  neighbourMaxX: 11.45,
+  neighbourMaxX: 10.05,
   /** Main roof tile shell aligns flush to brick gable faces (gevelpannen add the 6.5 cm verge overhang) */
   roofFrontZ: 0.005,
   roofRearZ: -10.465,
@@ -662,16 +662,15 @@ function buildPlotAndEnvironment(
   });
   plotGroup.add(plinthMesh);
 
-  // Surrounding context ground in neutral grey: a ring around the owned plot + full attached neighbour bnr. 56 (incl. berging to X = 14.72 m).
+  // Surrounding context ground in neutral grey: a ring around the owned plot.
+  // Right side (bnr. 56): 2.18 m strip + 2.00 m extra = 4.18 m; same width on the front, rear and left sides.
   const CONTEXT_MARGIN = 4.18;
-  const NB_TOTAL_MAX_X = 14.72; // Complete bnr. 56 (5.18 m interior + 0.40 m wall + 3.27 m berging)
   const ctx = new THREE.Shape();
   // Outer boundary is a true rectangle (90 degree corners), even though the owned plot is a trapezoid.
   const outerLeftX = Math.min(rearLeftX, frontLeftX) - CONTEXT_MARGIN;
-  const outerRightX = NB_TOTAL_MAX_X + CONTEXT_MARGIN;
   ctx.moveTo(outerLeftX, -(rearZ - CONTEXT_MARGIN));
-  ctx.lineTo(outerRightX, -(rearZ - CONTEXT_MARGIN));
-  ctx.lineTo(outerRightX, -(frontZ + CONTEXT_MARGIN));
+  ctx.lineTo(rightX + CONTEXT_MARGIN, -(rearZ - CONTEXT_MARGIN));
+  ctx.lineTo(rightX + CONTEXT_MARGIN, -(frontZ + CONTEXT_MARGIN));
   ctx.lineTo(outerLeftX, -(frontZ + CONTEXT_MARGIN));
   ctx.closePath();
   const ctxHole = new THREE.Path();
@@ -1314,20 +1313,20 @@ function buildPlotAndEnvironment(
     source: 'User specification: 75 cm front hedge',
   });
 
-  // Neighbour front street low hedge (neutral grey, 75 cm tall, across bnr. 56 front garden up to driveway)
+  // Neighbour front street low hedge (neutral grey, 75 cm tall)
   buildBushHedgeSegment(plotGroup, getMat, registerMesh, {
     id: 'hedge_front_neighbour',
     label: 'Haag Voorzijde Buurkavel (75 cm hoog)',
     matId: 'neighbour_hedge_grey',
     x0: 5.87,
     z0: frontZ - 0.18,
-    x1: 11.05,
+    x1: 10.02,
     z1: frontZ - 0.18,
     width: 0.34,
     height: 0.75,
     seed: 404,
     provenance: 'assumed',
-    source: 'Neighbour context matching 75 cm front hedge across bnr. 56 front garden',
+    source: 'Neighbour context matching 75 cm front hedge',
   });
 
   // 5. SOFT ARCHITECTURAL DIORAMA TREES (Matching positions in user's plot screenshot & front photo)
@@ -1368,8 +1367,8 @@ function buildPlotAndEnvironment(
   buildBackGardenFlowerBorders(plotGroup, getMat, registerMesh, leftBoundaryXAtZ);
 
   // 6. SURROUNDINGS (outside the owned plot, neutral grey): pavement strip & garden fences (schuttingen)
-  const ctxRightX = outerRightX;
-  const ctxLeftX = outerLeftX;
+  const ctxRightX = rightX + CONTEXT_MARGIN;
+  const ctxLeftX = Math.min(rearLeftX, frontLeftX) - CONTEXT_MARGIN;
   const addCtxBox = (
     id: string,
     label: string,
