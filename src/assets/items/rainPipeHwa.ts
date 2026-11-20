@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { AssetBuilderContext, AssetPrefabDefinition } from '../assetTypes';
-import { MaterialId } from '../../model/materials';
 import { cm } from '../../model/units';
 
 /**
@@ -10,11 +9,10 @@ import { cm } from '../../model/units';
  */
 function buildRainPipe3D(
   { width, depth, height, getMat }: AssetBuilderContext,
-  includeHopper: boolean,
-  materialId: MaterialId = 'roof_daktrim_zinc'
+  includeHopper: boolean
 ): THREE.Group {
   const group = new THREE.Group();
-  const zincMat = getMat(materialId);
+  const zincMat = getMat('roof_daktrim_zinc');
 
   const pipeRadius = 0.04; // Ø 8 cm standard Dutch HWA downspout
   const wallClearance = 0.02;
@@ -118,32 +116,4 @@ export const rainPipeHwaSectionPrefab: AssetPrefabDefinition = {
     height: cm(260, 'verified_drawing', 'Verdiepingshoogte HWA sectie (260 cm)'),
   },
   build3D: (ctx) => buildRainPipe3D(ctx, false),
-};
-
-/**
- * Neutral-grey rainwater downspout with collector hopper for neighbour bnr. 56 context.
- */
-export const rainPipeHwaGreyPrefab: AssetPrefabDefinition = {
-  prefabId: 'rain_pipe_hwa_grey',
-  defaultLabel: 'Buurwoning Regenpijp (HWA)',
-  defaultDimensions: {
-    width: cm(15, 'verified_drawing', 'HWA vergaderbak & regenpijp breedte (15 cm)'),
-    depth: cm(14, 'verified_drawing', 'HWA vergaderbak & regenpijp diepte vanaf gevel (14 cm)'),
-    height: cm(280, 'verified_drawing', 'Hoogte tot onderkant daktrim berging (+2.80 m)'),
-  },
-  build3D: (ctx) => buildRainPipe3D(ctx, true, 'neighbour_trim_grey'),
-};
-
-/**
- * Neutral-grey straight rainwater downspout section for neighbour bnr. 56 multi-floor stacking.
- */
-export const rainPipeHwaSectionGreyPrefab: AssetPrefabDefinition = {
-  prefabId: 'rain_pipe_hwa_section_grey',
-  defaultLabel: 'Buurwoning Regenpijp (HWA) Sectie',
-  defaultDimensions: {
-    width: cm(15, 'verified_drawing', 'HWA regenpijp breedte (15 cm)'),
-    depth: cm(14, 'verified_drawing', 'HWA regenpijp diepte vanaf gevel (14 cm)'),
-    height: cm(260, 'verified_drawing', 'Verdiepingshoogte HWA sectie (260 cm)'),
-  },
-  build3D: (ctx) => buildRainPipe3D(ctx, false, 'neighbour_trim_grey'),
 };

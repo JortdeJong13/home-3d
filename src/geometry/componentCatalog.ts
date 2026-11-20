@@ -30,15 +30,9 @@ export type OpeningPrefabId =
   | 'door_garden_double_b13'     // Rear extension double garden doors with sidelights (B13)
   | 'door_berging_garage_double' // Berging front double garage doors
   | 'door_berging_garden_rear'   // Berging rear single garden door
-  | 'neighbour_window_ground'      // Neighbour bnr. 56 ground floor front window (grey context)
+  | 'neighbour_window_ground'    // Neighbour bnr. 56 ground floor front window (grey context)
   | 'neighbour_window_rear_ground' // Neighbour bnr. 56 ground floor rear window (140x180 cm)
-  | 'neighbour_window_side'        // Neighbour bnr. 56 side living/bedroom window (140x180 cm)
-  | 'neighbour_window_slim'        // Neighbour bnr. 56 slim window (35x160 cm, Overloop/Badkamer/Gable)
-  | 'neighbour_french_balcony'     // Neighbour bnr. 56 1st floor French balcony (grey context)
-  | 'neighbour_door_entrance'      // Neighbour bnr. 56 arched front entrance door on right facade
-  | 'neighbour_door_rear_single'   // Neighbour bnr. 56 ground floor single rear kitchen door
-  | 'neighbour_door_berging_garage'// Neighbour bnr. 56 berging front garage tilt door
-  | 'neighbour_door_berging_rear'; // Neighbour bnr. 56 berging rear garden door
+  | 'neighbour_french_balcony';  // Neighbour bnr. 56 1st floor French balcony (grey context)
 
 export interface OpeningPrefabSpec {
   prefabId: OpeningPrefabId;
@@ -265,90 +259,6 @@ export const OPENING_PREFABS: Record<OpeningPrefabId, OpeningPrefabSpec> = {
     provenance: 'user_supplied',
     source: 'Verkooptekening VK-06 voorgevel/achtergevel bnr. 56 & user specification (140 × 230 cm, sill 0 cm)',
   },
-
-  // 16. Neighbour Context Side Living/Bedroom Window (140 × 180 cm)
-  neighbour_window_side: {
-    prefabId: 'neighbour_window_side',
-    defaultLabel: 'Buurwoning Zijraam (140 × 180 cm)',
-    width: 1.40,
-    height: 1.80,
-    sillHeight: 0.50,
-    frameMaterial: 'neighbour_window_grey',
-    panelMaterial: 'neighbour_glass_grey',
-    hasTerracottaSurround: true,
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 rechterzijgevel bnr. 56 (140 × 180 cm, sill 50 cm)',
-  },
-
-  // 17. Neighbour Context Slim Window (35 × 160 cm — Overloop, Badkamer & Topgevel)
-  neighbour_window_slim: {
-    prefabId: 'neighbour_window_slim',
-    defaultLabel: 'Buurwoning Smal Raam (35 × 160 cm)',
-    width: 0.35,
-    height: 1.60,
-    sillHeight: 0.70,
-    frameMaterial: 'neighbour_window_grey',
-    panelMaterial: 'neighbour_glass_grey',
-    hasTerracottaSurround: true,
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 achtergevel & rechterzijgevel bnr. 56 (35 × 160 cm)',
-  },
-
-  // 18. Neighbour Context Arched Front Entrance Door (Rechterzijgevel)
-  neighbour_door_entrance: {
-    prefabId: 'neighbour_door_entrance',
-    defaultLabel: 'Buurwoning Voordeur / Entree (98 × 208 cm + Boog)',
-    width: 0.98,
-    height: 2.08,
-    sillHeight: 0.00,
-    frameMaterial: 'neighbour_window_grey',
-    panelMaterial: 'neighbour_trim_grey',
-    hasArchTrim: true,
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 rechterzijgevel bnr. 56 (spiegelbeeld entree bnr. 55)',
-  },
-
-  // 19. Neighbour Context Rear Single Kitchen Door (Achtergevel Begane Grond)
-  neighbour_door_rear_single: {
-    prefabId: 'neighbour_door_rear_single',
-    defaultLabel: 'Buurwoning Achterdeur Keuken (100 × 230 cm)',
-    width: 1.00,
-    height: 2.30,
-    sillHeight: 0.00,
-    frameMaterial: 'neighbour_window_grey',
-    panelMaterial: 'neighbour_glass_grey',
-    hasTerracottaSurround: false,
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 achtergevel bnr. 56 (begane grond achterdeur)',
-  },
-
-  // 20. Neighbour Context Berging Garage Tilt Door (Voorgevel Berging)
-  neighbour_door_berging_garage: {
-    prefabId: 'neighbour_door_berging_garage',
-    defaultLabel: 'Buurwoning Garagedeur Kanteldeur (235 × 225 cm)',
-    width: 2.35,
-    height: 2.25,
-    sillHeight: 0.00,
-    frameMaterial: 'neighbour_window_grey',
-    panelMaterial: 'neighbour_trim_grey',
-    hasTerracottaSurround: false,
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 voorgevel bnr. 56 berging (spiegelbeeld bnr. 55)',
-  },
-
-  // 21. Neighbour Context Berging Rear Garden Door (Achtergevel Berging)
-  neighbour_door_berging_rear: {
-    prefabId: 'neighbour_door_berging_rear',
-    defaultLabel: 'Buurwoning Achterdeur Berging (100 × 230 cm)',
-    width: 1.00,
-    height: 2.30,
-    sillHeight: 0.00,
-    frameMaterial: 'neighbour_window_grey',
-    panelMaterial: 'neighbour_trim_grey',
-    hasTerracottaSurround: false,
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 achtergevel bnr. 56 berging (spiegelbeeld bnr. 55)',
-  },
 };
 
 export interface ResolvedOpeningInstance {
@@ -394,7 +304,6 @@ function buildTopBrickRollaag(
     openingHeight: number;
     wallThickness: number;
     reliefDepth?: number;
-    materialId?: MaterialId;
     provenance: ProvenanceType;
     source: string;
     floor: FloorLayerId;
@@ -408,7 +317,6 @@ function buildTopBrickRollaag(
     openingHeight,
     wallThickness,
     reliefDepth = 0.044,
-    materialId = 'window_trim_terracotta',
     provenance,
     source,
     floor,
@@ -429,8 +337,8 @@ function buildTopBrickRollaag(
 
   const mergedLintel = mergeGeometries(brickGeos, false);
   for (const g of brickGeos) g.dispose();
-  const lintelMesh = new THREE.Mesh(mergedLintel, getMat(materialId));
-  registerMesh(lintelMesh, materialId, {
+  const lintelMesh = new THREE.Mesh(mergedLintel, getMat('window_trim_terracotta'));
+  registerMesh(lintelMesh, 'window_trim_terracotta', {
     id,
     label,
     dimensionsLabel: `${lintelWidth.toFixed(2)} × ${lintelHeight.toFixed(2)} m`,
@@ -941,33 +849,24 @@ export function instantiateOpeningPrefab3D(
     group.add(surroundMesh);
   }
 
-  // 3. Decorative Brick Portal & Arch around Front Entrance Door (ONLY on the exterior facade surface!)
+  // 3. Decorative Red-Brown Brick Portal & Arch around Front Entrance Door (ONLY on the exterior facade surface!)
   if (op.hasArchTrim) {
-    const isNbArch = op.prefabId.startsWith('neighbour_');
-    const archOuterMatId: MaterialId = isNbArch ? 'neighbour_trim_grey' : 'exterior_arch_brick';
-    const archInfillMatId: MaterialId = isNbArch ? 'neighbour_window_grey' : 'exterior_arch_brick_infill';
-    // Door opening (0.98 m) sits asymmetrically in the 1.50 m portal:
-    // On bnr. 55 (left facade), portal center is +13.0 cm to the right of door center;
-    // on bnr. 56 (mirrored right facade), mirror horizontally with scale.x = -1 and -13.0 cm offset.
-    const archResult = buildDecorativeBrickArchMeshes(getMat, 0.076, 0.044, archOuterMatId, archInfillMatId);
-    if (isNbArch) {
-      archResult.group.scale.x = -1;
-      archResult.group.position.set(-0.13, -op.height / 2, wallThickness / 2 - 0.002);
-    } else {
-      archResult.group.position.set(0.13, -op.height / 2, wallThickness / 2 - 0.002);
-    }
+    // Door opening (0.98 m) sits asymmetrically on the left of the 1.50 m portal:
+    // Portal center is +13.0 cm to the right of the door center.
+    const archResult = buildDecorativeBrickArchMeshes(getMat, 0.076, 0.044);
+    archResult.group.position.set(0.13, -op.height / 2, wallThickness / 2 - 0.002);
 
-    registerMesh(archResult.outerBorderMesh, archOuterMatId, {
+    registerMesh(archResult.outerBorderMesh, 'exterior_arch_brick', {
       id: `${op.id}_arch_border`,
-      label: isNbArch ? 'Buurwoning Gemetselde Boog (Rollaag)' : 'Decoratieve Gemetselde Boog (Rollaag)',
+      label: 'Decoratieve Gemetselde Boog (Rollaag)',
       dimensionsLabel: '1.50 × 2.83 m (Asymmetrisch Portaal)',
       provenance: op.provenance,
       source: op.source,
       floor,
     });
-    registerMesh(archResult.recessedInfillMesh, archInfillMatId, {
+    registerMesh(archResult.recessedInfillMesh, 'exterior_arch_brick', {
       id: `${op.id}_arch_infill`,
-      label: isNbArch ? 'Buurwoning Boogveld & Penant' : 'Gemetseld Boogveld & Rechter Penant',
+      label: 'Gemetseld Boogveld & Rechter Penant',
       dimensionsLabel: 'Verdiept metselwerk (1.6 cm terugliggend)',
       provenance: op.provenance,
       source: op.source,
@@ -1030,33 +929,25 @@ export function instantiateOpeningPrefab3D(
     }
   };
 
-  const buildSingleSwingingDoor = (
-    leafThickness: number,
-    openAngle: number,
-    hasVisionGlass = false,
-    interactive = true
-  ) => {
-    const isNbDoor = op.prefabId.startsWith('neighbour_');
+  const buildSingleSwingingDoor = (leafThickness: number, openAngle: number, hasVisionGlass = false) => {
     const pivot = new THREE.Group();
     pivot.position.set(-innerW / 2, -frameThick / 2, frameCenterZ);
 
     let leaf: THREE.Mesh;
     if (hasVisionGlass) {
-      const handleMat = isNbDoor
-        ? getMat('neighbour_window_grey')
-        : new THREE.MeshStandardMaterial({
-            color: '#a8aeb5',
-            roughness: 0.35,
-            metalness: 0.75,
-            name: 'door_handle_steel',
-          });
+      const handleMat = new THREE.MeshStandardMaterial({
+        color: '#a8aeb5',
+        roughness: 0.35,
+        metalness: 0.75,
+        name: 'door_handle_steel',
+      });
       const built = buildDoorLeafWithVisionCutout({
         innerW,
         innerH,
         leafThickness,
         doorMat: getMat(op.panelMaterial),
         frameMat: getMat(op.frameMaterial),
-        glassMat: getMat(isNbDoor ? 'neighbour_glass_grey' : 'window_glass_day'),
+        glassMat: getMat('window_glass_day'),
         handleMat,
       });
       leaf = built.leafMesh;
@@ -1096,19 +987,17 @@ export function instantiateOpeningPrefab3D(
     });
     group.add(pivot);
 
-    if (interactive) {
-      const trigger = createTrigger();
-      if (onRegisterDoor) {
-        onRegisterDoor({
-          id: op.id,
-          label: op.label,
-          floor,
-          pivots: [{ group: pivot, openAngle, closedAngle: 0, currentAngle: 0 }],
-          triggerMeshes: [trigger, leaf],
-          isHovered: false,
-          isPinned: false,
-        });
-      }
+    const trigger = createTrigger();
+    if (onRegisterDoor) {
+      onRegisterDoor({
+        id: op.id,
+        label: op.label,
+        floor,
+        pivots: [{ group: pivot, openAngle, closedAngle: 0, currentAngle: 0 }],
+        triggerMeshes: [trigger, leaf],
+        isHovered: false,
+        isPinned: false,
+      });
     }
   };
 
@@ -1517,28 +1406,22 @@ export function instantiateOpeningPrefab3D(
       break;
     }
 
-    case 'door_berging_garage_double':
-    case 'neighbour_door_berging_garage': {
-      const isNbGarage = op.prefabId === 'neighbour_door_berging_garage';
-      addExteriorDoorThreshold(
-        isNbGarage ? 'neighbour_wall_grey' : 'floor_berging_concrete',
-        isNbGarage ? 'neighbour_window_grey' : 'window_frame_cream'
-      );
-      // 1. Facade brick soldier course (rollaag) ONLY across the top, matching front door arch relief (0.044 m)
+    case 'door_berging_garage_double': {
+      addExteriorDoorThreshold('floor_berging_concrete');
+      // 1. Red-brown facade brick soldier course (rollaag) ONLY across the top, matching front door arch relief (0.044 m)
       buildTopBrickRollaag(group, getMat, registerMesh, {
         id: `${op.id}_top_rollaag`,
-        label: isNbGarage ? 'Buurwoning Rollaag boven Garagedeur' : 'Gemetselde Rollaag boven Garagedeur',
+        label: 'Gemetselde Rollaag boven Garagedeur',
         lintelWidth: op.width + 0.06,
         lintelHeight: 0.19,
         openingHeight: op.height,
         wallThickness,
-        materialId: isNbGarage ? 'neighbour_trim_grey' : 'window_trim_terracotta',
         provenance: op.provenance,
         source: op.source,
         floor,
       });
 
-      // 2. Frameless single-piece kanteldeur (up-and-over tilt door) with crisp vertical ribs
+      // 2. Frameless single-piece sage-green kanteldeur (up-and-over tilt door) with crisp vertical ribs
       const doorW = op.width;
       const doorH = op.height;
       const doorPivot = new THREE.Group();
@@ -1565,15 +1448,13 @@ export function instantiateOpeningPrefab3D(
       const doorPanel = new THREE.Mesh(mergedDoorGeo, getMat(op.panelMaterial));
       doorPivot.add(doorPanel);
 
-      // Centered simple horizontal grab handle
-      const garageHandleMat = isNbGarage
-        ? getMat('neighbour_window_grey')
-        : new THREE.MeshStandardMaterial({
-            color: '#a8aeb5',
-            roughness: 0.35,
-            metalness: 0.75,
-            name: 'door_handle_steel',
-          });
+      // Centered simple horizontal brushed-steel grab handle (matching front door steel color)
+      const garageHandleMat = new THREE.MeshStandardMaterial({
+        color: '#a8aeb5',
+        roughness: 0.35,
+        metalness: 0.75,
+        name: 'door_handle_steel',
+      });
       const garageHandleGroup = new THREE.Group();
       const handleBaseZ = plateDepth / 2 + slatDepth;
       garageHandleGroup.position.set(0, -doorH / 2 + 0.72, handleBaseZ);
@@ -1616,60 +1497,50 @@ export function instantiateOpeningPrefab3D(
       };
       registerMesh(doorPanel, op.panelMaterial, meta);
 
-      if (!isNbGarage) {
-        const trigger = createTrigger();
-        if (onRegisterDoor) {
-          onRegisterDoor({
-            id: op.id,
-            label: op.label,
-            floor,
-            pivots: [
-              {
-                group: doorPivot,
-                openAngle: -Math.PI * 0.48, // tilts top inward (-Z) and bottom outward (+Z)
-                closedAngle: 0,
-                currentAngle: 0,
-                onUpdate: (angle, t) => {
-                  doorPivot.rotation.x = angle;
-                  // Keep top edge gliding cleanly below the lintel while retracting ~65% into the garage
-                  doorPivot.position.y = (doorH / 2) * (1 - Math.cos(angle)) - 0.03 * t;
-                  doorPivot.position.z = frameCenterZ - (doorH * 0.35) * Math.sin(-angle);
-                },
+      const trigger = createTrigger();
+      if (onRegisterDoor) {
+        onRegisterDoor({
+          id: op.id,
+          label: op.label,
+          floor,
+          pivots: [
+            {
+              group: doorPivot,
+              openAngle: -Math.PI * 0.48, // tilts top inward (-Z) and bottom outward (+Z)
+              closedAngle: 0,
+              currentAngle: 0,
+              onUpdate: (angle, t) => {
+                doorPivot.rotation.x = angle;
+                // Keep top edge gliding cleanly below the lintel while retracting ~65% into the garage
+                doorPivot.position.y = (doorH / 2) * (1 - Math.cos(angle)) - 0.03 * t;
+                doorPivot.position.z = frameCenterZ - (doorH * 0.35) * Math.sin(-angle);
               },
-            ],
-            triggerMeshes: [trigger, doorPanel],
-            isHovered: false,
-            isPinned: false,
-          });
-        }
+            },
+          ],
+          triggerMeshes: [trigger, doorPanel],
+          isHovered: false,
+          isPinned: false,
+        });
       }
       break;
     }
 
-    case 'door_entrance_front':
-    case 'neighbour_door_entrance': {
-      const isNbEntrance = op.prefabId === 'neighbour_door_entrance';
-      addExteriorDoorThreshold(
-        isNbEntrance ? 'neighbour_wall_grey' : 'floor_ground_tile',
-        isNbEntrance ? 'neighbour_window_grey' : 'window_frame_cream'
-      );
-      // Front entrance door with vertical glass vision panel (swings inward on owned house)
-      buildSingleSwingingDoor(0.055, Math.PI * 0.45, true, !isNbEntrance);
+    case 'door_entrance_front': {
+      addExteriorDoorThreshold('floor_ground_tile');
+      // Sage-green front entrance door with vertical glass vision panel, swings inward (-Z) into Hal
+      buildSingleSwingingDoor(0.055, Math.PI * 0.45, true);
       break;
     }
 
-    case 'door_berging_garden_rear':
-    case 'neighbour_door_berging_rear': {
-      const isNbBergingRear = op.prefabId === 'neighbour_door_berging_rear';
-      // 1. Facade brick soldier course (rollaag) ONLY across the top, flush with opening width
+    case 'door_berging_garden_rear': {
+      // 1. Red-brown facade brick soldier course (rollaag) ONLY across the top, flush with opening width
       buildTopBrickRollaag(group, getMat, registerMesh, {
         id: `${op.id}_top_rollaag`,
-        label: isNbBergingRear ? 'Buurwoning Rollaag boven Achterdeur Berging' : 'Gemetselde Rollaag boven Achterdeur Berging',
+        label: 'Gemetselde Rollaag boven Achterdeur Berging',
         lintelWidth: op.width,
         lintelHeight: 0.19,
         openingHeight: op.height,
         wallThickness,
-        materialId: isNbBergingRear ? 'neighbour_trim_grey' : 'window_trim_terracotta',
         provenance: op.provenance,
         source: op.source,
         floor,
@@ -1678,12 +1549,13 @@ export function instantiateOpeningPrefab3D(
       // Dark bottom threshold (onderdorpel)
       const sill = new THREE.Mesh(
         new THREE.BoxGeometry(op.width, 0.035, frameDepth + 0.02),
-        getMat(isNbBergingRear ? 'neighbour_roof_grey' : 'roof_tile_anthracite')
+        getMat('roof_tile_anthracite')
       );
       sill.position.set(0, -op.height / 2 + 0.0175, frameCenterZ + 0.006);
       group.add(sill);
 
-      // 2. Rear berging door leaf: upper glass (~60%), lower horizontal-grooved panel (~40%)
+      // 2. Sage-green rear berging door leaf: upper glass (~60%), lower horizontal-grooved panel (~40%)
+      // Hinged on the right (+X) in exterior view, swinging outward (+Z) into the garden
       const doorPivot = new THREE.Group();
       doorPivot.position.set(innerW / 2, -frameThick / 2, frameCenterZ);
 
@@ -1734,23 +1606,21 @@ export function instantiateOpeningPrefab3D(
       const leafMesh = new THREE.Mesh(mergedLeaf, getMat(op.panelMaterial));
       doorPivot.add(leafMesh);
 
-      // Upper glass pane
+      // Upper glass pane (unlit at night since the Berging is unlit)
       const glassPane = new THREE.Mesh(
         new THREE.BoxGeometry(glassW, glassH, 0.014),
-        getMat(isNbBergingRear ? 'neighbour_glass_grey' : 'window_glass_unlit')
+        getMat('window_glass_unlit')
       );
       glassPane.position.set(-innerW / 2, glassCenterY, 0);
       doorPivot.add(glassPane);
 
-      // Rounded door handle on left stile
-      const rearHandleMat = isNbBergingRear
-        ? getMat('neighbour_window_grey')
-        : new THREE.MeshStandardMaterial({
-            color: '#a8aeb5',
-            roughness: 0.35,
-            metalness: 0.75,
-            name: 'door_handle_steel',
-          });
+      // Rounded brushed-steel door handle on left stile (matching front door)
+      const rearHandleMat = new THREE.MeshStandardMaterial({
+        color: '#a8aeb5',
+        roughness: 0.35,
+        metalness: 0.75,
+        name: 'door_handle_steel',
+      });
       const rearHandle = createBrushedSteelLeverHandle({
         leafThickness: leafThick,
         handleMat: rearHandleMat,
@@ -1770,83 +1640,25 @@ export function instantiateOpeningPrefab3D(
         floor,
       });
 
-      if (!isNbBergingRear) {
-        const trigger = createTrigger();
-        if (onRegisterDoor) {
-          onRegisterDoor({
-            id: op.id,
-            label: op.label,
-            floor,
-            pivots: [
-              {
-                group: doorPivot,
-                openAngle: Math.PI * 0.45, // swings outward (+Z) into the garden
-                closedAngle: 0,
-                currentAngle: 0,
-              },
-            ],
-            triggerMeshes: [trigger, leafMesh, glassPane],
-            isHovered: false,
-            isPinned: false,
-          });
-        }
+      const trigger = createTrigger();
+      if (onRegisterDoor) {
+        onRegisterDoor({
+          id: op.id,
+          label: op.label,
+          floor,
+          pivots: [
+            {
+              group: doorPivot,
+              openAngle: Math.PI * 0.45, // swings outward (+Z) into the garden
+              closedAngle: 0,
+              currentAngle: 0,
+            },
+          ],
+          triggerMeshes: [trigger, leafMesh, glassPane],
+          isHovered: false,
+          isPinned: false,
+        });
       }
-      break;
-    }
-
-    case 'neighbour_door_rear_single': {
-      addExteriorDoorThreshold('neighbour_wall_grey', 'neighbour_window_grey');
-      buildTopBrickRollaag(group, getMat, registerMesh, {
-        id: `${op.id}_top_rollaag`,
-        label: 'Buurwoning Rollaag boven Achterdeur',
-        lintelWidth: op.width + 0.06,
-        lintelHeight: 0.19,
-        openingHeight: op.height,
-        wallThickness,
-        materialId: 'neighbour_trim_grey',
-        provenance: op.provenance,
-        source: op.source,
-        floor,
-      });
-
-      const stileW = 0.095;
-      const topRailH = 0.095;
-      const bottomRailH = 0.18;
-      const leafThick = 0.054;
-      const glassW = Math.max(0.10, innerW - stileW * 2);
-      const glassH = Math.max(0.20, innerH - topRailH - bottomRailH);
-      const glassCenterY = -frameThick / 2 + (bottomRailH - topRailH) / 2;
-
-      const leafGeos: THREE.BufferGeometry[] = [];
-      const addBar = (w: number, h: number, d: number, x: number, y: number) => {
-        const g = new THREE.BoxGeometry(w, h, d);
-        g.translate(x, y, frameCenterZ);
-        leafGeos.push(g);
-      };
-      addBar(stileW, innerH, leafThick, -innerW / 2 + stileW / 2, -frameThick / 2);
-      addBar(stileW, innerH, leafThick, innerW / 2 - stileW / 2, -frameThick / 2);
-      addBar(glassW, topRailH, leafThick, 0, -frameThick / 2 + innerH / 2 - topRailH / 2);
-      addBar(glassW, bottomRailH, leafThick, 0, -frameThick / 2 - innerH / 2 + bottomRailH / 2);
-
-      const mergedFrame = mergeGeometries(leafGeos, false);
-      for (const g of leafGeos) g.dispose();
-      const leafMesh = new THREE.Mesh(mergedFrame, getMat(op.frameMaterial));
-      registerMesh(leafMesh, op.frameMaterial, {
-        id: op.id,
-        label: op.label,
-        dimensionsLabel: `${op.width.toFixed(2)} × ${op.height.toFixed(2)} m`,
-        provenance: op.provenance,
-        source: op.source,
-        floor,
-      });
-      group.add(leafMesh);
-
-      const glassPane = new THREE.Mesh(
-        new THREE.BoxGeometry(glassW, glassH, 0.016),
-        getMat(op.panelMaterial)
-      );
-      glassPane.position.set(0, glassCenterY, frameCenterZ);
-      group.add(glassPane);
       break;
     }
 
@@ -1954,11 +1766,11 @@ export function instantiateOpeningPrefab3D(
       // Exterior Windows & Exterior Single Doors
       const isGlassWindow = op.panelMaterial.includes('glass');
       if (isGlassWindow && op.width >= 1.2) {
-        // Asymmetrical vertical mullion (185+75 for neighbour front, centered 70+70 for neighbour rear/side)
+        // Asymmetrical vertical mullion (185+75 for neighbour front, centered 70+70 for neighbour rear)
         const mullionRatio =
           op.prefabId === 'neighbour_window_ground'
             ? 0.55 / 2.60
-            : op.prefabId === 'neighbour_window_rear_ground' || op.prefabId === 'neighbour_window_side'
+            : op.prefabId === 'neighbour_window_rear_ground'
               ? 0
               : 0.14;
         const mullion = new THREE.Mesh(

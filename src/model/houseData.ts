@@ -131,7 +131,7 @@ export const HOUSE_DIMENSIONS = {
   plotRightBoundaryLength: m(25.63, 'calculated', 'Exact chain: 5.00 m (front garden) + 12.86 m (extended house) + 7.77 m (back garden) = 25.63 m'),
   beechHedgeHeight: m(1.50, 'user_supplied', 'Garden layout.png "Beech hedge · 1.5 m"'),
   sideAccessPathWidth: cm(96, 'user_supplied', 'Garden layout.png "Access around berging" & Garden gate width'),
-  neighbourContextSectionWidth: m(8.85, 'verified_drawing', 'Verkooptekening VK-06 complete attached neighbour bnr. 56 (5.18 m interior + 0.40 m wall + 3.27 m berging = 8.85 m)'),
+  neighbourContextSectionWidth: m(4.18, 'assumed', 'Project requirement: ~2.0 m cutaway section of attached neighbour bnr. 56'),
   surroundingContextMargin: m(1.85, 'assumed', 'Project requirement: 1–2 m surrounding environment margin on all sides with soft fade'),
   neighbourFrontStepBack: cm(22, 'verified_drawing', 'Verkooptekening VK-06 bnr. 56 front/rear facade recession (3.44 m - 3.22 m = 22 cm)'),
 } as const;
@@ -1158,17 +1158,14 @@ export function getHouseWalls(): WallSpec[] {
     },
 
     // =========================================================================
-    // ATTACHED NEIGHBOUR CONTEXT (Bouwnummer 56 — Complete House & Berging in Neutral Grey)
-    // Interior width = 5.18 m (X: 5.87..11.05 m), right outer wall = 0.40 m (X: 11.05..11.45 m)
-    // Depth = 9.22 m interior (Z: -0.62..-9.84 m), 10.02 m exterior (Z: -0.22..-10.24 m, 22 cm setback front & rear)
-    // Attached Berging on right: X: 11.45..14.72 m (3.19 m interior + 0.08 m wall, 3.44 m behind house), Z: -7.73..-13.72 m
+    // ATTACHED NEIGHBOUR CONTEXT (Bouwnummer 56 — 2.20 m section in Neutral Grey)
     // =========================================================================
     {
       id: 'nb_gf_front',
       label: 'Buurwoning bnr. 56 Voorgevel (Begane Grond — 22 cm terugliggend)',
       floor: 'ground',
       start: [5.87, -0.42],
-      end: [11.45, -0.42],
+      end: [10.05, -0.42],
       thickness: 0.40,
       baseY: 0.00,
       height: H0,
@@ -1177,12 +1174,12 @@ export function getHouseWalls(): WallSpec[] {
       isExterior: true,
       isNeighbour: true,
       provenance: 'verified_drawing',
-      source: 'Verkooptekening VK-06 bnr. 56 (0.22 m facade setback, 5.18 m interior + 0.40 m wall)',
+      source: 'Verkooptekening VK-06 bnr. 56 (0.22 m facade setback)',
       openings: [
         {
           id: 'nb_gf_win_front',
           prefabId: 'neighbour_window_ground',
-          offsetAlongWall: 2.10, // Left edge 80 cm from shared wall (X = 6.67 m) -> center X = 7.97 m
+          offsetAlongWall: 2.10, // Left edge 80 cm from shared wall (X = 5.87 + 0.80 = 6.67 m) -> center = 6.67 + 1.30 = 7.97 m
         },
       ],
     },
@@ -1190,7 +1187,7 @@ export function getHouseWalls(): WallSpec[] {
       id: 'nb_gf_rear',
       label: 'Buurwoning bnr. 56 Achtergevel (Begane Grond)',
       floor: 'ground',
-      start: [11.45, -10.04],
+      start: [10.05, -10.04],
       end: [5.87, -10.04],
       thickness: 0.40,
       baseY: 0.00,
@@ -1200,133 +1197,21 @@ export function getHouseWalls(): WallSpec[] {
       isExterior: true,
       isNeighbour: true,
       provenance: 'verified_drawing',
-      source: 'Verkooptekening VK-06 bnr. 56 base rear wall (window + rear kitchen door)',
+      source: 'Verkooptekening VK-06 bnr. 56 base rear wall',
       openings: [
-        {
-          id: 'nb_gf_door_rear',
-          prefabId: 'neighbour_door_rear_single',
-          offsetAlongWall: 1.295, // X = 11.45 - 1.295 = 10.155 m (aligned under 1st-floor bathroom window)
-        },
         {
           id: 'nb_gf_win_rear',
           prefabId: 'neighbour_window_rear_ground',
-          offsetAlongWall: 3.83, // X = 11.45 - 3.83 = 7.62 m (symmetrical to bnr. 55 rear French balcony)
+          offsetAlongWall: 2.43, // Symmetrical to bnr. 55 rear French balcony (X = 7.62 m, 1.05 m from shared wall)
         },
       ],
-    },
-    {
-      id: 'nb_gf_right',
-      label: 'Buurwoning bnr. 56 Rechterzijgevel (Begane Grond — 40 cm dik)',
-      floor: 'ground',
-      start: [11.25, -0.62],
-      end: [11.25, -9.84],
-      thickness: 0.40,
-      baseY: 0.00,
-      height: H0,
-      exteriorMaterial: 'neighbour_wall_grey',
-      interiorMaterial: 'neighbour_wall_grey',
-      isExterior: true,
-      isNeighbour: true,
-      provenance: 'verified_drawing',
-      source: 'Verkooptekening VK-06 rechterzijgevel bnr. 56 (9.22 m interior depth)',
-      openings: [
-        {
-          id: 'nb_gf_win_side',
-          prefabId: 'neighbour_window_side',
-          offsetAlongWall: 1.45, // Z = -0.62 - 1.45 = -2.07 m (centered in 3.22 m front living room)
-        },
-        {
-          id: 'nb_gf_door_entrance',
-          prefabId: 'neighbour_door_entrance',
-          offsetAlongWall: 5.26, // Z = -0.62 - 5.26 = -5.88 m (exact mirror of bnr. 55 entrance)
-        },
-      ],
-    },
-    // Attached Berging of Bouwnummer 56 (mirrored on right side: X 11.45..14.72 m, Z -7.73..-13.72 m)
-    {
-      id: 'nb_berging_front',
-      label: 'Buurwoning bnr. 56 Voorgevel Berging (20 cm dik)',
-      floor: 'ground',
-      start: [11.45, -7.83],
-      end: [14.72, -7.83],
-      thickness: 0.20,
-      baseY: 0.00,
-      height: H0,
-      exteriorMaterial: 'neighbour_wall_grey',
-      interiorMaterial: 'neighbour_wall_grey',
-      isExterior: true,
-      isNeighbour: true,
-      provenance: 'verified_drawing',
-      source: 'Verkooptekening VK-06 berging bnr. 56 (3.19 m interior, 20 cm front wall)',
-      openings: [
-        {
-          id: 'nb_door_berging_front',
-          prefabId: 'neighbour_door_berging_garage',
-          offsetAlongWall: 1.635,
-        },
-      ],
-    },
-    {
-      id: 'nb_berging_right',
-      label: 'Buurwoning bnr. 56 Rechterzijgevel Berging (5.99 m — 8 cm dik)',
-      floor: 'ground',
-      start: [14.68, -7.93],
-      end: [14.68, -13.64],
-      thickness: 0.08,
-      baseY: 0.00,
-      height: H0,
-      exteriorMaterial: 'neighbour_wall_grey',
-      interiorMaterial: 'neighbour_wall_grey',
-      isExterior: true,
-      isNeighbour: true,
-      provenance: 'verified_drawing',
-      source: 'Verkooptekening VK-06 berging bnr. 56 (5.99 m length)',
-    },
-    {
-      id: 'nb_berging_rear',
-      label: 'Buurwoning bnr. 56 Achtergevel Berging (8 cm dik)',
-      floor: 'ground',
-      start: [14.72, -13.68],
-      end: [11.12, -13.68],
-      thickness: 0.08,
-      baseY: 0.00,
-      height: H0,
-      exteriorMaterial: 'neighbour_wall_grey',
-      interiorMaterial: 'neighbour_wall_grey',
-      isExterior: true,
-      isNeighbour: true,
-      provenance: 'verified_drawing',
-      source: 'Verkooptekening VK-06 berging bnr. 56 achtergevel met tuindeur',
-      openings: [
-        {
-          id: 'nb_door_berging_rear',
-          prefabId: 'neighbour_door_berging_rear',
-          offsetAlongWall: 2.43, // Mirrored closer to house (X = 12.29 m)
-        },
-      ],
-    },
-    {
-      id: 'nb_berging_left_protrusion',
-      label: 'Buurwoning bnr. 56 Linkermuur Berging achter Achtergevel (8 cm dik)',
-      floor: 'ground',
-      start: [11.16, -13.64],
-      end: [11.16, -10.24],
-      thickness: 0.08,
-      baseY: 0.00,
-      height: H0,
-      exteriorMaterial: 'neighbour_wall_grey',
-      interiorMaterial: 'neighbour_wall_grey',
-      isExterior: true,
-      isNeighbour: true,
-      provenance: 'verified_drawing',
-      source: 'Verkooptekening VK-06 berging bnr. 56 (3.44 m width behind house rear wall)',
     },
     {
       id: 'nb_ff_front',
       label: 'Buurwoning bnr. 56 Voorgevel (1e Verdieping)',
       floor: 'first',
       start: [5.87, -0.42],
-      end: [11.45, -0.42],
+      end: [10.05, -0.42],
       thickness: 0.40,
       baseY: Y1,
       height: H1,
@@ -1340,7 +1225,7 @@ export function getHouseWalls(): WallSpec[] {
         {
           id: 'nb_ff_win_front',
           prefabId: 'neighbour_french_balcony',
-          offsetAlongWall: 1.50, // Left-aligned with nb_gf_win_front (X = 6.67 m) -> center X = 7.37 m
+          offsetAlongWall: 1.50, // Left-aligned with nb_gf_win_front (X = 6.67 m) -> center = 6.67 + 0.70 = 7.37 m
         },
       ],
     },
@@ -1348,7 +1233,7 @@ export function getHouseWalls(): WallSpec[] {
       id: 'nb_ff_rear',
       label: 'Buurwoning bnr. 56 Achtergevel (1e Verdieping)',
       floor: 'first',
-      start: [11.45, -10.04],
+      start: [10.05, -10.04],
       end: [5.87, -10.04],
       thickness: 0.40,
       baseY: Y1,
@@ -1361,51 +1246,18 @@ export function getHouseWalls(): WallSpec[] {
       source: 'Verkooptekening VK-06 achtergevel bnr. 56',
       openings: [
         {
-          id: 'nb_ff_win_rear_badkamer',
-          prefabId: 'neighbour_window_slim',
-          offsetAlongWall: 1.295, // X = 10.155 m (mirror of bnr. 55 bathroom window)
-        },
-        {
           id: 'nb_ff_win_rear',
           prefabId: 'neighbour_french_balcony',
-          offsetAlongWall: 3.83, // X = 7.62 m (aligned above nb_gf_win_rear)
-        },
-      ],
-    },
-    {
-      id: 'nb_ff_right',
-      label: 'Buurwoning bnr. 56 Rechterzijgevel (1e Verdieping — 40 cm dik)',
-      floor: 'first',
-      start: [11.25, -0.62],
-      end: [11.25, -9.84],
-      thickness: 0.40,
-      baseY: Y1,
-      height: H1,
-      exteriorMaterial: 'neighbour_wall_grey',
-      interiorMaterial: 'neighbour_wall_grey',
-      isExterior: true,
-      isNeighbour: true,
-      provenance: 'verified_drawing',
-      source: 'Verkooptekening VK-06 rechterzijgevel bnr. 56',
-      openings: [
-        {
-          id: 'nb_ff_win_side_bedroom',
-          prefabId: 'neighbour_window_side',
-          offsetAlongWall: 1.45, // Z = -2.07 m (directly above nb_gf_win_side)
-        },
-        {
-          id: 'nb_ff_win_side_overloop',
-          prefabId: 'neighbour_window_slim',
-          offsetAlongWall: 5.215, // Z = -5.835 m (directly above entrance door, mirror of bnr. 55)
+          offsetAlongWall: 2.43, // Aligned above nb_gf_win_rear (X = 7.62 m)
         },
       ],
     },
     {
       id: 'nb_sf_front',
-      label: 'Buurwoning bnr. 56 Voorgevel Borstwering (Zolder)',
+      label: 'Buurwoning bnr. 56 Voorgevel (Zolder)',
       floor: 'second',
       start: [5.87, -0.42],
-      end: [11.05, -0.42],
+      end: [10.05, -0.42],
       thickness: 0.40,
       baseY: Y2,
       height: 0.42,
@@ -1418,9 +1270,9 @@ export function getHouseWalls(): WallSpec[] {
     },
     {
       id: 'nb_sf_rear',
-      label: 'Buurwoning bnr. 56 Achtergevel Borstwering (Zolder)',
+      label: 'Buurwoning bnr. 56 Achtergevel (Zolder)',
       floor: 'second',
-      start: [11.05, -10.04],
+      start: [10.05, -10.04],
       end: [5.87, -10.04],
       thickness: 0.40,
       baseY: Y2,
@@ -1431,35 +1283,6 @@ export function getHouseWalls(): WallSpec[] {
       isNeighbour: true,
       provenance: 'verified_drawing',
       source: 'Verkooptekening VK-06 bnr. 56 achtergevel borstwering zolder',
-    },
-    {
-      id: 'nb_sf_right_gable',
-      label: 'Buurwoning bnr. 56 Rechterzijgevel Tuitgevel (Zolder — 40 cm dik)',
-      floor: 'second',
-      start: [11.25, -0.22],
-      end: [11.25, -10.24],
-      thickness: 0.40,
-      baseY: Y2,
-      height: 0.42,
-      gablePeak: {
-        offsetAlongWall: 5.01, // Center ridge at Z = -5.23 m
-        peakHeight: 5.08, // Rises cleanly to 10.78 m (2 cm under 10 cm roof tile shell)
-      },
-      exteriorMaterial: 'neighbour_wall_grey',
-      interiorMaterial: 'neighbour_wall_grey',
-      isExterior: true,
-      isNeighbour: true,
-      provenance: 'verified_drawing',
-      source: 'Verkooptekening VK-06 rechterzijgevel bnr. 56 (puntgevel onder langskap)',
-      openings: [
-        {
-          id: 'nb_sf_win_gable_slot',
-          prefabId: 'neighbour_window_slim',
-          label: 'Buurwoning Topgevelraam Rechterzijgevel (35 × 160 cm)',
-          offsetAlongWall: 5.01,
-          sillHeightOverride: 1.35,
-        },
-      ],
     },
   ];
 

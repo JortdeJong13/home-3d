@@ -3,12 +3,7 @@ import { m } from '../model/units';
 import { frontDoorArchPrefab } from './items/frontDoorArch';
 import { standardInteriorDoorPrefab } from './items/standardInteriorDoor';
 import { heatPumpOutdoorPrefab } from './items/heatPumpOutdoor';
-import {
-  rainPipeHwaPrefab,
-  rainPipeHwaSectionPrefab,
-  rainPipeHwaGreyPrefab,
-  rainPipeHwaSectionGreyPrefab,
-} from './items/rainPipeHwa';
+import { rainPipeHwaPrefab, rainPipeHwaSectionPrefab } from './items/rainPipeHwa';
 import { loungeCornerSofaPrefab } from './items/loungeCornerSofa';
 import { loungeCoffeeTablePrefab } from './items/loungeCoffeeTable';
 import { gardenPlanterClusterPrefab } from './items/gardenPlanterCluster';
@@ -32,8 +27,6 @@ export const ASSET_PREFABS: Record<string, AssetPrefabDefinition> = {
   heat_pump_outdoor: heatPumpOutdoorPrefab,
   rain_pipe_hwa: rainPipeHwaPrefab,
   rain_pipe_hwa_section: rainPipeHwaSectionPrefab,
-  rain_pipe_hwa_grey: rainPipeHwaGreyPrefab,
-  rain_pipe_hwa_section_grey: rainPipeHwaSectionGreyPrefab,
   lounge_corner_sofa: loungeCornerSofaPrefab,
   lounge_coffee_table: loungeCoffeeTablePrefab,
   garden_planter_cluster: gardenPlanterClusterPrefab,
@@ -138,186 +131,6 @@ export const PLACED_ASSETS: PlacedAssetSpec[] = [
     },
     provenance: 'verified_drawing',
     source: 'Verkooptekening VK-06 linkerzijgevel: HWA regenpijp bij achterhoek (zolder tot goot +6.13 m)',
-  },
-  // Attached Neighbour bnr. 56 HWA Rainwater Downspouts (Neutral Grey, per VK-06 Voorgevel, Achtergevel & Berging)
-  // 1. Front-left corner (near shared party wall, X = 6.02 m, Z = -0.15 m)
-  {
-    id: 'nb_gf_voorgevel_regenpijp_links',
-    prefabId: 'rain_pipe_hwa_section_grey',
-    label: 'Buurwoning bnr. 56 Regenpijp / HWA (Voorgevel Links · Begane Grond)',
-    floor: 'ground',
-    positionXZ: [6.02, -0.15],
-    rotationDeg: 0,
-    dimensionsOverride: {
-      height: m(2.60, 'verified_drawing', 'Begane grond hoogte (0.00 -> +2.60 m)'),
-    },
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 voorgevel bnr. 56: HWA regenpijp bij woningscheiding (begane grond)',
-  },
-  {
-    id: 'nb_ff_voorgevel_regenpijp_links',
-    prefabId: 'rain_pipe_hwa_section_grey',
-    label: 'Buurwoning bnr. 56 Regenpijp / HWA (Voorgevel Links · 1e Verdieping)',
-    floor: 'first',
-    positionXZ: [6.02, -0.15],
-    elevationOffsetY: -0.25,
-    rotationDeg: 0,
-    dimensionsOverride: {
-      height: m(2.85, 'verified_drawing', '1e verdieping incl. vloerrand (+2.60 -> +5.45 m)'),
-    },
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 voorgevel bnr. 56: HWA regenpijp bij woningscheiding (1e verdieping)',
-  },
-  {
-    id: 'nb_sf_voorgevel_regenpijp_links',
-    prefabId: 'rain_pipe_hwa_grey',
-    label: 'Buurwoning bnr. 56 Regenpijp / HWA (Voorgevel Links · Zolder / Goot)',
-    floor: 'second',
-    positionXZ: [6.02, -0.15],
-    elevationOffsetY: -0.25,
-    rotationDeg: 0,
-    dimensionsOverride: {
-      height: m(0.52, 'verified_drawing', 'Zolder borstwering tot onderkant voorgoot (+5.45 -> +5.97 m)'),
-    },
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 voorgevel bnr. 56: HWA regenpijp met vergaderbak bij voorgoot',
-  },
-  // 2. Front-right corner (X = 11.23 m, Z = -0.15 m)
-  {
-    id: 'nb_gf_voorgevel_regenpijp_rechts',
-    prefabId: 'rain_pipe_hwa_section_grey',
-    label: 'Buurwoning bnr. 56 Regenpijp / HWA (Voorgevel Rechts · Begane Grond)',
-    floor: 'ground',
-    positionXZ: [11.23, -0.15],
-    rotationDeg: 0,
-    dimensionsOverride: {
-      height: m(2.60, 'verified_drawing', 'Begane grond hoogte (0.00 -> +2.60 m)'),
-    },
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 voorgevel bnr. 56: HWA regenpijp bij rechterhoek (begane grond)',
-  },
-  {
-    id: 'nb_ff_voorgevel_regenpijp_rechts',
-    prefabId: 'rain_pipe_hwa_section_grey',
-    label: 'Buurwoning bnr. 56 Regenpijp / HWA (Voorgevel Rechts · 1e Verdieping)',
-    floor: 'first',
-    positionXZ: [11.23, -0.15],
-    elevationOffsetY: -0.25,
-    rotationDeg: 0,
-    dimensionsOverride: {
-      height: m(2.85, 'verified_drawing', '1e verdieping incl. vloerrand (+2.60 -> +5.45 m)'),
-    },
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 voorgevel bnr. 56: HWA regenpijp bij rechterhoek (1e verdieping)',
-  },
-  {
-    id: 'nb_sf_voorgevel_regenpijp_rechts',
-    prefabId: 'rain_pipe_hwa_grey',
-    label: 'Buurwoning bnr. 56 Regenpijp / HWA (Voorgevel Rechts · Zolder / Goot)',
-    floor: 'second',
-    positionXZ: [11.23, -0.15],
-    elevationOffsetY: -0.25,
-    rotationDeg: 0,
-    dimensionsOverride: {
-      height: m(0.52, 'verified_drawing', 'Zolder borstwering tot onderkant voorgoot (+5.45 -> +5.97 m)'),
-    },
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 voorgevel bnr. 56: HWA regenpijp met vergaderbak bij voorgoot',
-  },
-  // 3. Rear-left corner (near shared party wall, X = 6.02 m, Z = -10.31 m)
-  {
-    id: 'nb_gf_achtergevel_regenpijp_links',
-    prefabId: 'rain_pipe_hwa_section_grey',
-    label: 'Buurwoning bnr. 56 Regenpijp / HWA (Achtergevel Links · Begane Grond)',
-    floor: 'ground',
-    positionXZ: [6.02, -10.31],
-    rotationDeg: 180,
-    dimensionsOverride: {
-      height: m(2.60, 'verified_drawing', 'Begane grond hoogte (0.00 -> +2.60 m)'),
-    },
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 achtergevel bnr. 56: HWA regenpijp bij woningscheiding (begane grond)',
-  },
-  {
-    id: 'nb_ff_achtergevel_regenpijp_links',
-    prefabId: 'rain_pipe_hwa_section_grey',
-    label: 'Buurwoning bnr. 56 Regenpijp / HWA (Achtergevel Links · 1e Verdieping)',
-    floor: 'first',
-    positionXZ: [6.02, -10.31],
-    elevationOffsetY: -0.25,
-    rotationDeg: 180,
-    dimensionsOverride: {
-      height: m(2.85, 'verified_drawing', '1e verdieping incl. vloerrand (+2.60 -> +5.45 m)'),
-    },
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 achtergevel bnr. 56: HWA regenpijp bij woningscheiding (1e verdieping)',
-  },
-  {
-    id: 'nb_sf_achtergevel_regenpijp_links',
-    prefabId: 'rain_pipe_hwa_grey',
-    label: 'Buurwoning bnr. 56 Regenpijp / HWA (Achtergevel Links · Zolder / Goot)',
-    floor: 'second',
-    positionXZ: [6.02, -10.31],
-    elevationOffsetY: -0.25,
-    rotationDeg: 180,
-    dimensionsOverride: {
-      height: m(0.52, 'verified_drawing', 'Zolder borstwering tot onderkant achtergoot (+5.45 -> +5.97 m)'),
-    },
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 achtergevel bnr. 56: HWA regenpijp met vergaderbak bij achtergoot',
-  },
-  // 4. Rear-right corner (beside Berging, X = 11.00 m, Z = -10.31 m)
-  {
-    id: 'nb_gf_achtergevel_regenpijp_rechts',
-    prefabId: 'rain_pipe_hwa_section_grey',
-    label: 'Buurwoning bnr. 56 Regenpijp / HWA (Achtergevel Rechts · Begane Grond)',
-    floor: 'ground',
-    positionXZ: [11.00, -10.31],
-    rotationDeg: 180,
-    dimensionsOverride: {
-      height: m(2.60, 'verified_drawing', 'Begane grond hoogte (0.00 -> +2.60 m)'),
-    },
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 achtergevel bnr. 56: HWA regenpijp bij berging (begane grond)',
-  },
-  {
-    id: 'nb_ff_achtergevel_regenpijp_rechts',
-    prefabId: 'rain_pipe_hwa_section_grey',
-    label: 'Buurwoning bnr. 56 Regenpijp / HWA (Achtergevel Rechts · 1e Verdieping)',
-    floor: 'first',
-    positionXZ: [11.00, -10.31],
-    elevationOffsetY: -0.25,
-    rotationDeg: 180,
-    dimensionsOverride: {
-      height: m(2.85, 'verified_drawing', '1e verdieping incl. vloerrand (+2.60 -> +5.45 m)'),
-    },
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 achtergevel bnr. 56: HWA regenpijp bij berging (1e verdieping)',
-  },
-  {
-    id: 'nb_sf_achtergevel_regenpijp_rechts',
-    prefabId: 'rain_pipe_hwa_grey',
-    label: 'Buurwoning bnr. 56 Regenpijp / HWA (Achtergevel Rechts · Zolder / Goot)',
-    floor: 'second',
-    positionXZ: [11.00, -10.31],
-    elevationOffsetY: -0.25,
-    rotationDeg: 180,
-    dimensionsOverride: {
-      height: m(0.52, 'verified_drawing', 'Zolder borstwering tot onderkant achtergoot (+5.45 -> +5.97 m)'),
-    },
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 achtergevel bnr. 56: HWA regenpijp met vergaderbak bij achtergoot',
-  },
-  // 5. Rear outer corner of bnr. 56 Berging (mirrored from bnr. 55 berging HWA, X = 14.30 m, Z = -13.79 m)
-  {
-    id: 'nb_gf_berging_regenpijp_achter',
-    prefabId: 'rain_pipe_hwa_grey',
-    label: 'Buurwoning bnr. 56 Regenpijp / HWA (Achtergevel Berging)',
-    floor: 'ground',
-    positionXZ: [14.30, -13.79],
-    rotationDeg: 180,
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 achtergevel berging bnr. 56: HWA regenpijp bij buitenhoek',
   },
   {
     id: 'back_garden_lounge_sofa',
