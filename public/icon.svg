@@ -10,17 +10,6 @@
   <polygon points="14.5,136.62 95.61,178.85 95.61,175.92 14.5,133.69" fill="#c9c4ba" stroke="none" stroke-width="0" />
   <polygon points="14.5,133.69 84.67,111.39 165.79,153.62 95.61,175.92" fill="#b8c7a3" stroke="none" stroke-width="0" />
 
-  <!-- Berging (Attached garage on left: X=-3.27..0, Z=-7.73..-13.72, Y=0..2.85) -->
-  <polygon points="18.1,133.87 51.96,151.5 51.96,127.59 18.1,109.97" fill="#d1b07f" stroke="none" stroke-width="0" />
-  <polygon points="18.1,133.87 51.96,151.5 51.96,148.81 18.1,131.19" fill="#b89f7d" stroke="none" stroke-width="0" />
-  <polygon points="51.96,151.5 75.62,143.98 75.62,120.07 51.96,127.59" fill="#e4c79a" stroke="none" stroke-width="0" />
-  <polygon points="51.96,151.5 75.62,143.98 75.62,141.29 51.96,148.81" fill="#b89f7d" stroke="none" stroke-width="0" />
-  <polygon points="55.0,150.11 72.36,144.59 72.36,126.14 55.0,131.66" fill="#b5654d" stroke="none" stroke-width="0" />
-  <polygon points="55.87,149.84 71.5,144.87 71.5,127.26 55.87,132.22" fill="#f5f2eb" stroke="none" stroke-width="0" />
-  <polygon points="56.45,149.4 63.54,147.15 63.54,130.37 56.45,132.62" fill="#4f6b58" stroke="none" stroke-width="0" />
-  <polygon points="63.83,147.05 70.92,144.8 70.92,128.03 63.83,130.28" fill="#4f6b58" stroke="none" stroke-width="0" />
-  <polygon points="17.72,109.95 41.59,102.36 75.79,120.16 51.91,127.75" fill="#3a3e42" stroke="#b8bec4" stroke-width="1.1" />
-
   <!-- Main House Left Wall (X = 0.0, Z = 0..-10.46) -->
   <polygon points="60.19,135.94 119.31,166.73 119.31,115.31 60.19,84.53" fill="#d1b07f" stroke="none" stroke-width="0" />
   <polygon points="75.62,143.98 119.31,166.73 119.31,164.04 75.62,141.29" fill="#a88f6e" stroke="none" stroke-width="0" />
@@ -38,6 +27,17 @@
   <polygon points="82.57,116.98 88.51,120.07 88.51,107.49 82.57,104.4" fill="#b5654d" stroke="none" stroke-width="0" />
   <polygon points="83.03,116.63 88.06,119.25 88.06,107.84 83.03,105.22" fill="#f5f2eb" stroke="none" stroke-width="0" />
   <polygon points="83.59,116.09 87.49,118.12 87.49,108.39 83.59,106.36" fill="#8fbcd4" stroke="none" stroke-width="0" />
+
+  <!-- Berging (Attached garage on left: X=-3.27..0, Z=-7.73..-13.72, Y=0..2.85) -->
+  <polygon points="18.1,133.87 51.96,151.5 51.96,127.59 18.1,109.97" fill="#d1b07f" stroke="none" stroke-width="0" />
+  <polygon points="18.1,133.87 51.96,151.5 51.96,148.81 18.1,131.19" fill="#b89f7d" stroke="none" stroke-width="0" />
+  <polygon points="51.96,151.5 75.62,143.98 75.62,120.07 51.96,127.59" fill="#e4c79a" stroke="none" stroke-width="0" />
+  <polygon points="51.96,151.5 75.62,143.98 75.62,141.29 51.96,148.81" fill="#b89f7d" stroke="none" stroke-width="0" />
+  <polygon points="55.0,150.11 72.36,144.59 72.36,126.14 55.0,131.66" fill="#b5654d" stroke="none" stroke-width="0" />
+  <polygon points="55.87,149.84 71.5,144.87 71.5,127.26 55.87,132.22" fill="#f5f2eb" stroke="none" stroke-width="0" />
+  <polygon points="56.45,149.4 63.54,147.15 63.54,130.37 56.45,132.62" fill="#4f6b58" stroke="none" stroke-width="0" />
+  <polygon points="63.83,147.05 70.92,144.8 70.92,128.03 63.83,130.28" fill="#4f6b58" stroke="none" stroke-width="0" />
+  <polygon points="17.72,109.95 41.59,102.36 75.79,120.16 51.91,127.75" fill="#3a3e42" stroke="#b8bec4" stroke-width="1.1" />
 
   <!-- Right/Rear Roof Slopes (behind front gable) -->
   <polygon points="140.91,68.44 161.78,101.81 149.06,95.19 111.35,53.05" fill="#33373c" stroke="none" stroke-width="0" />
