@@ -1842,9 +1842,9 @@ function buildFrontGardenFlowerBorder(
 }
 
 /**
- * Build very sparse, stemless "floaty zen" hovering blossom puffs: weightless, soft pastel
- * cloud-like blossom forms drifting a few centimetres above the grass with soft detached
- * shadows, scattered loosely in 3 spots in the front garden and 2 spots next to the driveway.
+ * Build very sparse, "floaty zen" blossom puffs: soft pastel cloud-like blossom forms
+ * poised on ultra-slender minimalist stems, scattered loosely in 3 spots in the front
+ * garden and 2 spots next to the driveway.
  */
 function buildFrontAndDrivewayWildflowers(
   group: THREE.Group,
@@ -1860,12 +1860,15 @@ function buildFrontAndDrivewayWildflowers(
 
   type PuffPalette = 'white' | 'pink' | 'lavender' | 'yellow';
 
+  const stemGeos: THREE.BufferGeometry[] = [];
   const buckets: Record<PuffPalette, THREE.BufferGeometry[]> = {
     white: [],
     pink: [],
     lavender: [],
     yellow: [],
   };
+
+  const upVec = new THREE.Vector3(0, 1, 0);
 
   const addCloudPuff = (
     cx: number,
@@ -1875,6 +1878,21 @@ function buildFrontAndDrivewayWildflowers(
     palette: PuffPalette,
     lobes: number
   ) => {
+    // Ultra-slender minimalist stem grounding the blossom puff cleanly to the lawn
+    const base = new THREE.Vector3(
+      cx + (rand() - 0.5) * 0.028,
+      0,
+      cz + (rand() - 0.5) * 0.028
+    );
+    const tip = new THREE.Vector3(cx, cy, cz);
+    const dir = new THREE.Vector3().subVectors(tip, base);
+    const len = dir.length();
+    const stemGeo = new THREE.CylinderGeometry(0.0045, 0.0065, len, 6);
+    const quat = new THREE.Quaternion().setFromUnitVectors(upVec, dir.clone().normalize());
+    stemGeo.applyQuaternion(quat);
+    stemGeo.translate((base.x + tip.x) * 0.5, (base.y + tip.y) * 0.5, (base.z + tip.z) * 0.5);
+    stemGeos.push(stemGeo);
+
     const target = buckets[palette];
     const baseYaw = rand() * Math.PI * 2;
     for (let i = 0; i < lobes; i++) {
@@ -1905,12 +1923,12 @@ function buildFrontAndDrivewayWildflowers(
     mainPalette: PuffPalette,
     companionPalette: PuffPalette
   ) => {
-    // Main hovering cloud-blossom puff floating 12..18 cm above the lawn
+    // Main cloud-blossom puff poised 13..18 cm above the lawn
     const mainY = 0.13 + rand() * 0.05;
     const mainR = 0.072 + rand() * 0.018;
     addCloudPuff(cx, mainY, cz, mainR, mainPalette, 3);
 
-    // 1-2 smaller satellite petal-puffs drifting lightly nearby & slightly higher
+    // 1-2 smaller satellite blossom puffs poised slightly higher nearby
     const driftAngle = rand() * Math.PI * 2;
     const dist1 = 0.14 + rand() * 0.07;
     addCloudPuff(
@@ -1936,7 +1954,7 @@ function buildFrontAndDrivewayWildflowers(
     }
   };
 
-  // --- Front garden lawn: 3 sparse, weightless hovering blossom accents ---
+  // --- Front garden lawn: 3 sparse zen blossom accents ---
   addDriftingAccent(0.92, 3.78, 'pink', 'white');
   addDriftingAccent(3.64, 2.52, 'white', 'yellow');
   addDriftingAccent(5.05, 4.08, 'lavender', 'white');
@@ -1951,16 +1969,21 @@ function buildFrontAndDrivewayWildflowers(
   addDriftingAccent(drivewayStripX(3.62, 0.12), 3.62, 'white', 'pink');
   addDriftingAccent(drivewayStripX(-1.45, -0.08), -1.45, 'lavender', 'yellow');
 
+  const stemsMesh = new THREE.Mesh(mergeGeometries(stemGeos, false), getMat('plot_hedge_beech_deep'));
+  stemsMesh.castShadow = true;
+  stemsMesh.receiveShadow = true;
+  group.add(stemsMesh);
+
   const whiteMesh = new THREE.Mesh(mergeGeometries(buckets.white, false), getMat('plot_tree_foliage_blossom'));
   registerMesh(
     whiteMesh,
     'plot_tree_foliage_blossom',
     {
       id: 'front_driveway_wildflowers',
-      label: 'Zwevende Bloesemwolkjes (Voortuin & langs Oprit)',
+      label: 'Zen Bloesemwolkjes (Voortuin & langs Oprit)',
       dimensionsLabel: '5 losse accenten',
       provenance: 'user_supplied',
-      source: 'User request: sparse, abstract stemless hovering blossom puffs in front garden and next to driveway',
+      source: 'User request: sparse, abstract zen blossom puffs on slender stems in front garden and next to driveway',
       floor: 'plot',
     },
     true,
