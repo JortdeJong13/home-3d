@@ -11,7 +11,7 @@ import * as THREE from 'three';
 const PLOT = {
   rearZ: -20.63,
   frontZ: 5.0,
-  rightX: 5.87,
+  rightX: 14.72, // Extends past complete grey neighbour bnr. 56 + berging (X = 14.72 m) before edge blur/fade begins
   rearLeftX: -4.28,
   frontLeftX: -5.0,
 };

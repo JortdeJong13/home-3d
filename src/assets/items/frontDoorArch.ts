@@ -27,7 +27,9 @@ export interface BrickArchBuildResult {
 export function buildDecorativeBrickArchMeshes(
   getMat: (id: MaterialId) => THREE.MeshStandardMaterial,
   outerReliefDepth = 0.076,
-  infillReliefDepth = 0.044
+  infillReliefDepth = 0.044,
+  archBrickMatId: MaterialId = 'exterior_arch_brick',
+  infillMatId: MaterialId = 'exterior_arch_brick_infill'
 ): BrickArchBuildResult {
   const group = new THREE.Group();
 
@@ -37,8 +39,8 @@ export function buildDecorativeBrickArchMeshes(
   const doorRightLocalX = 0.36; // Right edge of 0.98 m door opening in portal space (-0.62 + 0.98 = +0.36)
 
   // Slightly deeper derivative of exterior_arch_brick for the recessed tympanum & right pier
-  const archBrickMat = getMat('exterior_arch_brick');
-  const infillMat = getMat('exterior_arch_brick_infill');
+  const archBrickMat = getMat(archBrickMatId);
+  const infillMat = getMat(infillMatId);
 
   // 1. Continuous Outer U-Shaped Arch Border: Horizontal bricks on legs + radial voussoirs on arch
   const borderShape = new THREE.Shape();

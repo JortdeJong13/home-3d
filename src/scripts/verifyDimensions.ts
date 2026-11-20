@@ -320,6 +320,26 @@ console.log(
   `  ✓ All ${ownedExteriorWalls.length} owned exterior walls verified with local +Z pointing OUTWARD (brick/trim outside, plaster inside)`
 );
 
+// Verify that all neighbour bnr. 56 exterior walls also have local +Z pointing OUTWARD
+const nbExteriorWalls = walls.filter((w) => w.isExterior && w.isNeighbour);
+for (const ew of nbExteriorWalls) {
+  const dx = ew.end[0] - ew.start[0];
+  const dz = ew.end[1] - ew.start[1];
+  const len = Math.hypot(dx, dz);
+  const normalX = -dz / len;
+  const normalZ = dx / len;
+  const midX = (ew.start[0] + ew.end[0]) / 2;
+  const midZ = (ew.start[1] + ew.end[1]) / 2;
+  const refCenter = ew.id.includes('berging') ? [13.0, -10.7] : [8.66, -5.23];
+  const dot = (midX - refCenter[0]) * normalX + (midZ - refCenter[1]) * normalZ;
+  if (dot <= 0) {
+    throw new Error(`Neighbour exterior wall ${ew.id} is inside-out! Outward dot product = ${dot}`);
+  }
+}
+console.log(
+  `  ✓ All ${nbExteriorWalls.length} neighbour bnr. 56 exterior walls verified with local +Z pointing OUTWARD`
+);
+
 // 3. Verify 3D Scene Graph, Scroll Animation Invariants & Day/Night Lighting in Node
 const scene = new THREE.Scene();
 const rig = createLightingRig(scene);
