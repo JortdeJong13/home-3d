@@ -1842,9 +1842,9 @@ function buildFrontGardenFlowerBorder(
 }
 
 /**
- * Build sparse, small stemmed wildflowers (slender leaning stems, tiny base leaves,
- * 5–6 distinct radiating petals around a contrasting center) scattered casually in a few
- * irregular mini-pockets across the front garden lawn and the grass strip next to the driveway.
+ * Build sparse, "floaty zen" small flowers (slender gently arching stems, soft base leaves,
+ * pillowy cupped lotus/anemone petal bowls with a small pearl center) scattered organically
+ * in a few irregular pockets across the front garden lawn and the grass strip next to the driveway.
  */
 function buildFrontAndDrivewayWildflowers(
   group: THREE.Group,
@@ -1871,58 +1871,75 @@ function buildFrontAndDrivewayWildflowers(
   };
 
   const addFlower = (fx: number, fz: number, palette: PetalPalette) => {
-    const stemH = 0.14 + rand() * 0.12; // 14 -> 26 cm tall
-    const tilt = 0.08 + rand() * 0.22;  // gentle natural lean
+    const stemH = 0.20 + rand() * 0.14; // 20 -> 34 cm tall for a floaty, airy silhouette
+    const lowerTilt = 0.05 + rand() * 0.10;
+    const upperTilt = lowerTilt + 0.06 + rand() * 0.12; // gentle zen arch
     const leanYaw = rand() * Math.PI * 2;
     const headSpin = rand() * Math.PI * 2;
-    const petalCount = rand() < 0.55 ? 5 : 6;
-    const petalL = 0.044 + rand() * 0.016;
-    const petalW = 0.021 + rand() * 0.007;
-    const centerR = 0.016 + rand() * 0.005;
+    const petalCount = 5;
+    const petalL = 0.062 + rand() * 0.016;
+    const petalW = 0.042 + rand() * 0.010;
+    const petalT = 0.019 + rand() * 0.005;
+    const centerR = 0.022 + rand() * 0.005;
 
-    // Matrix placing the tilted stem base at (fx, 0, fz)
-    const mat = new THREE.Matrix4()
+    const lowerH = stemH * 0.54;
+    const upperH = stemH - lowerH;
+
+    // Lower stem segment matrix
+    const lowerMat = new THREE.Matrix4()
       .makeTranslation(fx, 0, fz)
       .multiply(new THREE.Matrix4().makeRotationY(leanYaw))
-      .multiply(new THREE.Matrix4().makeRotationZ(tilt));
+      .multiply(new THREE.Matrix4().makeRotationZ(lowerTilt));
 
-    // Slender stem (convert to non-indexed to match IcosahedronGeometry leaves for mergeGeometries)
-    const stemGeo = new THREE.CylinderGeometry(0.0055, 0.0075, stemH, 5).toNonIndexed();
-    stemGeo.translate(0, stemH * 0.5, 0);
-    stemGeo.applyMatrix4(mat);
-    stemLeafGeos.push(stemGeo);
+    const stemLower = new THREE.CylinderGeometry(0.006, 0.008, lowerH, 6).toNonIndexed();
+    stemLower.translate(0, lowerH * 0.5, 0);
+    stemLower.applyMatrix4(lowerMat);
+    stemLeafGeos.push(stemLower);
 
-    // 2 tiny base leaves sprouting from the ground
+    // Midpoint where upper arching segment begins
+    const midPt = new THREE.Vector3(0, lowerH, 0).applyMatrix4(lowerMat);
+    const upperMat = new THREE.Matrix4()
+      .makeTranslation(midPt.x, midPt.y, midPt.z)
+      .multiply(new THREE.Matrix4().makeRotationY(leanYaw))
+      .multiply(new THREE.Matrix4().makeRotationZ(upperTilt));
+
+    const stemUpper = new THREE.CylinderGeometry(0.005, 0.006, upperH, 6).toNonIndexed();
+    stemUpper.translate(0, upperH * 0.5, 0);
+    stemUpper.applyMatrix4(upperMat);
+    stemLeafGeos.push(stemUpper);
+
+    // 1-2 soft curved zen base leaves
+    const leafCount = rand() < 0.45 ? 1 : 2;
     const baseLeafYaw = rand() * Math.PI * 2;
-    for (let l = 0; l < 2; l++) {
-      const leafGeo = new THREE.IcosahedronGeometry(0.5, 1);
-      leafGeo.scale(0.018, 0.006, 0.052 + rand() * 0.018);
-      leafGeo.translate(0, 0, 0.024);
-      leafGeo.rotateX(-(0.48 + rand() * 0.28));
-      leafGeo.rotateY(baseLeafYaw + l * (Math.PI * 0.85 + rand() * 0.35));
-      leafGeo.translate(fx, 0.014 + rand() * 0.012, fz);
+    for (let l = 0; l < leafCount; l++) {
+      const leafGeo = new THREE.IcosahedronGeometry(0.5, 2);
+      leafGeo.scale(0.024, 0.010, 0.078 + rand() * 0.024);
+      leafGeo.translate(0, 0, 0.036);
+      leafGeo.rotateX(-(0.55 + rand() * 0.25));
+      leafGeo.rotateY(baseLeafYaw + l * (Math.PI * 0.9 + rand() * 0.35));
+      leafGeo.translate(fx, 0.016 + rand() * 0.014, fz);
       stemLeafGeos.push(leafGeo);
     }
 
-    // Distinct radiating petals cupped gently upward at the stem tip
+    // Soft pillowy lotus/anemone petal bowl floating at the arching stem tip
     const petalTarget = petalBuckets[palette];
     for (let i = 0; i < petalCount; i++) {
-      const pAngle = headSpin + (i / petalCount) * Math.PI * 2 + (rand() - 0.5) * 0.14;
-      const petalGeo = new THREE.IcosahedronGeometry(0.5, 1);
-      petalGeo.scale(petalW, 0.009, petalL);
-      petalGeo.translate(0, 0, centerR * 0.62 + petalL * 0.44);
-      petalGeo.rotateX(-(0.18 + rand() * 0.14));
+      const pAngle = headSpin + (i / petalCount) * Math.PI * 2 + (rand() - 0.5) * 0.12;
+      const petalGeo = new THREE.IcosahedronGeometry(0.5, 2);
+      petalGeo.scale(petalW, petalT, petalL);
+      petalGeo.translate(0, 0.004, centerR * 0.58 + petalL * 0.38);
+      petalGeo.rotateX(-(0.38 + rand() * 0.14)); // soft cupped zen bloom
       petalGeo.rotateY(pAngle);
-      petalGeo.translate(0, stemH, 0);
-      petalGeo.applyMatrix4(mat);
+      petalGeo.translate(0, upperH, 0);
+      petalGeo.applyMatrix4(upperMat);
       petalTarget.push(petalGeo);
     }
 
-    // Contrasting flower center disc
-    const centerGeo = new THREE.IcosahedronGeometry(centerR, 1);
-    centerGeo.scale(1.0, 0.50, 1.0);
-    centerGeo.translate(0, stemH + 0.004, 0);
-    centerGeo.applyMatrix4(mat);
+    // Smooth pearl center nestled softly inside the cupped petals
+    const centerGeo = new THREE.IcosahedronGeometry(centerR, 2);
+    centerGeo.scale(1.0, 0.72, 1.0);
+    centerGeo.translate(0, upperH + 0.012, 0);
+    centerGeo.applyMatrix4(upperMat);
     if (palette === 'yellow') {
       warmDarkCenterGeos.push(centerGeo);
     } else {
@@ -1943,28 +1960,28 @@ function buildFrontAndDrivewayWildflowers(
   // --- Front garden lawn: 4 sparse, irregular pockets + 1 lone stray flower ---
   addPocket(0.76, 3.86, [
     { palette: 'white', dx: 0.00, dz: 0.00 },
-    { palette: 'pink', dx: 0.14, dz: -0.09 },
-    { palette: 'white', dx: -0.08, dz: -0.15 },
+    { palette: 'pink', dx: 0.18, dz: -0.11 },
+    { palette: 'white', dx: -0.10, dz: -0.19 },
   ]);
 
   addPocket(1.94, 3.16, [
     { palette: 'lavender', dx: 0.00, dz: 0.00 },
-    { palette: 'lavender', dx: 0.12, dz: 0.11 },
+    { palette: 'lavender', dx: 0.16, dz: 0.14 },
   ]);
 
   addPocket(3.88, 2.34, [
     { palette: 'yellow', dx: 0.00, dz: 0.00 },
-    { palette: 'white', dx: 0.13, dz: 0.08 },
-    { palette: 'yellow', dx: -0.11, dz: 0.07 },
+    { palette: 'white', dx: 0.17, dz: 0.10 },
+    { palette: 'yellow', dx: -0.14, dz: 0.09 },
   ]);
 
   addPocket(5.16, 3.84, [
     { palette: 'pink', dx: 0.00, dz: 0.00 },
-    { palette: 'white', dx: -0.14, dz: 0.11 },
-    { palette: 'pink', dx: 0.09, dz: 0.16 },
+    { palette: 'white', dx: -0.18, dz: 0.14 },
+    { palette: 'pink', dx: 0.11, dz: 0.20 },
   ]);
 
-  // Lone stray daisy near the front hedge
+  // Lone stray blossom near the front hedge
   addFlower(2.68, 4.34, 'white');
 
   // --- Next to the driveway: 3 sparse, irregular pockets in the open grass stretches ---
@@ -1976,20 +1993,20 @@ function buildFrontAndDrivewayWildflowers(
 
   addPocket(drivewayStripX(3.68, 0.14), 3.68, [
     { palette: 'white', dx: 0.00, dz: 0.00 },
-    { palette: 'yellow', dx: -0.12, dz: 0.14 },
-    { palette: 'white', dx: 0.07, dz: 0.19 },
+    { palette: 'yellow', dx: -0.15, dz: 0.17 },
+    { palette: 'white', dx: 0.09, dz: 0.23 },
   ]);
 
   addPocket(drivewayStripX(-1.18, -0.10), -1.18, [
     { palette: 'pink', dx: 0.00, dz: 0.00 },
-    { palette: 'lavender', dx: 0.14, dz: -0.13 },
-    { palette: 'pink', dx: -0.06, dz: -0.22 },
-    { palette: 'white', dx: 0.11, dz: 0.12 },
+    { palette: 'lavender', dx: 0.17, dz: -0.16 },
+    { palette: 'pink', dx: -0.08, dz: -0.26 },
+    { palette: 'white', dx: 0.13, dz: 0.15 },
   ]);
 
   addPocket(drivewayStripX(-2.42, 0.12), -2.42, [
     { palette: 'white', dx: 0.00, dz: 0.00 },
-    { palette: 'yellow', dx: -0.13, dz: -0.11 },
+    { palette: 'yellow', dx: -0.16, dz: -0.14 },
   ]);
 
   const stemsMesh = new THREE.Mesh(mergeGeometries(stemLeafGeos, false), getMat('plot_hedge_beech_deep'));
@@ -2001,7 +2018,7 @@ function buildFrontAndDrivewayWildflowers(
       label: 'Kleine Veldbloemen (Voortuin & langs Oprit)',
       dimensionsLabel: '7 kleine groepjes',
       provenance: 'user_supplied',
-      source: 'User request: sparse, small stemmed flowers in front garden and next to driveway',
+      source: 'User request: sparse, floaty zen flowers in front garden and next to driveway',
       floor: 'plot',
     },
     true,
