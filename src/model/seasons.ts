@@ -111,6 +111,11 @@ export const SEASON_MATERIAL_OVERRIDES: Partial<
     autumn: { colorDay: '#8e7f96', colorNight: '#403946' },
     winter: { colorDay: '#bbc4ce', colorNight: '#555d68' },
   },
+  plot_flower_pink: {
+    spring: { colorDay: '#f0b1ba', colorNight: '#704d52' },
+    autumn: { colorDay: '#b38b88', colorNight: '#4f3d3c' },
+    winter: { colorDay: '#ccd3da', colorNight: '#5c636e' },
+  },
   plot_soil_border: {
     autumn: { colorDay: '#86725c', colorNight: '#3d342b' },
     winter: { colorDay: '#dce4eb', colorNight: '#5e6978' },
@@ -182,6 +187,7 @@ export const MATERIAL_SURFACE_WEATHER: Partial<
   plot_tree_foliage_blossom: { snow: 0.55, wet: 0.10 },
   plot_tree_foliage_warm: { snow: 0.50, wet: 0.10 },
   plot_flower_lavender: { snow: 0.55, wet: 0.10 },
+  plot_flower_pink: { snow: 0.55, wet: 0.10 },
   plot_gate_timber: { snow: 0.62, wet: 0.35 },
   plot_fence_post: { snow: 0.62, wet: 0.35 },
   neighbour_roof_grey: { snow: 0.82, wet: 0.25, isNeighbour: true },
