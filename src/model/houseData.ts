@@ -410,6 +410,51 @@ export function getHouseWalls(): WallSpec[] {
       provenance: 'verified_drawing',
       source: 'VK-06 & User specification (7 cm inner wall): 344 + 12 + 242 + 7 + 92 + 7 + 262 = 966 cm',
     },
+    // 5c-bis. Built-in Kitchen Cabinet Niche ("Nis" / Koof) framing the centered 240 × 60 × 224 cm kastenwand
+    // Centered on the 2.61 m wall (X: 0.40..3.01 m -> center X = 1.705 m, cabinet X: 0.505..2.905 m, Z: -7.44..-8.04 m).
+    // 1 mm shadow-gap clearance prevents coplanar Z-fighting while keeping the surround flush.
+    {
+      id: 'gf_int_kitchen_nis_left',
+      label: 'Keukennis Zijwand Links (10.5 × 60 cm)',
+      floor: 'ground',
+      start: [0.452, -7.44],
+      end: [0.452, -8.04],
+      thickness: 0.104,
+      baseY: 0.00,
+      height: H0,
+      exteriorMaterial: 'interior_wall_plaster',
+      interiorMaterial: 'interior_wall_plaster',
+      provenance: 'user_supplied',
+      source: 'User specification: Built-in kitchen nis flanking centered 240 cm kastenwand on 261 cm wall',
+    },
+    {
+      id: 'gf_int_kitchen_nis_right',
+      label: 'Keukennis Zijwand Rechts (10.5 × 60 cm)',
+      floor: 'ground',
+      start: [2.958, -7.44],
+      end: [2.958, -8.04],
+      thickness: 0.104,
+      baseY: 0.00,
+      height: H0,
+      exteriorMaterial: 'interior_wall_plaster',
+      interiorMaterial: 'interior_wall_plaster',
+      provenance: 'user_supplied',
+      source: 'User specification: Built-in kitchen nis flush with hall right wall (X = 3.01 m)',
+    },
+    {
+      id: 'gf_int_kitchen_nis_top',
+      label: 'Keukennis Koof Boven Kastenwand (240 × 60 × 36 cm)',
+      floor: 'ground',
+      start: [0.504, -7.74],
+      end: [2.906, -7.74],
+      thickness: 0.60,
+      baseY: 2.241,
+      height: H0 - 2.241,
+      exteriorMaterial: 'interior_wall_plaster',
+      interiorMaterial: 'interior_wall_plaster',
+      provenance: 'user_supplied',
+      source: 'User specification: Built-in bulkhead above 224 cm kastenwand up to 260 cm ceiling (36 cm)',
+    },
     // 5d. Front wall of Toilet (separating Toilet 1.50×0.92m from Hal 2.42m) = 7 cm thick!
     // Z: -6.38 to -6.45 m (centerline Z = -6.415 m), X: 1.37 to 3.01 m
     {

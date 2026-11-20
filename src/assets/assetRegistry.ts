@@ -10,6 +10,7 @@ import { gardenPlanterClusterPrefab } from './items/gardenPlanterCluster';
 import { gardenBollardLightPrefab } from './items/gardenBollardLight';
 import { loungeLanternPrefab } from './items/loungeLantern';
 import { diningTableOakPrefab } from './items/diningTableOak';
+import { kitchenTallCabinetWallPrefab } from './items/kitchenTallCabinetWall';
 
 /**
  * CENTRAL ASSET PREFAB CATALOG
@@ -31,6 +32,7 @@ export const ASSET_PREFABS: Record<string, AssetPrefabDefinition> = {
   garden_bollard_light: gardenBollardLightPrefab,
   lounge_lantern: loungeLanternPrefab,
   dining_table_oak: diningTableOakPrefab,
+  kitchen_tall_cabinet_wall: kitchenTallCabinetWallPrefab,
 };
 
 /**
@@ -235,5 +237,15 @@ export const PLACED_ASSETS: PlacedAssetSpec[] = [
     rotationDeg: 270,
     provenance: 'user_supplied',
     source: 'User specification: 220 × 105 × 77 cm oak table, 118 cm from rear wall (-12.46 m) and 83 cm from shared party wall (+5.57 m)',
+  },
+  {
+    id: 'gf_keuken_kastenwand',
+    prefabId: 'kitchen_tall_cabinet_wall',
+    label: 'Keuken Kastenwand Savino Chabrier (240 × 60 × 224 cm)',
+    floor: 'ground',
+    positionXZ: [1.705, -7.74],
+    rotationDeg: 180,
+    provenance: 'user_supplied',
+    source: 'User specification: Superkeukens Savino Chabrier kastenwand (240 × 60 × 224 cm) centered in 261 cm built-in nis behind toilet (Z = -7.44..-8.04 m)',
   },
 ];
