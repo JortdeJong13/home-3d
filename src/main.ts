@@ -33,7 +33,6 @@ renderer.toneMappingExposure = 1.04;
 
 const scene = new THREE.Scene();
 const edgeBlur = new EdgeBlurPass(renderer);
-edgeBlur.enabled = !isTouchDevice;
 const lightingRig = createLightingRig(scene);
 const cameraController = new IsometricCameraController(canvas);
 

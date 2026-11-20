@@ -29,15 +29,19 @@ export class EdgeBlurPass {
   private quadScene = new THREE.Scene();
   private quadCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   private size = new THREE.Vector2();
+  private cachedScene: THREE.Scene | null = null;
+  private cachedSkipDepthObjects: THREE.Object3D[] = [];
+  private hiddenHitboxes: THREE.Object3D[] = [];
 
   constructor(private renderer: THREE.WebGLRenderer) {
     const isTouchDevice =
       typeof window !== 'undefined' &&
       (window.matchMedia?.('(pointer: coarse)').matches || /iPad|iPhone|Android/i.test(navigator.userAgent));
+    const blurTaps = isTouchDevice ? 14 : 28;
 
     this.target = new THREE.WebGLRenderTarget(4, 4, {
       type: THREE.HalfFloatType,
-      samples: isTouchDevice ? 0 : 2,
+      samples: 2,
       depthBuffer: true,
     });
     this.target.depthTexture = new THREE.DepthTexture(4, 4);
@@ -151,7 +155,7 @@ export class EdgeBlurPass {
 
           vec4 acc = vec4(0.0);
           float wsum = 0.0;
-          const int TAPS = 28;
+          const int TAPS = ${blurTaps};
           float radius = blurAmt * uMaxBlurPx;
           if (radius > 0.25) {
             for (int i = 0; i < TAPS; i++) {
@@ -217,25 +221,34 @@ export class EdgeBlurPass {
     this.renderer.render(scene, camera);
 
     // 2. Render Z-only pass for all visible geometry (including transparent trees & glass)
-    const hiddenHitboxes: THREE.Object3D[] = [];
-    scene.traverse((obj) => {
-      if (!obj.visible) return;
-      if (obj.userData?.skipEdgeBlurDepth) {
-        obj.visible = false;
-        hiddenHitboxes.push(obj);
-        return;
-      }
-      if ((obj as THREE.Mesh).isMesh) {
-        const mat = (obj as THREE.Mesh).material;
-        const isInvisible = Array.isArray(mat)
-          ? mat.every((m) => m.transparent && m.opacity <= 0.001)
-          : Boolean(mat && mat.transparent && mat.opacity <= 0.001);
-        if (isInvisible) {
-          obj.visible = false;
-          hiddenHitboxes.push(obj);
+    if (this.cachedScene !== scene) {
+      this.cachedScene = scene;
+      this.cachedSkipDepthObjects.length = 0;
+      scene.traverse((obj) => {
+        if (obj.userData?.skipEdgeBlurDepth) {
+          this.cachedSkipDepthObjects.push(obj);
+          return;
         }
+        if ((obj as THREE.Mesh).isMesh) {
+          const mat = (obj as THREE.Mesh).material;
+          const isInvisible = Array.isArray(mat)
+            ? mat.every((m) => m.transparent && m.opacity <= 0.001)
+            : Boolean(mat && mat.transparent && mat.opacity <= 0.001);
+          if (isInvisible) {
+            this.cachedSkipDepthObjects.push(obj);
+          }
+        }
+      });
+    }
+
+    this.hiddenHitboxes.length = 0;
+    for (let i = 0; i < this.cachedSkipDepthObjects.length; i++) {
+      const obj = this.cachedSkipDepthObjects[i];
+      if (obj.visible) {
+        obj.visible = false;
+        this.hiddenHitboxes.push(obj);
       }
-    });
+    }
 
     const prevOverride = scene.overrideMaterial;
     const prevShadowAutoUpdate = this.renderer.shadowMap.autoUpdate;
@@ -251,9 +264,10 @@ export class EdgeBlurPass {
       scene.overrideMaterial = prevOverride;
       this.renderer.shadowMap.autoUpdate = prevShadowAutoUpdate;
       this.renderer.shadowMap.needsUpdate = prevShadowNeedsUpdate;
-      for (const obj of hiddenHitboxes) {
-        obj.visible = true;
+      for (let i = 0; i < this.hiddenHitboxes.length; i++) {
+        this.hiddenHitboxes[i].visible = true;
       }
+      this.hiddenHitboxes.length = 0;
     }
 
     // 3. Composite with plot-edge blur & fade
