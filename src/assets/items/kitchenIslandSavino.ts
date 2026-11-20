@@ -93,21 +93,30 @@ function getCountertopMarbleTexture(): THREE.DataTexture {
 }
 
 /**
- * Creates a 2D plan shape for the Savino Chabrier island:
+ * Creates a 2D plan shape for the Savino Chabrier island with rounded corners on ALL 4 sides:
  * - X spans [-halfW, +halfW]
  * - Y spans [-halfD, +halfD], which after rotateX(-PI/2) maps:
- *     +halfD -> -Z (dining/showcase side, with signature rounded corners!)
- *     -halfD -> +Z (working/cooking side, with crisp straight corners!)
+ *     +halfD -> -Z (dining/showcase side, generous rounded corners rDining = 14 cm)
+ *     -halfD -> +Z (working/cooking side, rounded corners rWork = 6 cm matching 60 mm cheeks)
  */
-function createIslandPlanShape(halfW: number, halfD: number, diningCornerR: number): THREE.Shape {
-  const r = Math.min(diningCornerR, halfW * 0.45, halfD * 0.45);
+function createIslandPlanShape(
+  halfW: number,
+  halfD: number,
+  rDining: number,
+  rWork: number
+): THREE.Shape {
+  const rd = Math.min(rDining, halfW * 0.45, halfD * 0.45);
+  const rw = Math.min(rWork, halfW * 0.45, halfD * 0.45);
   const s = new THREE.Shape();
-  s.moveTo(-halfW, -halfD);
-  s.lineTo(halfW, -halfD);
-  s.lineTo(halfW, halfD - r);
-  s.absarc(halfW - r, halfD - r, r, 0, Math.PI / 2, false);
-  s.lineTo(-halfW + r, halfD);
-  s.absarc(-halfW + r, halfD - r, r, Math.PI / 2, Math.PI, false);
+  s.moveTo(-halfW + rw, -halfD);
+  s.lineTo(halfW - rw, -halfD);
+  s.absarc(halfW - rw, -halfD + rw, rw, -Math.PI / 2, 0, false);
+  s.lineTo(halfW, halfD - rd);
+  s.absarc(halfW - rd, halfD - rd, rd, 0, Math.PI / 2, false);
+  s.lineTo(-halfW + rd, halfD);
+  s.absarc(-halfW + rd, halfD - rd, rd, Math.PI / 2, Math.PI, false);
+  s.lineTo(-halfW, -halfD + rw);
+  s.absarc(-halfW + rw, -halfD + rw, rw, Math.PI, (3 * Math.PI) / 2, false);
   s.closePath();
   return s;
 }
@@ -169,12 +178,12 @@ export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
 
     // --- Materials (matched to Keuken rose groot.webp & diorama style) ---
     const greigeFrontMat = new THREE.MeshStandardMaterial({
-      color: '#cbc2b7', // Soft warm sand-greige (zandgrijs)
+      color: '#d6cec3', // Soft light warm sand-greige (zandgrijs)
       roughness: 0.84,
       metalness: 0.0,
     });
     const greigePlinthMat = new THREE.MeshStandardMaterial({
-      color: '#b8afa4',
+      color: '#c5bdb2',
       roughness: 0.88,
       metalness: 0.0,
     });
@@ -252,6 +261,7 @@ export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
     const halfW = width / 2; // 1.26 m
     const halfD = depth / 2; // 0.54 m
     const diningCornerR = 0.14; // 14 cm organic rounded corners on dining (-Z) side
+    const workCornerR = 0.06; // 6 cm rounded corners on working (+Z) side (matches 60 mm side cheeks)
     const plinthH = 0.100; // 10 cm toe-kick
     const topThick = 0.030; // 3 cm marble-look countertop
     const topBottomY = height - topThick; // 0.940 m
@@ -268,18 +278,20 @@ export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
     const cookColCenterX = -halfW + endCheekW + 0.45; // -0.75 m
     const dwColCenterX = 0.0; // 0.00 m (60 cm centered)
     const sinkColCenterX = halfW - endCheekW - 0.45; // +0.75 m
-    const applianceZ = 0.14; // slightly toward working (+Z) side
+    const cookZ = 0.21; // 7 cm marble margin from front working edge (+0.54 m)
+    const sinkZ = 0.255; // 7 cm marble margin from front edge -> basin Z: +0.055..+0.455 m (8 cm clear of center spine!)
 
-    const sinkInnerW = 0.52;
+    const sinkInnerW = 0.54;
     const sinkInnerD = 0.40;
     const sinkDepthY = 0.18;
 
-    // 1. Recessed Toe-Kick Plinth (Y: 0.00..0.10 m)
+    // 1. Recessed Toe-Kick Plinth (Y: 0.00..0.10 m, rounded on all 4 corners)
     const plinthInset = 0.055;
     const plinthShape = createIslandPlanShape(
       halfW - plinthInset,
       halfD - plinthInset,
-      Math.max(0.04, diningCornerR - plinthInset * 0.7)
+      Math.max(0.04, diningCornerR - plinthInset * 0.7),
+      Math.max(0.03, workCornerR - plinthInset * 0.5)
     );
     const plinthMesh = new THREE.Mesh(
       extrudePlanY(plinthShape, plinthH, 0, width, depth),
@@ -288,13 +300,13 @@ export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
     plinthMesh.name = 'island_plinth';
     group.add(plinthMesh);
 
-    // 2. Countertop with Real Recessed Sink Cutout (Y: 0.94..0.97 m)
-    const topShape = createIslandPlanShape(halfW, halfD, diningCornerR);
+    // 2. Countertop with Rounded Corners on ALL 4 Sides & Real Recessed Sink Cutout (Y: 0.94..0.97 m)
+    const topShape = createIslandPlanShape(halfW, halfD, diningCornerR, workCornerR);
     // Punch sink opening hole in 2D shape (remember y_shape = -z_world)
     const holeX0 = sinkColCenterX - sinkInnerW / 2;
     const holeX1 = sinkColCenterX + sinkInnerW / 2;
-    const holeY0 = -(applianceZ + sinkInnerD / 2);
-    const holeY1 = -(applianceZ - sinkInnerD / 2);
+    const holeY0 = -(sinkZ + sinkInnerD / 2);
+    const holeY1 = -(sinkZ - sinkInnerD / 2);
     const sinkHole = new THREE.Path();
     sinkHole.moveTo(holeX0, holeY0);
     sinkHole.lineTo(holeX1, holeY0);
@@ -310,33 +322,32 @@ export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
     countertopMesh.name = 'island_countertop_marble';
     group.add(countertopMesh);
 
-    // 3. Signature Rounded Sand-Greige End Caps / Cheeks (left & right ends, Y: 0.10..0.94 m)
-    // Left end cap spans X: [-halfW, -halfW + diningCornerR], right end cap spans [+halfW - diningCornerR, +halfW]
-    // On the working (+Z) side, the cabinet fronts start at ±(halfW - endCheekW) = ±1.20 m,
-    // so we cut out the 8 cm front-cabinet overlap zone to avoid any Z-fighting with the outer doors!
+    // 3. Signature Rounded Sand-Greige End Caps / Cheeks (rounded on BOTH working +Z and dining -Z corners!)
     const buildEndCheek = (side: -1 | 1) => {
-      const r = diningCornerR;
+      const rd = diningCornerR;
+      const rw = workCornerR;
       const xOuter = side * halfW;
-      const xInnerDining = side * (halfW - r); // ±1.12 m (where dining doors start)
-      const xInnerWork = side * (halfW - endCheekW); // ±1.20 m (where working doors start)
+      const xInnerDining = side * (halfW - rd); // ±1.12 m (where dining doors start)
+      const xInnerWork = side * (halfW - endCheekW); // ±1.20 m (where working doors start, exact tangent of rw!)
       const yWork = -halfD; // maps to +Z
       const yDining = halfD; // maps to -Z
       const yMidSplit = 0.0; // Z = 0 split line inside island
 
       const s = new THREE.Shape();
       if (side === -1) {
-        s.moveTo(xOuter, yWork);
-        s.lineTo(xInnerWork, yWork);
+        s.moveTo(xInnerWork, yWork);
         s.lineTo(xInnerWork, yMidSplit);
         s.lineTo(xInnerDining, yMidSplit);
         s.lineTo(xInnerDining, yDining);
-        s.absarc(xInnerDining, yDining - r, r, Math.PI / 2, Math.PI, false);
+        s.absarc(xInnerDining, yDining - rd, rd, Math.PI / 2, Math.PI, false);
+        s.lineTo(xOuter, yWork + rw);
+        s.absarc(xOuter + rw, yWork + rw, rw, Math.PI, (3 * Math.PI) / 2, false);
         s.closePath();
       } else {
         s.moveTo(xInnerWork, yWork);
-        s.lineTo(xOuter, yWork);
-        s.lineTo(xOuter, yDining - r);
-        s.absarc(xInnerDining, yDining - r, r, 0, Math.PI / 2, false);
+        s.absarc(xOuter - rw, yWork + rw, rw, -Math.PI / 2, 0, false);
+        s.lineTo(xOuter, yDining - rd);
+        s.absarc(xInnerDining, yDining - rd, rd, 0, Math.PI / 2, false);
         s.lineTo(xInnerDining, yMidSplit);
         s.lineTo(xInnerWork, yMidSplit);
         s.closePath();
@@ -663,7 +674,7 @@ export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
       cooktopGlassMat
     );
     cooktopMesh.name = 'island_induction_cooktop';
-    cooktopMesh.position.set(cookColCenterX, height + cookThick / 2 - 0.002, applianceZ);
+    cooktopMesh.position.set(cookColCenterX, height + cookThick / 2 - 0.002, cookZ);
     group.add(cooktopMesh);
 
     // Central downdraft extractor vent grille
@@ -672,7 +683,7 @@ export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
       cooktopGrilleMat
     );
     ventMesh.name = 'island_cooktop_extractor';
-    ventMesh.position.set(cookColCenterX, height + 0.001, applianceZ);
+    ventMesh.position.set(cookColCenterX, height + 0.001, cookZ);
     group.add(ventMesh);
 
     // 4 subtle induction zone rings (2 left, 2 right of central extractor)
@@ -681,24 +692,66 @@ export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
     for (const zx of [-0.22, 0.22]) {
       for (const zz of [-0.11, 0.11]) {
         const ring = new THREE.Mesh(zoneRingGeo, cooktopZoneRingMat);
-        ring.position.set(cookColCenterX + zx, height + 0.0025, applianceZ + zz);
+        ring.position.set(cookColCenterX + zx, height + 0.0025, cookZ + zz);
         group.add(ring);
       }
     }
 
-    // 8. BRONZE / COPPER UNDERMOUNT SINK & MATCHING TAP (RIGHT, +X side)
+    // 8. ROSE-COPPER FLUSH-RIM SINK WITH FLAT LEDGE & MATCHING QUOOKER FAUCET (RIGHT, +X side)
     const sinkWallT = 0.008;
-    const sinkTopY = topBottomY + 0.002; // tucked right under the marble cutout lip
+    const sinkRimW = 0.024; // 2.4 cm flat brushed-copper perimeter ledge resting on countertop
+    const sinkRimT = 0.003; // 3 mm slim flat flange
+    const sinkRimR = 0.010; // soft 1 cm rounded outer rim corners
+    const sinkTopY = height; // basin walls rise cleanly to countertop rim
     const sinkBotY = sinkTopY - sinkDepthY;
     const sinkCenterY = (sinkTopY + sinkBotY) / 2;
 
-    // 4 basin walls + bottom + bronze strainer
+    // Flat brushed-copper outer rim/ledge (ExtrudeGeometry frame with inner basin hole)
+    {
+      const rw = sinkInnerW / 2 + sinkRimW;
+      const rd = sinkInnerD / 2 + sinkRimW;
+      const rr = sinkRimR;
+      const rimShape = new THREE.Shape();
+      rimShape.moveTo(-rw + rr, -rd);
+      rimShape.lineTo(rw - rr, -rd);
+      rimShape.absarc(rw - rr, -rd + rr, rr, -Math.PI / 2, 0, false);
+      rimShape.lineTo(rw, rd - rr);
+      rimShape.absarc(rw - rr, rd - rr, rr, 0, Math.PI / 2, false);
+      rimShape.lineTo(-rw + rr, rd);
+      rimShape.absarc(-rw + rr, rd - rr, rr, Math.PI / 2, Math.PI, false);
+      rimShape.lineTo(-rw, -rd + rr);
+      rimShape.absarc(-rw + rr, -rd + rr, rr, Math.PI, (3 * Math.PI) / 2, false);
+      rimShape.closePath();
+
+      const iw = sinkInnerW / 2;
+      const id = sinkInnerD / 2;
+      const innerHole = new THREE.Path();
+      innerHole.moveTo(-iw, -id);
+      innerHole.lineTo(iw, -id);
+      innerHole.lineTo(iw, id);
+      innerHole.lineTo(-iw, id);
+      innerHole.closePath();
+      rimShape.holes.push(innerHole);
+
+      const rimGeo = new THREE.ExtrudeGeometry(rimShape, {
+        depth: sinkRimT,
+        bevelEnabled: false,
+        curveSegments: 10,
+      });
+      rimGeo.rotateX(-Math.PI / 2);
+      const rimMesh = new THREE.Mesh(rimGeo, bronzeSinkMat);
+      rimMesh.name = 'island_bronze_sink_rim';
+      rimMesh.position.set(sinkColCenterX, height, sinkZ);
+      group.add(rimMesh);
+    }
+
+    // 4 basin walls + bottom (positioned strictly inside cutout & well clear of center spine!)
     const sinkBot = new THREE.Mesh(
       new THREE.BoxGeometry(sinkInnerW + 2 * sinkWallT, sinkWallT, sinkInnerD + 2 * sinkWallT),
       bronzeSinkMat
     );
     sinkBot.name = 'island_bronze_sink_bottom';
-    sinkBot.position.set(sinkColCenterX, sinkBotY + sinkWallT / 2, applianceZ);
+    sinkBot.position.set(sinkColCenterX, sinkBotY + sinkWallT / 2, sinkZ);
     group.add(sinkBot);
 
     for (const s of [-1, 1]) {
@@ -709,7 +762,7 @@ export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
       sideWall.position.set(
         sinkColCenterX + s * (sinkInnerW / 2 + sinkWallT / 2),
         sinkCenterY,
-        applianceZ
+        sinkZ
       );
       group.add(sideWall);
 
@@ -720,22 +773,44 @@ export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
       fbWall.position.set(
         sinkColCenterX,
         sinkCenterY,
-        applianceZ + s * (sinkInnerD / 2 + sinkWallT / 2)
+        sinkZ + s * (sinkInnerD / 2 + sinkWallT / 2)
       );
       group.add(fbWall);
     }
 
-    // Subtle brushed-bronze drain strainer in sink bottom
-    const drainMesh = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.042, 0.042, 0.004, 16),
+    // Subtle overflow slot on the back inner wall of the basin (below faucet)
+    const overflowSlot = new THREE.Mesh(
+      new THREE.BoxGeometry(0.036, 0.012, 0.002),
+      cooktopGrilleMat
+    );
+    overflowSlot.position.set(sinkColCenterX, sinkTopY - 0.055, sinkZ - sinkInnerD / 2 + 0.001);
+    group.add(overflowSlot);
+
+    // Circular brushed-copper drain strainer assembly in basin floor
+    const drainOuter = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.052, 0.052, 0.003, 24),
       bronzeTapMat
     );
-    drainMesh.position.set(sinkColCenterX, sinkBotY + sinkWallT + 0.002, applianceZ);
-    group.add(drainMesh);
+    drainOuter.position.set(sinkColCenterX, sinkBotY + sinkWallT + 0.0015, sinkZ);
+    group.add(drainOuter);
+
+    const drainInner = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.038, 0.038, 0.005, 24),
+      cooktopGrilleMat
+    );
+    drainInner.position.set(sinkColCenterX, sinkBotY + sinkWallT + 0.0025, sinkZ);
+    group.add(drainInner);
+
+    const drainCap = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.018, 0.018, 0.007, 16),
+      bronzeTapMat
+    );
+    drainCap.position.set(sinkColCenterX, sinkBotY + sinkWallT + 0.0035, sinkZ);
+    group.add(drainCap);
 
     // Matching Brushed Rose-Copper Quooker Fusion Square Faucet behind sink
     const tapX = sinkColCenterX;
-    const tapZ = applianceZ - sinkInnerD / 2 - 0.065; // 6.5 cm behind sink edge
+    const tapZ = sinkZ - sinkInnerD / 2 - sinkRimW - 0.042; // 4.2 cm behind sink rim ledge
     const tapGroup = new THREE.Group();
     tapGroup.name = 'island_bronze_tap';
     tapGroup.position.set(tapX, height, tapZ);
@@ -769,7 +844,7 @@ export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
     collarMesh.position.y = collarY + collarH / 2;
     tapGroup.add(collarMesh);
 
-    // 3. Side mixer handle (horizontal cylinder hub + upright slim vertical pin lever)
+    // 3. Side mixer handle on the right (+X) side matching the showroom photo
     const leverHubY = 0.086;
     const leverHubLen = 0.044;
     const leverHub = new THREE.Mesh(
@@ -777,7 +852,7 @@ export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
       bronzeTapMat
     );
     leverHub.rotation.z = Math.PI / 2;
-    leverHub.position.set(-bodyR - leverHubLen / 2 + 0.004, leverHubY, 0);
+    leverHub.position.set(bodyR + leverHubLen / 2 - 0.004, leverHubY, 0);
     tapGroup.add(leverHub);
 
     const leverPinH = 0.092;
@@ -785,7 +860,7 @@ export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
       new THREE.CylinderGeometry(0.0042, 0.0048, leverPinH, 12),
       bronzeTapMat
     );
-    leverPin.position.set(-bodyR - leverHubLen + 0.014, leverHubY + leverPinH / 2 + 0.008, 0);
+    leverPin.position.set(bodyR + leverHubLen - 0.014, leverHubY + leverPinH / 2 + 0.008, 0);
     tapGroup.add(leverPin);
 
     // 4. Crisp Quooker Square-Arch Spout (straight segments + exact 90° circular bends)
