@@ -185,24 +185,28 @@ export const kitchenTallCabinetWallPrefab: AssetPrefabDefinition = {
       metalness: 0.44,
     });
 
-    // Clean white cabinet backer (no black back, zero clipping)
+    // Clean white exterior cabinet backer (no black back, zero clipping)
     const backWhiteMat = new THREE.MeshStandardMaterial({
       color: '#f4f1eb',
       roughness: 0.90,
       metalness: 0.0,
     });
 
-    // Dark shadow reveal strip on front edges of internal dividers only
-    const revealShadowMat = new THREE.MeshStandardMaterial({
-      color: '#3c3630',
-      roughness: 0.92,
+    // Warm taupe-sand interior cabinet lining so open cabinets clearly read as deep
+    // cabinetry rather than blending into the white plaster nis walls
+    const interiorBackMat = new THREE.MeshStandardMaterial({
+      color: '#b8aa98',
+      roughness: 0.88,
       metalness: 0.0,
     });
-
-    // Clean interior melamine carcass & shelves (visible when interactive doors swing open)
+    const interiorDividerMat = new THREE.MeshStandardMaterial({
+      color: '#c4b7a5',
+      roughness: 0.86,
+      metalness: 0.0,
+    });
     const interiorShelfMat = new THREE.MeshStandardMaterial({
-      color: '#eae4db',
-      roughness: 0.88,
+      color: '#d4c7b4',
+      roughness: 0.85,
       metalness: 0.0,
     });
 
@@ -347,12 +351,19 @@ export const kitchenTallCabinetWallPrefab: AssetPrefabDefinition = {
       group.add(upperSide);
     });
 
-    // 3. Clean White Back Panel (X strictly between side panels, Y: plinthH..height, Z: -0.300..-0.282 m)
+    // 3. Back Panel: clean white on exterior (-Z), warm taupe-sand on interior (+Z)
     const innerW = width - 2 * sidePanelThick;
     const bodyH = height - plinthH;
     const backPanel = new THREE.Mesh(
       new THREE.BoxGeometry(innerW, bodyH, panelT),
-      backWhiteMat
+      [
+        backWhiteMat, // +X
+        backWhiteMat, // -X
+        backWhiteMat, // +Y
+        backWhiteMat, // -Y
+        interiorBackMat, // +Z (inside cabinet)
+        backWhiteMat, // -Z (exterior back)
+      ]
     );
     backPanel.name = 'kastenwand_back_white';
     backPanel.position.set(0, plinthH + bodyH / 2, carcassBackZ + panelT / 2);
@@ -386,47 +397,39 @@ export const kitchenTallCabinetWallPrefab: AssetPrefabDefinition = {
     group.add(midDeck);
 
     // 5. Three Internal Vertical Dividers — split cleanly below & above the copper channel so
-    //    NO white divider can ever intersect or show through the continuous copper greeplijst!
-    const divEdgeStripDepth = 0.004;
-    const divBodyDepth = innerDepth - divEdgeStripDepth;
-    const divBodyCenterZ = backInnerZ + divBodyDepth / 2;
+    //    NO divider can ever intersect or show through the continuous copper greeplijst,
+    //    with a clean white front edge (no dark strip).
     const lowerDivH = lowerDoorH - panelT; // from top of bottomPanel to copperBottomY
     const upperDivH = upperFullH - panelT; // from copperTopY to underside of topPanel
+    const dividerMats = [
+      interiorDividerMat, // +X
+      interiorDividerMat, // -X
+      interiorDividerMat, // +Y
+      interiorDividerMat, // -Y
+      backWhiteMat, // +Z (clean white front edge)
+      interiorDividerMat, // -Z
+    ];
 
     for (let i = 1; i < colCount; i++) {
       const divX = -width / 2 + i * colW;
 
       // Lower divider
       const lowDiv = new THREE.Mesh(
-        new THREE.BoxGeometry(0.016, lowerDivH, divBodyDepth),
-        interiorShelfMat
+        new THREE.BoxGeometry(0.016, lowerDivH, innerDepth),
+        dividerMats
       );
       lowDiv.name = `kastenwand_divider_lower_${i}`;
-      lowDiv.position.set(divX, plinthH + panelT + lowerDivH / 2, divBodyCenterZ);
+      lowDiv.position.set(divX, plinthH + panelT + lowerDivH / 2, innerCenterZ);
       group.add(lowDiv);
-
-      const lowEdge = new THREE.Mesh(
-        new THREE.BoxGeometry(0.014, lowerDivH, divEdgeStripDepth),
-        revealShadowMat
-      );
-      lowEdge.position.set(divX, plinthH + panelT + lowerDivH / 2, carcassFrontZ - divEdgeStripDepth / 2);
-      group.add(lowEdge);
 
       // Upper divider
       const upDiv = new THREE.Mesh(
-        new THREE.BoxGeometry(0.016, upperDivH, divBodyDepth),
-        interiorShelfMat
+        new THREE.BoxGeometry(0.016, upperDivH, innerDepth),
+        dividerMats
       );
       upDiv.name = `kastenwand_divider_upper_${i}`;
-      upDiv.position.set(divX, copperTopY + upperDivH / 2, divBodyCenterZ);
+      upDiv.position.set(divX, copperTopY + upperDivH / 2, innerCenterZ);
       group.add(upDiv);
-
-      const upEdge = new THREE.Mesh(
-        new THREE.BoxGeometry(0.014, upperDivH, divEdgeStripDepth),
-        revealShadowMat
-      );
-      upEdge.position.set(divX, copperTopY + upperDivH / 2, carcassFrontZ - divEdgeStripDepth / 2);
-      group.add(upEdge);
     }
 
     // Interior shelves inside each cabinet column (visible when doors open)
