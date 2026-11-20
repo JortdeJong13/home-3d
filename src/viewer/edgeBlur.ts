@@ -11,7 +11,10 @@ import * as THREE from 'three';
 const PLOT = {
   rearZ: -20.63,
   frontZ: 5.0,
-  rightX: 14.72, // Extends past complete grey neighbour bnr. 56 + berging (X = 14.72 m) before edge blur/fade begins
+  /** Owned plot right boundary (party wall): progressive blur starts here so bnr. 55 stays sharp */
+  ownedRightX: 5.87,
+  /** Outer edge of complete grey neighbour bnr. 56 + berging: fade-to-sky starts here so bnr. 56 stays solid */
+  fadeRightX: 14.72,
   rearLeftX: -4.28,
   frontLeftX: -5.0,
 };
@@ -73,7 +76,7 @@ export class EdgeBlurPass {
         uProjInv: { value: new THREE.Matrix4() },
         uTexel: { value: new THREE.Vector2(1, 1) },
         uMaxBlurPx: { value: 14 },
-        uPlot: { value: new THREE.Vector4(PLOT.rearZ, PLOT.frontZ, PLOT.rightX, 0) },
+        uPlot: { value: new THREE.Vector4(PLOT.rearZ, PLOT.frontZ, PLOT.ownedRightX, PLOT.fadeRightX) },
         uPlotLeft: { value: new THREE.Vector2(PLOT.rearLeftX, PLOT.frontLeftX) },
         uRanges: { value: new THREE.Vector3(EDGE_BLUR_START, EDGE_BLUR_FULL, EDGE_FADE_START) },
       },
@@ -92,16 +95,16 @@ export class EdgeBlurPass {
         uniform mat4 uProjInv;
         uniform vec2 uTexel;
         uniform float uMaxBlurPx;
-        uniform vec4 uPlot;       // rearZ, frontZ, rightX
+        uniform vec4 uPlot;       // rearZ, frontZ, ownedRightX (blur start), fadeRightX (fade start)
         uniform vec2 uPlotLeft;   // rearLeftX, frontLeftX
         uniform vec3 uRanges;     // blurStart, blurFull, fadeStart
         varying vec2 vUv;
 
-        float outsideDistance(vec2 p) {
+        float outsideDistance(vec2 p, float rightEdgeX) {
           float tZ = clamp((p.y - uPlot.x) / (uPlot.y - uPlot.x), 0.0, 1.0);
           float leftX = mix(uPlotLeft.x, uPlotLeft.y, tZ);
           vec2 dMin = vec2(leftX - p.x, uPlot.x - p.y);
-          vec2 dMax = vec2(p.x - uPlot.z, p.y - uPlot.y);
+          vec2 dMax = vec2(p.x - rightEdgeX, p.y - uPlot.y);
           vec2 d = max(max(dMin, dMax), vec2(0.0));
           return length(d);
         }
@@ -127,13 +130,15 @@ export class EdgeBlurPass {
             );
           }
 
-          float dist = 0.0;
+          float blurDist = 0.0;
+          float fadeDist = 0.0;
           if (depth < 0.99999) {
             vec4 ndc = vec4(vUv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
             vec4 view = uProjInv * ndc;
             view /= view.w;
             vec3 world = (uCamWorld * view).xyz;
-            dist = outsideDistance(world.xz);
+            blurDist = outsideDistance(world.xz, uPlot.z);
+            fadeDist = outsideDistance(world.xz, uPlot.w);
           } else {
             // Silhouette edge where MSAA resolved depth to clear depth (1.0).
             // Reconstruct the world ray and find where it hits the ground plinth level (Y = -0.15).
@@ -143,11 +148,12 @@ export class EdgeBlurPass {
             vec3 rayDir = normalize((uCamWorld * vec4(0.0, 0.0, -1.0, 0.0)).xyz);
             float tG = abs(rayDir.y) > 0.0001 ? (-0.15 - rayOrigin.y) / rayDir.y : 0.0;
             vec3 hitPos = rayOrigin + rayDir * tG;
-            dist = outsideDistance(hitPos.xz);
+            blurDist = outsideDistance(hitPos.xz, uPlot.z);
+            fadeDist = outsideDistance(hitPos.xz, uPlot.w);
           }
 
-          float blurAmt = smoothstep(uRanges.x, uRanges.y, dist);
-          float fade = 1.0 - smoothstep(uRanges.z, uRanges.y, dist);
+          float blurAmt = smoothstep(uRanges.x, uRanges.y, blurDist);
+          float fade = 1.0 - smoothstep(uRanges.z, uRanges.y, fadeDist);
           if (fade <= 0.0001) {
             gl_FragColor = vec4(0.0);
             return;
