@@ -243,9 +243,9 @@ export const PLACED_ASSETS: PlacedAssetSpec[] = [
     prefabId: 'kitchen_tall_cabinet_wall',
     label: 'Keuken Kastenwand Savino Chabrier (240 × 60 × 224 cm)',
     floor: 'ground',
-    positionXZ: [1.705, -7.74],
+    positionXZ: [1.705, -7.744],
     rotationDeg: 180,
     provenance: 'user_supplied',
-    source: 'User specification: Superkeukens Savino Chabrier kastenwand (240 × 60 × 224 cm) centered in 261 cm built-in nis behind toilet (Z = -7.44..-8.04 m)',
+    source: 'User specification: Superkeukens Savino Chabrier kastenwand (240 × 60 × 224 cm) centered in 261 cm built-in nis behind toilet (Z = -7.444..-8.044 m)',
   },
 ];

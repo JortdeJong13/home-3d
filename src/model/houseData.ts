@@ -411,15 +411,15 @@ export function getHouseWalls(): WallSpec[] {
       source: 'VK-06 & User specification (7 cm inner wall): 344 + 12 + 242 + 7 + 92 + 7 + 262 = 966 cm',
     },
     // 5c-bis. Built-in Kitchen Cabinet Niche ("Nis" / Koof) framing the centered 240 × 60 × 224 cm kastenwand
-    // Centered on the 2.61 m wall (X: 0.40..3.01 m -> center X = 1.705 m, cabinet X: 0.505..2.905 m, Z: -7.44..-8.04 m).
-    // 1 mm shadow-gap clearance prevents coplanar Z-fighting while keeping the surround flush.
+    // Centered on the 2.61 m wall (X: 0.40..3.01 m -> center X = 1.705 m, cabinet X: 0.505..2.905 m, Z: -7.444..-8.044 m).
+    // 4 mm architectural shadow-gap clearance prevents any depth-buffer bleed or clipping into the cabinets.
     {
       id: 'gf_int_kitchen_nis_left',
-      label: 'Keukennis Zijwand Links (10.5 × 60 cm)',
+      label: 'Keukennis Zijwand Links (10.1 × 60.4 cm)',
       floor: 'ground',
-      start: [0.452, -7.44],
-      end: [0.452, -8.04],
-      thickness: 0.104,
+      start: [0.4505, -7.44],
+      end: [0.4505, -8.044],
+      thickness: 0.101,
       baseY: 0.00,
       height: H0,
       exteriorMaterial: 'interior_wall_plaster',
@@ -429,11 +429,11 @@ export function getHouseWalls(): WallSpec[] {
     },
     {
       id: 'gf_int_kitchen_nis_right',
-      label: 'Keukennis Zijwand Rechts (10.5 × 60 cm)',
+      label: 'Keukennis Zijwand Rechts (10.1 × 60.4 cm)',
       floor: 'ground',
-      start: [2.958, -7.44],
-      end: [2.958, -8.04],
-      thickness: 0.104,
+      start: [2.9595, -7.44],
+      end: [2.9595, -8.044],
+      thickness: 0.101,
       baseY: 0.00,
       height: H0,
       exteriorMaterial: 'interior_wall_plaster',
@@ -443,13 +443,13 @@ export function getHouseWalls(): WallSpec[] {
     },
     {
       id: 'gf_int_kitchen_nis_top',
-      label: 'Keukennis Koof Boven Kastenwand (240 × 60 × 36 cm)',
+      label: 'Keukennis Koof Boven Kastenwand (240 × 60.4 × 35.6 cm)',
       floor: 'ground',
-      start: [0.504, -7.74],
-      end: [2.906, -7.74],
-      thickness: 0.60,
-      baseY: 2.241,
-      height: H0 - 2.241,
+      start: [0.501, -7.742],
+      end: [2.909, -7.742],
+      thickness: 0.604,
+      baseY: 2.244,
+      height: H0 - 2.244,
       exteriorMaterial: 'interior_wall_plaster',
       interiorMaterial: 'interior_wall_plaster',
       provenance: 'user_supplied',

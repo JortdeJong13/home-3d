@@ -48,16 +48,16 @@ function periodicNoise2D(x: number, y: number, px: number, py: number, seed: num
 let cachedSandOakTexture: THREE.DataTexture | null = null;
 
 /**
- * Generates a soft, warm vertical sand-oak (zandeiken) veneer DataTexture matching
- * the Superkeukens Savino Chabrier kastenwand in Keuken rose groot.webp and the
- * powdery matte architectural diorama style of the house.
- * Grain runs vertically along V (Y axis).
+ * Generates a very smooth, soft, low-contrast vertical sand-oak (zandeiken) veneer
+ * DataTexture matching the Superkeukens Savino Chabrier kastenwand and the powdery
+ * matte architectural diorama style of the house.
+ * Grain runs softly and vertically along V (Y axis).
  */
 function getSandOakTexture(): THREE.DataTexture {
   if (cachedSandOakTexture) return cachedSandOakTexture;
 
   const data = new Uint8Array(TEX_SIZE * TEX_SIZE * 4);
-  const NUM_STRIPS = 6;
+  const NUM_STRIPS = 4;
 
   for (let py = 0; py < TEX_SIZE; py++) {
     const v = py / TEX_SIZE;
@@ -68,33 +68,33 @@ function getSandOakTexture(): THREE.DataTexture {
       const stripIdx = Math.floor(stripFloat) % NUM_STRIPS;
       const stripFrac = stripFloat - Math.floor(stripFloat);
 
-      const stripTone = 0.988 + hash2(stripIdx, 5, 31) * 0.024;
-      const offsetU = hash2(stripIdx, 13, 47) * 9.0;
-      const offsetV = hash2(stripIdx, 23, 61) * 11.0;
+      // Subtle, serene plank warmth variation (±0.6%)
+      const stripTone = 0.994 + hash2(stripIdx, 5, 31) * 0.012;
+      const offsetU = hash2(stripIdx, 13, 47) * 7.0;
+      const offsetV = hash2(stripIdx, 23, 61) * 9.0;
 
       const seamDist = Math.min(stripFrac, 1.0 - stripFrac);
-      const seamMask = smoothstep(0.0, 0.022, seamDist);
+      const seamMask = smoothstep(0.0, 0.04, seamDist);
 
-      // Gentle vertical flowing sand-oak grain ribbons
-      const warp1 = periodicNoise2D(u * 10 + offsetU, v * 3 + offsetV, 10, 3, 83);
-      const warp2 = periodicNoise2D(u * 20 + offsetU, v * 6 + offsetV, 20, 6, 109);
-      const fineStreak = periodicNoise2D(u * 48 + offsetU, v * 8 + offsetV, 48, 8, 151);
+      // Soft, low-frequency silky vertical sand-oak flow (no harsh streaks or dark veins)
+      const warp1 = periodicNoise2D(u * 4 + offsetU, v * 2 + offsetV, 4, 2, 83);
+      const warp2 = periodicNoise2D(u * 8 + offsetU, v * 4 + offsetV, 8, 4, 109);
 
       const ringCoord =
-        (u * 7.5 + offsetU) * 2.3 +
-        warp1 * 2.1 +
-        warp2 * 0.45 +
-        Math.sin((v + offsetV * 0.1) * Math.PI * 2) * 0.25;
+        (u * 3.0 + offsetU) * 1.7 +
+        warp1 * 1.25 +
+        warp2 * 0.25 +
+        Math.sin((v + offsetV * 0.1) * Math.PI * 2) * 0.18;
 
       const ringPhase = fract(ringCoord);
       const ringBand = Math.sin(ringPhase * Math.PI);
-      const latewood = (1.0 - smoothstep(0.14, 0.76, ringBand)) * 0.78 + fineStreak * 0.22;
+      const latewood = (1.0 - smoothstep(0.22, 0.86, ringBand)) * 0.55;
 
-      // Warm honey-sand oak palette (#dfc095 -> #cda574) matching Keuken rose groot.webp
-      const shade = stripTone * (0.992 + 0.008 * seamMask);
-      const r = Math.min(255, Math.round(lerp(223, 205, latewood) * shade));
-      const g = Math.min(255, Math.round(lerp(192, 165, latewood) * shade));
-      const b = Math.min(255, Math.round(lerp(149, 116, latewood) * shade));
+      // Soft, muted warm sand-oak palette (#e5cfa9 -> #dbc198)
+      const shade = stripTone * (0.996 + 0.004 * seamMask);
+      const r = Math.min(255, Math.round(lerp(229, 219, latewood) * shade));
+      const g = Math.min(255, Math.round(lerp(207, 193, latewood) * shade));
+      const b = Math.min(255, Math.round(lerp(169, 152, latewood) * shade));
 
       const idx = (py * TEX_SIZE + px) * 4;
       data[idx] = r;
@@ -130,8 +130,8 @@ function createOakDoorGeometry(
 ): THREE.BoxGeometry {
   const geo = new THREE.BoxGeometry(w, h, d);
   const uv = geo.getAttribute('uv');
-  const uScale = Math.max(0.25, w / 0.65);
-  const vScale = Math.max(0.25, h / 1.60);
+  const uScale = Math.max(0.25, w / 0.70);
+  const vScale = Math.max(0.25, h / 1.80);
   for (let i = 0; i < uv.count; i++) {
     uv.setXY(i, uv.getX(i) * uScale + uOffset, uv.getY(i) * vScale + vOffset);
   }
@@ -144,9 +144,11 @@ function createOakDoorGeometry(
  *
  * Dimensions: 240 cm (W) × 60 cm (D) × 224 cm (H)
  * - 4 × 60 cm cabinet columns, split into 4 lower doors and 4 upper doors/compartments
- * - Continuous recessed brushed-copper grip rail (greeplijst) between lower and upper doors
+ * - One continuous recessed brushed-copper grip rail (greeplijst) across all 4 cabinets
  * - Built-in matte-black oven in the 2nd upper cabinet from the right (column index 2 when facing +Z)
+ *   with an interactive drop-down oven door and hollow baking cavity with racks
  * - Recessed matching sand-oak toe-kick plinth at floor level
+ * - Clean white back panel with zero overlapping/clipping geometry
  * - Interactive hinged doors (hover to open, click to pin) with interior shelving
  */
 export const kitchenTallCabinetWallPrefab: AssetPrefabDefinition = {
@@ -165,34 +167,41 @@ export const kitchenTallCabinetWallPrefab: AssetPrefabDefinition = {
     const oakMat = new THREE.MeshStandardMaterial({
       color: '#ffffff',
       map: oakMap,
-      roughness: 0.82,
+      roughness: 0.85,
       metalness: 0.0,
     });
 
     const oakPlinthMat = new THREE.MeshStandardMaterial({
-      color: '#ebe4da',
+      color: '#f2ece2',
       map: oakMap,
-      roughness: 0.86,
+      roughness: 0.88,
       metalness: 0.0,
     });
 
-    // Warm brushed copper recessed greeplijst (matches Keuken rose groot.webp)
+    // Warm lighter brushed copper recessed greeplijst (one continuous piece)
     const copperInlayMat = new THREE.MeshStandardMaterial({
-      color: '#9b6246',
-      roughness: 0.42,
-      metalness: 0.52,
+      color: '#c88b6b',
+      roughness: 0.40,
+      metalness: 0.44,
     });
 
-    // Dark shadow backing behind door reveals
-    const carcassShadowMat = new THREE.MeshStandardMaterial({
-      color: '#342e29',
+    // Clean white cabinet backer (no black back, zero clipping)
+    const backWhiteMat = new THREE.MeshStandardMaterial({
+      color: '#f4f1eb',
+      roughness: 0.90,
+      metalness: 0.0,
+    });
+
+    // Dark shadow reveal strip on front edges of internal dividers only
+    const revealShadowMat = new THREE.MeshStandardMaterial({
+      color: '#3c3630',
       roughness: 0.92,
       metalness: 0.0,
     });
 
-    // Clean interior melamine shelves (visible when interactive doors swing open)
+    // Clean interior melamine carcass & shelves (visible when interactive doors swing open)
     const interiorShelfMat = new THREE.MeshStandardMaterial({
-      color: '#e5dfd5',
+      color: '#eae4db',
       roughness: 0.88,
       metalness: 0.0,
     });
@@ -208,17 +217,22 @@ export const kitchenTallCabinetWallPrefab: AssetPrefabDefinition = {
       roughness: 0.14,
       metalness: 0.16,
       transparent: true,
-      opacity: 0.74,
+      opacity: 0.68,
     });
     const ovenCavityMat = new THREE.MeshStandardMaterial({
-      color: '#25282d',
-      roughness: 0.85,
-      metalness: 0.05,
+      color: '#262a30',
+      roughness: 0.82,
+      metalness: 0.08,
     });
     const ovenRackMat = new THREE.MeshStandardMaterial({
-      color: '#888e96',
-      roughness: 0.42,
-      metalness: 0.45,
+      color: '#9aa0a8',
+      roughness: 0.38,
+      metalness: 0.55,
+    });
+    const ovenTrayMat = new THREE.MeshStandardMaterial({
+      color: '#1e2126',
+      roughness: 0.55,
+      metalness: 0.22,
     });
     const ovenDisplayMat = new THREE.MeshStandardMaterial({
       color: '#f2f5f7',
@@ -256,6 +270,12 @@ export const kitchenTallCabinetWallPrefab: AssetPrefabDefinition = {
     const copperBottomY = lowerDoorTopY; // 0.820 m
     const copperTopY = copperBottomY + copperChannelH; // 0.858 m
 
+    // Copper channel Z layout (strictly non-overlapping with side panels & dividers!)
+    const copperBackPlateThick = 0.006;
+    const copperBackFaceZ = doorFrontZ - 0.035; // +0.263 m (back of copper rail)
+    const copperInnerFaceZ = copperBackFaceZ + copperBackPlateThick; // +0.269 m
+    const copperFrontZ = doorFrontZ - 0.006; // +0.292 m
+
     const upperBottomY = copperTopY; // 0.858 m
     const upperTopY = height; // 2.240 m
     const upperFullH = upperTopY - upperBottomY; // 1.382 m
@@ -271,9 +291,13 @@ export const kitchenTallCabinetWallPrefab: AssetPrefabDefinition = {
     const aboveOvenH = upperTopY - aboveOvenBottomY; // 0.764 m
 
     const sidePanelThick = 0.018;
+    const panelT = 0.018;
     const carcassBackZ = -depth / 2; // -0.300 m
-    const carcassBodyDepth = carcassFrontZ - carcassBackZ; // 0.578 m
-    const carcassBodyCenterZ = (carcassBackZ + carcassFrontZ) / 2;
+    const backInnerZ = carcassBackZ + panelT; // -0.282 m (everything inside starts here -> zero back clipping!)
+    const carcassSideDepth = carcassFrontZ - carcassBackZ; // 0.578 m
+    const carcassSideCenterZ = (carcassBackZ + carcassFrontZ) / 2;
+    const innerDepth = carcassFrontZ - backInnerZ; // 0.560 m
+    const innerCenterZ = (backInnerZ + carcassFrontZ) / 2;
 
     // 1. Recessed Sand-Oak Plinth (Y: 0.000..0.100 m)
     const plinthW = width - 2 * plinthInsetSide;
@@ -286,88 +310,132 @@ export const kitchenTallCabinetWallPrefab: AssetPrefabDefinition = {
     plinthMesh.position.set(0, plinthH / 2, carcassBackZ + plinthD / 2);
     group.add(plinthMesh);
 
-    // 2. Left & Right Outer Sand-Oak Side Panels (X: exact -width/2 and +width/2, Y: plinthH..height)
-    const bodyH = height - plinthH;
-    const sideGeo = createOakDoorGeometry(sidePanelThick, bodyH, carcassBodyDepth, 0.13, 0.05);
-    const leftSide = new THREE.Mesh(sideGeo, oakMat);
-    leftSide.name = 'kastenwand_side_left';
-    leftSide.position.set(-width / 2 + sidePanelThick / 2, plinthH + bodyH / 2, carcassBodyCenterZ);
-    group.add(leftSide);
+    // 2. Left & Right Outer Sand-Oak Side Panels (split cleanly around the copper rail -> zero edge clipping!)
+    const sideBackDepthCopper = copperBackFaceZ - carcassBackZ; // stops cleanly behind copper rail
+    const sideBackCenterZCopper = (carcassBackZ + copperBackFaceZ) / 2;
+    const sideXPositions = [-width / 2 + sidePanelThick / 2, width / 2 - sidePanelThick / 2];
 
-    const rightSide = new THREE.Mesh(sideGeo, oakMat);
-    rightSide.name = 'kastenwand_side_right';
-    rightSide.position.set(width / 2 - sidePanelThick / 2, plinthH + bodyH / 2, carcassBodyCenterZ);
-    group.add(rightSide);
+    sideXPositions.forEach((sx, idx) => {
+      const tag = idx === 0 ? 'left' : 'right';
+      const uSeed = idx === 0 ? 0.13 : 0.67;
 
-    // 3. Top, Bottom, Back Carcass Panels & Vertical Dividers (keeps interior hollow for open doors)
+      // Lower side panel (Y: plinthH..copperBottomY)
+      const lowerSide = new THREE.Mesh(
+        createOakDoorGeometry(sidePanelThick, lowerDoorH, carcassSideDepth, uSeed, 0.05),
+        oakMat
+      );
+      lowerSide.name = `kastenwand_side_${tag}_lower`;
+      lowerSide.position.set(sx, lowerDoorBottomY + lowerDoorH / 2, carcassSideCenterZ);
+      group.add(lowerSide);
+
+      // Mid side section behind the continuous copper channel (Y: copperBottomY..copperTopY)
+      const midSide = new THREE.Mesh(
+        createOakDoorGeometry(sidePanelThick, copperChannelH, sideBackDepthCopper, uSeed, 0.34),
+        oakMat
+      );
+      midSide.name = `kastenwand_side_${tag}_mid`;
+      midSide.position.set(sx, copperBottomY + copperChannelH / 2, sideBackCenterZCopper);
+      group.add(midSide);
+
+      // Upper side panel (Y: copperTopY..height)
+      const upperSide = new THREE.Mesh(
+        createOakDoorGeometry(sidePanelThick, upperFullH, carcassSideDepth, uSeed, 0.38),
+        oakMat
+      );
+      upperSide.name = `kastenwand_side_${tag}_upper`;
+      upperSide.position.set(sx, upperBottomY + upperFullH / 2, carcassSideCenterZ);
+      group.add(upperSide);
+    });
+
+    // 3. Clean White Back Panel (X strictly between side panels, Y: plinthH..height, Z: -0.300..-0.282 m)
     const innerW = width - 2 * sidePanelThick;
-    const panelT = 0.018;
-
+    const bodyH = height - plinthH;
     const backPanel = new THREE.Mesh(
       new THREE.BoxGeometry(innerW, bodyH, panelT),
-      carcassShadowMat
+      backWhiteMat
     );
-    backPanel.name = 'kastenwand_back';
+    backPanel.name = 'kastenwand_back_white';
     backPanel.position.set(0, plinthH + bodyH / 2, carcassBackZ + panelT / 2);
     group.add(backPanel);
 
+    // 4. Top, Bottom & Mid-Deck Carcass Panels (all start at backInnerZ -> zero back clipping!)
     const topPanel = new THREE.Mesh(
-      new THREE.BoxGeometry(innerW, panelT, carcassBodyDepth),
+      new THREE.BoxGeometry(innerW, panelT, innerDepth),
       oakMat
     );
     topPanel.name = 'kastenwand_top';
-    topPanel.position.set(0, height - panelT / 2, carcassBodyCenterZ);
+    topPanel.position.set(0, height - panelT / 2, innerCenterZ);
     group.add(topPanel);
 
     const bottomPanel = new THREE.Mesh(
-      new THREE.BoxGeometry(innerW, panelT, carcassBodyDepth),
+      new THREE.BoxGeometry(innerW, panelT, innerDepth),
       interiorShelfMat
     );
     bottomPanel.name = 'kastenwand_bottom';
-    bottomPanel.position.set(0, plinthH + panelT / 2, carcassBodyCenterZ);
+    bottomPanel.position.set(0, plinthH + panelT / 2, innerCenterZ);
     group.add(bottomPanel);
 
-    // Horizontal mid-deck behind the copper channel
-    const midDeckDepth = carcassBodyDepth - 0.028;
+    // Horizontal mid-deck behind the copper channel (stops strictly at copperBackFaceZ)
+    const midDeckDepth = copperBackFaceZ - backInnerZ;
     const midDeck = new THREE.Mesh(
       new THREE.BoxGeometry(innerW, copperChannelH, midDeckDepth),
-      carcassShadowMat
+      interiorShelfMat
     );
     midDeck.name = 'kastenwand_mid_deck';
-    midDeck.position.set(
-      0,
-      copperBottomY + copperChannelH / 2,
-      carcassBackZ + midDeckDepth / 2
-    );
+    midDeck.position.set(0, copperBottomY + copperChannelH / 2, backInnerZ + midDeckDepth / 2);
     group.add(midDeck);
 
-    // 3 vertical internal cabinet dividers between the 4 columns (front edge dark so 3 mm gaps read dark)
-    const divDepth = carcassBodyDepth - panelT;
+    // 5. Three Internal Vertical Dividers — split cleanly below & above the copper channel so
+    //    NO white divider can ever intersect or show through the continuous copper greeplijst!
+    const divEdgeStripDepth = 0.004;
+    const divBodyDepth = innerDepth - divEdgeStripDepth;
+    const divBodyCenterZ = backInnerZ + divBodyDepth / 2;
+    const lowerDivH = lowerDoorH - panelT; // from top of bottomPanel to copperBottomY
+    const upperDivH = upperFullH - panelT; // from copperTopY to underside of topPanel
+
     for (let i = 1; i < colCount; i++) {
       const divX = -width / 2 + i * colW;
-      const divider = new THREE.Mesh(
-        new THREE.BoxGeometry(0.016, bodyH - 2 * panelT, divDepth),
+
+      // Lower divider
+      const lowDiv = new THREE.Mesh(
+        new THREE.BoxGeometry(0.016, lowerDivH, divBodyDepth),
         interiorShelfMat
       );
-      divider.name = `kastenwand_divider_${i}`;
-      divider.position.set(divX, plinthH + bodyH / 2, carcassBackZ + panelT + divDepth / 2);
-      group.add(divider);
+      lowDiv.name = `kastenwand_divider_lower_${i}`;
+      lowDiv.position.set(divX, plinthH + panelT + lowerDivH / 2, divBodyCenterZ);
+      group.add(lowDiv);
 
-      // Dark front edge strip on divider so the 3 mm reveal between doors is crisp
-      const edgeStrip = new THREE.Mesh(
-        new THREE.BoxGeometry(0.014, bodyH - 2 * panelT, 0.004),
-        carcassShadowMat
+      const lowEdge = new THREE.Mesh(
+        new THREE.BoxGeometry(0.014, lowerDivH, divEdgeStripDepth),
+        revealShadowMat
       );
-      edgeStrip.position.set(divX, plinthH + bodyH / 2, carcassFrontZ - 0.002);
-      group.add(edgeStrip);
+      lowEdge.position.set(divX, plinthH + panelT + lowerDivH / 2, carcassFrontZ - divEdgeStripDepth / 2);
+      group.add(lowEdge);
+
+      // Upper divider
+      const upDiv = new THREE.Mesh(
+        new THREE.BoxGeometry(0.016, upperDivH, divBodyDepth),
+        interiorShelfMat
+      );
+      upDiv.name = `kastenwand_divider_upper_${i}`;
+      upDiv.position.set(divX, copperTopY + upperDivH / 2, divBodyCenterZ);
+      group.add(upDiv);
+
+      const upEdge = new THREE.Mesh(
+        new THREE.BoxGeometry(0.014, upperDivH, divEdgeStripDepth),
+        revealShadowMat
+      );
+      upEdge.position.set(divX, copperTopY + upperDivH / 2, carcassFrontZ - divEdgeStripDepth / 2);
+      group.add(upEdge);
     }
 
     // Interior shelves inside each cabinet column (visible when doors open)
-    const shelfDepth = carcassBodyDepth - 0.06;
-    const shelfCenterZ = carcassBackZ + panelT + shelfDepth / 2;
+    const shelfDepth = innerDepth - 0.04;
+    const shelfCenterZ = backInnerZ + shelfDepth / 2;
     for (let c = 0; c < colCount; c++) {
       const colCenterX = -width / 2 + (c + 0.5) * colW;
       const shelfW = colW - 0.022;
+
       // Lower cabinet shelf
       const lowShelf = new THREE.Mesh(
         new THREE.BoxGeometry(shelfW, 0.016, shelfDepth),
@@ -390,38 +458,38 @@ export const kitchenTallCabinetWallPrefab: AssetPrefabDefinition = {
       }
     }
 
-    // 4. Continuous Recessed Copper Inlay (Greeplijst, Y: 0.820..0.858 m)
-    // C-channel profile: recessed back plate + top & bottom return flanges
-    const copperBackZ = doorFrontZ - 0.032; // 3.2 cm recess behind door front
-    const copperFrontZ = doorFrontZ - 0.008; // 8 mm inset from door face
-    const copperLipDepth = copperFrontZ - copperBackZ;
-    const copperLipCenterZ = (copperBackZ + copperFrontZ) / 2;
+    // 6. ONE Continuous Recessed Copper Inlay (Greeplijst, Y: 0.820..0.858 m, full 240 cm width)
+    // Extruded C-channel profile along X -> guaranteed single unbroken piece with zero edge clipping!
+    const copperLipT = 0.004;
+    const copperProfile = new THREE.Shape();
+    // Profile in 2D (x = local Z depth from copperBackFaceZ, y = local Y from copperBottomY)
+    const railDepth = copperFrontZ - copperBackFaceZ; // 2.9 cm
+    copperProfile.moveTo(0, 0);
+    copperProfile.lineTo(railDepth, 0);
+    copperProfile.lineTo(railDepth, copperLipT);
+    copperProfile.lineTo(copperBackPlateThick, copperLipT);
+    copperProfile.lineTo(copperBackPlateThick, copperChannelH - copperLipT);
+    copperProfile.lineTo(railDepth, copperChannelH - copperLipT);
+    copperProfile.lineTo(railDepth, copperChannelH);
+    copperProfile.lineTo(0, copperChannelH);
+    copperProfile.closePath();
 
-    const copperBack = new THREE.Mesh(
-      new THREE.BoxGeometry(width, copperChannelH, 0.006),
-      copperInlayMat
-    );
-    copperBack.name = 'kastenwand_copper_inlay_back';
-    copperBack.position.set(0, copperBottomY + copperChannelH / 2, copperBackZ);
-    group.add(copperBack);
+    const copperGeo = new THREE.ExtrudeGeometry(copperProfile, {
+      depth: width,
+      bevelEnabled: false,
+      steps: 1,
+    });
+    // Rotate so extrusion axis (+Z) maps to world +X, and profile +X maps to world +Z
+    copperGeo.rotateY(-Math.PI / 2);
+    // After rotateY(-PI/2): (x, y, z) -> (-z, y, x). Shift X by +width/2 so X spans [-width/2, +width/2]
+    copperGeo.translate(width / 2, copperBottomY, copperBackFaceZ);
+    copperGeo.computeVertexNormals();
 
-    const copperTopLip = new THREE.Mesh(
-      new THREE.BoxGeometry(width, 0.004, copperLipDepth),
-      copperInlayMat
-    );
-    copperTopLip.name = 'kastenwand_copper_inlay_top';
-    copperTopLip.position.set(0, copperTopY - 0.002, copperLipCenterZ);
-    group.add(copperTopLip);
+    const copperRailMesh = new THREE.Mesh(copperGeo, copperInlayMat);
+    copperRailMesh.name = 'kastenwand_copper_greeplijst';
+    group.add(copperRailMesh);
 
-    const copperBottomLip = new THREE.Mesh(
-      new THREE.BoxGeometry(width, 0.004, copperLipDepth),
-      copperInlayMat
-    );
-    copperBottomLip.name = 'kastenwand_copper_inlay_bottom';
-    copperBottomLip.position.set(0, copperBottomY + 0.002, copperLipCenterZ);
-    group.add(copperBottomLip);
-
-    // 5. Helper to build an interactive hinged sand-oak cabinet door
+    // 7. Helper to build an interactive hinged sand-oak cabinet door
     const addHingedDoor = (
       id: string,
       colIndex: number,
@@ -434,18 +502,19 @@ export const kitchenTallCabinetWallPrefab: AssetPrefabDefinition = {
       const colLeftX = -width / 2 + colIndex * colW + doorGap / 2;
       const colRightX = colLeftX + doorW;
       const hingeX = hingeSide === 'left' ? colLeftX : colRightX;
+      // Place pivot at front outer corner (doorFrontZ) like a concealed Euro hinge so
+      // opening outward never swings the door's back edge into the adjacent nis cheek wall.
       const pivot = new THREE.Group();
       pivot.name = `pivot_${id}`;
-      pivot.position.set(hingeX, bottomY + doorH / 2, doorCenterZ);
+      pivot.position.set(hingeX, bottomY + doorH / 2, doorFrontZ);
       group.add(pivot);
 
       const doorGeo = createOakDoorGeometry(doorW, doorH, doorThick, uOffset, vOffset);
       const doorMesh = new THREE.Mesh(doorGeo, oakMat);
       doorMesh.name = id;
-      doorMesh.position.set(hingeSide === 'left' ? doorW / 2 : -doorW / 2, 0, 0);
+      doorMesh.position.set(hingeSide === 'left' ? doorW / 2 : -doorW / 2, 0, -doorThick / 2);
       pivot.add(doorMesh);
 
-      // Stationary invisible trigger plane for smooth hover/click interaction
       const trigger = new THREE.Mesh(
         new THREE.BoxGeometry(doorW, doorH, doorThick + 0.04),
         triggerMat
@@ -512,40 +581,76 @@ export const kitchenTallCabinetWallPrefab: AssetPrefabDefinition = {
         ovenGroup.name = 'kastenwand_builtin_oven';
         group.add(ovenGroup);
 
-        // Recessed dark oven cavity behind door glass
-        const ovenCavityDepth = 0.42;
-        const ovenCavity = new THREE.Mesh(
-          new THREE.BoxGeometry(ovenW - 0.04, ovenH - 0.04, ovenCavityDepth),
+        const ovenFrontZ = depth / 2 - 0.016; // +0.284 m (handle reaches exact +0.300 m)
+        const ovenFasciaThick = 0.018;
+        const ctrlH = 0.105;
+        const ovenDoorH = ovenH - ctrlH - 0.004; // ~0.487 m
+        const ovenDoorBottomY = ovenBottomY;
+
+        // Hollow dark oven cavity (back, top, bottom, left, right walls — visible when oven door opens!)
+        const cavW = ovenW - 0.05;
+        const cavH = ovenDoorH - 0.03;
+        const cavD = 0.44;
+        const cavWallT = 0.014;
+        const cavFrontZ = ovenFrontZ - ovenFasciaThick; // +0.266 m
+        const cavCenterZ = cavFrontZ - cavD / 2;
+        const cavCenterY = ovenDoorBottomY + ovenDoorH / 2;
+
+        const cavBack = new THREE.Mesh(
+          new THREE.BoxGeometry(cavW, cavH, cavWallT),
           ovenCavityMat
         );
-        ovenCavity.position.set(
-          colCenterX,
-          ovenBottomY + ovenH / 2,
-          carcassFrontZ - ovenCavityDepth / 2
-        );
-        ovenGroup.add(ovenCavity);
+        cavBack.position.set(colCenterX, cavCenterY, cavFrontZ - cavD + cavWallT / 2);
+        ovenGroup.add(cavBack);
 
-        // Two subtle metallic wire rack bars inside oven cavity
-        for (const rackRelY of [0.34, 0.56]) {
-          const rackBar = new THREE.Mesh(
-            new THREE.BoxGeometry(ovenW - 0.12, 0.006, 0.012),
-            ovenRackMat
+        const cavTop = new THREE.Mesh(
+          new THREE.BoxGeometry(cavW, cavWallT, cavD),
+          ovenCavityMat
+        );
+        cavTop.position.set(colCenterX, cavCenterY + cavH / 2 - cavWallT / 2, cavCenterZ);
+        ovenGroup.add(cavTop);
+
+        const cavBottom = new THREE.Mesh(
+          new THREE.BoxGeometry(cavW, cavWallT, cavD),
+          ovenCavityMat
+        );
+        cavBottom.position.set(colCenterX, cavCenterY - cavH / 2 + cavWallT / 2, cavCenterZ);
+        ovenGroup.add(cavBottom);
+
+        for (const s of [-1, 1]) {
+          const cavSide = new THREE.Mesh(
+            new THREE.BoxGeometry(cavWallT, cavH, cavD),
+            ovenCavityMat
           );
-          rackBar.position.set(
-            colCenterX,
-            ovenBottomY + ovenH * rackRelY,
-            carcassFrontZ - 0.06
-          );
-          ovenGroup.add(rackBar);
+          cavSide.position.set(colCenterX + s * (cavW / 2 - cavWallT / 2), cavCenterY, cavCenterZ);
+          ovenGroup.add(cavSide);
         }
 
-        // Matte-black outer oven fascia bezel (front at Z = +0.284 m so handle projects cleanly to +0.300 m)
-        const ovenFrontZ = depth / 2 - 0.016; // +0.284 m
-        const ovenFasciaThick = 0.018;
-        const ovenCenterY = ovenBottomY + ovenH / 2;
+        // Interior wire rack & enameled baking tray inside cavity
+        const rackW = cavW - 0.04;
+        const rackD = cavD - 0.08;
+        const rackY = cavCenterY + 0.05;
+        // Front & back rack bars + side rails + cross wires
+        for (const rz of [-rackD / 2, rackD / 2]) {
+          const bar = new THREE.Mesh(new THREE.BoxGeometry(rackW, 0.005, 0.005), ovenRackMat);
+          bar.position.set(colCenterX, rackY, cavCenterZ + rz);
+          ovenGroup.add(bar);
+        }
+        for (let rw = -3; rw <= 3; rw++) {
+          const wire = new THREE.Mesh(new THREE.BoxGeometry(0.003, 0.003, rackD), ovenRackMat);
+          wire.position.set(colCenterX + (rw / 3.5) * (rackW / 2), rackY, cavCenterZ);
+          ovenGroup.add(wire);
+        }
 
-        // Control strip at top of oven (10.5 cm high)
-        const ctrlH = 0.105;
+        // Dark baking tray on lower shelf level
+        const bakingTray = new THREE.Mesh(
+          new THREE.BoxGeometry(rackW - 0.01, 0.016, rackD - 0.02),
+          ovenTrayMat
+        );
+        bakingTray.position.set(colCenterX, cavCenterY - 0.08, cavCenterZ);
+        ovenGroup.add(bakingTray);
+
+        // Stationary top control panel strip (10.5 cm high)
         const ctrlY = ovenTopY - ctrlH / 2;
         const ctrlStrip = new THREE.Mesh(
           new THREE.BoxGeometry(ovenW, ctrlH, ovenFasciaThick),
@@ -555,7 +660,7 @@ export const kitchenTallCabinetWallPrefab: AssetPrefabDefinition = {
         ctrlStrip.position.set(colCenterX, ctrlY, ovenFrontZ - ovenFasciaThick / 2);
         ovenGroup.add(ctrlStrip);
 
-        // Crisp centered digital clock display
+        // Centered crisp digital clock display
         const display = new THREE.Mesh(
           new THREE.BoxGeometry(0.052, 0.016, 0.003),
           ovenDisplayMat
@@ -574,13 +679,17 @@ export const kitchenTallCabinetWallPrefab: AssetPrefabDefinition = {
           ovenGroup.add(knob);
         }
 
-        // Oven door perimeter frame + dark tinted glass window
-        const ovenDoorH = ovenH - ctrlH - 0.004; // ~0.487 m
-        const ovenDoorBottomY = ovenBottomY;
-        const ovenDoorCenterY = ovenDoorBottomY + ovenDoorH / 2;
+        // Interactive Bottom-Hinged Drop-Down Oven Door
+        const ovenDoorPivot = new THREE.Group();
+        ovenDoorPivot.name = 'pivot_kastenwand_oven_door';
+        ovenDoorPivot.position.set(colCenterX, ovenDoorBottomY, ovenFrontZ - ovenFasciaThick / 2);
+        ovenGroup.add(ovenDoorPivot);
+
         const frameSideW = 0.052;
         const frameTopH = 0.068;
         const frameBotH = 0.064;
+        const doorLocalCenterY = ovenDoorH / 2;
+        const doorLocalFrontZ = ovenFasciaThick / 2;
 
         // Left & right vertical matte-black door stiles
         for (const s of [-1, 1]) {
@@ -588,12 +697,8 @@ export const kitchenTallCabinetWallPrefab: AssetPrefabDefinition = {
             new THREE.BoxGeometry(frameSideW, ovenDoorH, ovenFasciaThick),
             ovenMatteBlackMat
           );
-          stile.position.set(
-            colCenterX + s * (ovenW / 2 - frameSideW / 2),
-            ovenDoorCenterY,
-            ovenFrontZ - ovenFasciaThick / 2
-          );
-          ovenGroup.add(stile);
+          stile.position.set(s * (ovenW / 2 - frameSideW / 2), doorLocalCenterY, 0);
+          ovenDoorPivot.add(stile);
         }
 
         // Top & bottom horizontal matte-black door rails
@@ -602,23 +707,15 @@ export const kitchenTallCabinetWallPrefab: AssetPrefabDefinition = {
           new THREE.BoxGeometry(innerGlassW, frameTopH, ovenFasciaThick),
           ovenMatteBlackMat
         );
-        topRail.position.set(
-          colCenterX,
-          ovenDoorBottomY + ovenDoorH - frameTopH / 2,
-          ovenFrontZ - ovenFasciaThick / 2
-        );
-        ovenGroup.add(topRail);
+        topRail.position.set(0, ovenDoorH - frameTopH / 2, 0);
+        ovenDoorPivot.add(topRail);
 
         const botRail = new THREE.Mesh(
           new THREE.BoxGeometry(innerGlassW, frameBotH, ovenFasciaThick),
           ovenMatteBlackMat
         );
-        botRail.position.set(
-          colCenterX,
-          ovenDoorBottomY + frameBotH / 2,
-          ovenFrontZ - ovenFasciaThick / 2
-        );
-        ovenGroup.add(botRail);
+        botRail.position.set(0, frameBotH / 2, 0);
+        ovenDoorPivot.add(botRail);
 
         // Tinted glass viewing window
         const glassH = ovenDoorH - frameTopH - frameBotH;
@@ -627,38 +724,39 @@ export const kitchenTallCabinetWallPrefab: AssetPrefabDefinition = {
           ovenGlassMat
         );
         glassMesh.name = 'oven_door_glass';
-        glassMesh.position.set(
-          colCenterX,
-          ovenDoorBottomY + frameBotH + glassH / 2,
-          ovenFrontZ - 0.006
-        );
-        ovenGroup.add(glassMesh);
+        glassMesh.position.set(0, frameBotH + glassH / 2, 0);
+        ovenDoorPivot.add(glassMesh);
 
         // Sleek horizontal matte-black bar handle (front edge hits exact Z = +depth/2 = +0.300 m)
         const handleW = 0.46;
         const handleBarThick = 0.009;
-        const handleY = ovenDoorBottomY + ovenDoorH - frameTopH * 0.50;
+        const handleLocalY = ovenDoorH - frameTopH * 0.50;
+        const handleProjFromDoor = depth / 2 - ovenFrontZ; // 0.016 m
         const handleBar = new THREE.Mesh(
           new THREE.BoxGeometry(handleW, 0.014, handleBarThick),
           ovenMatteBlackMat
         );
         handleBar.name = 'oven_door_handle';
-        handleBar.position.set(colCenterX, handleY, depth / 2 - handleBarThick / 2);
-        ovenGroup.add(handleBar);
+        handleBar.position.set(
+          0,
+          handleLocalY,
+          doorLocalFrontZ + handleProjFromDoor - handleBarThick / 2
+        );
+        ovenDoorPivot.add(handleBar);
 
         // Two handle standoffs connecting bar to oven top rail
-        const standoffDepth = depth / 2 - handleBarThick - ovenFrontZ;
+        const standoffDepth = handleProjFromDoor - handleBarThick;
         for (const s of [-1, 1]) {
           const standoff = new THREE.Mesh(
             new THREE.BoxGeometry(0.014, 0.012, standoffDepth),
             ovenMatteBlackMat
           );
           standoff.position.set(
-            colCenterX + s * (handleW / 2 - 0.032),
-            handleY,
-            ovenFrontZ + standoffDepth / 2
+            s * (handleW / 2 - 0.032),
+            handleLocalY,
+            doorLocalFrontZ + standoffDepth / 2
           );
-          ovenGroup.add(standoff);
+          ovenDoorPivot.add(standoff);
         }
 
         // Subtle brushed-metal brand emblem on lower oven rail
@@ -666,8 +764,33 @@ export const kitchenTallCabinetWallPrefab: AssetPrefabDefinition = {
           new THREE.BoxGeometry(0.026, 0.005, 0.002),
           ovenRackMat
         );
-        emblem.position.set(colCenterX, ovenDoorBottomY + frameBotH * 0.52, ovenFrontZ + 0.001);
-        ovenGroup.add(emblem);
+        emblem.position.set(0, frameBotH * 0.52, doorLocalFrontZ + 0.001);
+        ovenDoorPivot.add(emblem);
+
+        // Stationary invisible trigger covering the oven door opening
+        const ovenTrigger = new THREE.Mesh(
+          new THREE.BoxGeometry(ovenW, ovenDoorH, ovenFasciaThick + 0.04),
+          triggerMat
+        );
+        ovenTrigger.userData.isInteractiveTrigger = true;
+        ovenTrigger.position.set(colCenterX, ovenDoorBottomY + ovenDoorH / 2, ovenFrontZ + 0.01);
+        ovenGroup.add(ovenTrigger);
+
+        registerInteractiveDoor?.({
+          subId: 'kastenwand_oven_door',
+          pivots: [
+            {
+              group: ovenDoorPivot,
+              openAngle: Math.PI * 0.44, // ~80° drop-down outward toward +Z
+              closedAngle: 0,
+              currentAngle: 0,
+              onUpdate: (angle) => {
+                ovenDoorPivot.rotation.x = angle;
+              },
+            },
+          ],
+          triggerMeshes: [ovenTrigger, glassMesh, topRail, botRail, handleBar],
+        });
 
         // Upper cabinet door above the oven (Y: 1.476..2.240 m)
         addHingedDoor(
@@ -679,9 +802,6 @@ export const kitchenTallCabinetWallPrefab: AssetPrefabDefinition = {
           uOff,
           0.62
         );
-
-        // Keep reference to ovenCenterY unused warning free
-        void ovenCenterY;
       }
     }
 
