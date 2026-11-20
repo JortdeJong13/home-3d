@@ -178,11 +178,11 @@ export const kitchenTallCabinetWallPrefab: AssetPrefabDefinition = {
       metalness: 0.0,
     });
 
-    // Warm lighter brushed copper recessed greeplijst (one continuous piece)
+    // Warm light rose-copper recessed greeplijst (one continuous piece)
     const copperInlayMat = new THREE.MeshStandardMaterial({
-      color: '#c88b6b',
-      roughness: 0.40,
-      metalness: 0.44,
+      color: '#d49c7e',
+      roughness: 0.38,
+      metalness: 0.40,
     });
 
     // Clean white exterior cabinet backer (no black back, zero clipping)

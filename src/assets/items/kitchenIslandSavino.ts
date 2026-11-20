@@ -178,10 +178,11 @@ export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
       roughness: 0.88,
       metalness: 0.0,
     });
-    const greigeRecessMat = new THREE.MeshStandardMaterial({
-      color: '#ada498',
-      roughness: 0.88,
-      metalness: 0.0,
+    // Light brushed rose-copper greeplijst (working / faucet side only, matches kastenwand)
+    const copperGripMat = new THREE.MeshStandardMaterial({
+      color: '#d49c7e',
+      roughness: 0.38,
+      metalness: 0.40,
     });
     const countertopMat = new THREE.MeshStandardMaterial({
       color: '#ffffff',
@@ -205,16 +206,23 @@ export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
       metalness: 0.25,
     });
 
-    // Bronze / warm brushed copper sink & tap (matches Keuken rose groot.webp)
+    // Lighter warm brushed rose-copper sink & Quooker faucet (matches uploaded close-up photo)
     const bronzeSinkMat = new THREE.MeshStandardMaterial({
-      color: '#a86b4c',
-      roughness: 0.36,
-      metalness: 0.54,
+      color: '#cc9477',
+      roughness: 0.34,
+      metalness: 0.44,
     });
     const bronzeTapMat = new THREE.MeshStandardMaterial({
-      color: '#ba7d5c',
-      roughness: 0.32,
-      metalness: 0.60,
+      color: '#dfb096',
+      roughness: 0.28,
+      metalness: 0.45,
+    });
+    const tapRedRingMat = new THREE.MeshStandardMaterial({
+      color: '#d63b3b',
+      emissive: '#a82222',
+      emissiveIntensity: 0.35,
+      roughness: 0.4,
+      metalness: 0.0,
     });
 
     // Matte-black induction cooktop + downdraft extractor
@@ -254,7 +262,7 @@ export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
 
     const endCheekW = 0.060; // 60 mm side cheeks on working (+Z) side -> 60 + 900 + 600 + 900 + 60 = 2520 mm
     const doorThick = 0.020;
-    const doorGap = 0.003;
+    const doorGap = 0.006; // 6 mm crisp reveal so individual doors & drawers read clearly
 
     // Sink & cooktop center coordinates (mirrored: cooktop on LEFT -X, sink on RIGHT +X when facing +Z)
     const cookColCenterX = -halfW + endCheekW + 0.45; // -0.75 m
@@ -362,14 +370,38 @@ export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
     floorDeck.position.set(0, plinthH + 0.009, 0);
     group.add(floorDeck);
 
-    // Recessed greeploos grip rail along the working (+Z) side directly beneath the countertop
-    const gripRail = new THREE.Mesh(
-      new THREE.BoxGeometry(coreW, gripGrooveH, 0.04),
-      greigeRecessMat
-    );
-    gripRail.name = 'island_working_grip_rail';
-    gripRail.position.set(0, topBottomY - gripGrooveH / 2, halfD - doorThick - 0.02);
-    group.add(gripRail);
+    // Continuous recessed rose-copper greeplijst along the working/faucet (+Z) side ONLY
+    // Extruded C-channel directly beneath the marble countertop (Y: workDoorTopY..topBottomY)
+    {
+      const gripBackZ = halfD - 0.036;
+      const gripFrontZ = halfD - 0.004;
+      const gripDepth = gripFrontZ - gripBackZ;
+      const gripBackT = 0.006;
+      const gripLipT = 0.004;
+      const gripProfile = new THREE.Shape();
+      gripProfile.moveTo(0, 0);
+      gripProfile.lineTo(gripDepth, 0);
+      gripProfile.lineTo(gripDepth, gripLipT);
+      gripProfile.lineTo(gripBackT, gripLipT);
+      gripProfile.lineTo(gripBackT, gripGrooveH - gripLipT);
+      gripProfile.lineTo(gripDepth, gripGrooveH - gripLipT);
+      gripProfile.lineTo(gripDepth, gripGrooveH);
+      gripProfile.lineTo(0, gripGrooveH);
+      gripProfile.closePath();
+
+      const gripGeo = new THREE.ExtrudeGeometry(gripProfile, {
+        depth: coreW,
+        bevelEnabled: false,
+        steps: 1,
+      });
+      gripGeo.rotateY(-Math.PI / 2);
+      gripGeo.translate(coreW / 2, workDoorTopY, gripBackZ);
+      gripGeo.computeVertexNormals();
+
+      const gripRail = new THREE.Mesh(gripGeo, copperGripMat);
+      gripRail.name = 'island_working_copper_greeplijst';
+      group.add(gripRail);
+    }
 
     // Two simple vertical dividers on the working (+Z) side separating 90 | 60 | 90 cm zones
     const workZoneDepth = halfD - doorThick - (-0.028); // from center spine to behind doors
@@ -558,13 +590,28 @@ export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
     const diningFrontZ = -halfD; // -0.54 m
     const diningHingeSides: Array<'left' | 'right'> = ['left', 'right', 'left', 'right'];
 
-    // Simple low-poly single shelf on dining side
+    // Simple low-poly single shelf on dining side + subtle recessed shadow seam strips behind the 5 vertical gaps
     const diningShelf = new THREE.Mesh(
       new THREE.BoxGeometry(diningSpanW - 0.02, 0.016, 0.36),
       interiorWhiteMat
     );
     diningShelf.position.set(0, plinthH + diningDoorH * 0.5, -0.28);
     group.add(diningShelf);
+
+    const seamShadowMat = new THREE.MeshStandardMaterial({
+      color: '#6e675f',
+      roughness: 0.92,
+      metalness: 0.0,
+    });
+    for (let s = 0; s <= diningDoorCount; s++) {
+      const seamX = -diningSpanW / 2 + s * diningColW;
+      const seamStrip = new THREE.Mesh(
+        new THREE.BoxGeometry(doorGap * 0.9, diningDoorH, 0.004),
+        seamShadowMat
+      );
+      seamStrip.position.set(seamX, plinthH + diningDoorH / 2, diningFrontZ + doorThick - 0.003);
+      group.add(seamStrip);
+    }
 
     for (let i = 0; i < diningDoorCount; i++) {
       const colLeftX = -diningSpanW / 2 + i * diningColW + doorGap / 2;
@@ -686,7 +733,7 @@ export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
     drainMesh.position.set(sinkColCenterX, sinkBotY + sinkWallT + 0.002, applianceZ);
     group.add(drainMesh);
 
-    // Matching Brushed Bronze/Copper Quooker Square-Arch Tap behind sink
+    // Matching Brushed Rose-Copper Quooker Fusion Square Faucet behind sink
     const tapX = sinkColCenterX;
     const tapZ = applianceZ - sinkInnerD / 2 - 0.065; // 6.5 cm behind sink edge
     const tapGroup = new THREE.Group();
@@ -694,32 +741,113 @@ export const kitchenIslandSavinoPrefab: AssetPrefabDefinition = {
     tapGroup.position.set(tapX, height, tapZ);
     group.add(tapGroup);
 
-    // Base collar
-    const tapBase = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.025, 0.016, 16), bronzeTapMat);
-    tapBase.position.y = 0.008;
-    tapGroup.add(tapBase);
+    // 1. Thick cylindrical faucet body (Ø 4.4 cm, height 13.2 cm)
+    const bodyR = 0.022;
+    const bodyH = 0.132;
+    const bodyMesh = new THREE.Mesh(
+      new THREE.CylinderGeometry(bodyR, bodyR, bodyH, 24),
+      bronzeTapMat
+    );
+    bodyMesh.position.y = bodyH / 2;
+    tapGroup.add(bodyMesh);
 
-    // Vertical stem (26 cm tall)
-    const tapStemH = 0.25;
-    const tapStem = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.013, tapStemH, 16), bronzeTapMat);
-    tapStem.position.y = tapStemH / 2;
-    tapGroup.add(tapStem);
+    // 2. Signature Quooker red indicator ring + knurled boiling-water collar
+    const redRingH = 0.0035;
+    const redRing = new THREE.Mesh(
+      new THREE.CylinderGeometry(bodyR + 0.0005, bodyR + 0.0005, redRingH, 24),
+      tapRedRingMat
+    );
+    redRing.position.y = bodyH + redRingH / 2;
+    tapGroup.add(redRing);
 
-    // Smooth curved elbow + horizontal spout reaching over sink (+Z)
-    const spoutCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0, tapStemH - 0.005, 0),
-      new THREE.Vector3(0, tapStemH + 0.035, 0.025),
-      new THREE.Vector3(0, tapStemH + 0.040, 0.14),
-      new THREE.Vector3(0, tapStemH + 0.012, 0.185),
-    ]);
-    const spoutMesh = new THREE.Mesh(new THREE.TubeGeometry(spoutCurve, 14, 0.010, 12, false), bronzeTapMat);
+    const collarH = 0.022;
+    const collarY = bodyH + redRingH;
+    const collarMesh = new THREE.Mesh(
+      new THREE.CylinderGeometry(bodyR + 0.001, bodyR + 0.001, collarH, 24),
+      bronzeTapMat
+    );
+    collarMesh.position.y = collarY + collarH / 2;
+    tapGroup.add(collarMesh);
+
+    // 3. Side mixer handle (horizontal cylinder hub + upright slim vertical pin lever)
+    const leverHubY = 0.086;
+    const leverHubLen = 0.044;
+    const leverHub = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.014, 0.014, leverHubLen, 18),
+      bronzeTapMat
+    );
+    leverHub.rotation.z = Math.PI / 2;
+    leverHub.position.set(-bodyR - leverHubLen / 2 + 0.004, leverHubY, 0);
+    tapGroup.add(leverHub);
+
+    const leverPinH = 0.092;
+    const leverPin = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.0042, 0.0048, leverPinH, 12),
+      bronzeTapMat
+    );
+    leverPin.position.set(-bodyR - leverHubLen + 0.014, leverHubY + leverPinH / 2 + 0.008, 0);
+    tapGroup.add(leverPin);
+
+    // 4. Crisp Quooker Square-Arch Spout (straight segments + exact 90° circular bends)
+    const spoutR = 0.0115; // Ø 2.3 cm
+    const bendR = 0.028; // tight 2.8 cm architectural 90° bend radius
+    const spoutStartY = collarY + collarH - 0.002; // 0.155 m
+    const archTopY = 0.335; // 33.5 cm total faucet height
+    const reachZ = 0.185; // 18.5 cm forward reach over the sink
+    const tipDropLen = 0.040; // 4.0 cm vertical nozzle drop
+
+    const spoutPath = new THREE.CurvePath<THREE.Vector3>();
+    // Vertical straight riser
+    spoutPath.add(
+      new THREE.LineCurve3(
+        new THREE.Vector3(0, spoutStartY, 0),
+        new THREE.Vector3(0, archTopY - bendR, 0)
+      )
+    );
+    // First crisp 90° elbow (vertical -> horizontal +Z)
+    spoutPath.add(
+      new THREE.QuadraticBezierCurve3(
+        new THREE.Vector3(0, archTopY - bendR, 0),
+        new THREE.Vector3(0, archTopY, 0),
+        new THREE.Vector3(0, archTopY, bendR)
+      )
+    );
+    // Horizontal straight arm
+    spoutPath.add(
+      new THREE.LineCurve3(
+        new THREE.Vector3(0, archTopY, bendR),
+        new THREE.Vector3(0, archTopY, reachZ - bendR)
+      )
+    );
+    // Second crisp 90° elbow (horizontal +Z -> downward -Y)
+    spoutPath.add(
+      new THREE.QuadraticBezierCurve3(
+        new THREE.Vector3(0, archTopY, reachZ - bendR),
+        new THREE.Vector3(0, archTopY, reachZ),
+        new THREE.Vector3(0, archTopY - bendR, reachZ)
+      )
+    );
+    // Short vertical straight spout nozzle
+    spoutPath.add(
+      new THREE.LineCurve3(
+        new THREE.Vector3(0, archTopY - bendR, reachZ),
+        new THREE.Vector3(0, archTopY - bendR - tipDropLen, reachZ)
+      )
+    );
+
+    const spoutMesh = new THREE.Mesh(
+      new THREE.TubeGeometry(spoutPath, 40, spoutR, 18, false),
+      bronzeTapMat
+    );
     tapGroup.add(spoutMesh);
 
-    // Side control lever
-    const leverStem = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.055, 10), bronzeTapMat);
-    leverStem.rotation.z = -Math.PI / 2;
-    leverStem.position.set(0.032, 0.065, 0);
-    tapGroup.add(leverStem);
+    // Flat aerator cap closing the spout tip cleanly
+    const tipCap = new THREE.Mesh(
+      new THREE.CylinderGeometry(spoutR * 0.96, spoutR * 0.96, 0.004, 18),
+      bronzeTapMat
+    );
+    tipCap.position.set(0, archTopY - bendR - tipDropLen, reachZ);
+    tapGroup.add(tipCap);
 
     return group;
   },
