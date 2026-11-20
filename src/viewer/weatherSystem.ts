@@ -260,7 +260,7 @@ export class WeatherSystem {
   private plotRipplesMesh: THREE.Mesh;
   private roofRipplesMesh: THREE.Mesh;
   private pitchedRoofRipplesMesh: THREE.Mesh;
-  private groundGroupRef: THREE.Group;
+  private firstGroupRef: THREE.Group;
   private roofGroupRef: THREE.Group;
 
   private rainAlphaUniform = { value: 0 };
@@ -270,7 +270,7 @@ export class WeatherSystem {
   private rippleAlphaUniform = { value: 0 };
 
   constructor(houseGroups: HouseSceneGroups) {
-    this.groundGroupRef = houseGroups.groundGroup;
+    this.firstGroupRef = houseGroups.firstGroup;
     this.roofGroupRef = houseGroups.roofGroup;
     this.sharedUniforms = {
       uTime: { value: 0 },
@@ -313,7 +313,7 @@ export class WeatherSystem {
     this.roofRipplesMesh = roofRipples;
     this.pitchedRoofRipplesMesh = pitchedRoofRipples;
     houseGroups.plotGroup.add(this.plotRipplesMesh);
-    houseGroups.groundGroup.add(this.roofRipplesMesh);
+    houseGroups.firstGroup.add(this.roofRipplesMesh);
     houseGroups.roofGroup.add(this.pitchedRoofRipplesMesh);
   }
 
@@ -938,9 +938,9 @@ export class WeatherSystem {
     this.plotRipplesMesh.visible = rainW > 0.003;
     this.roofRipplesMesh.visible =
       rainW > 0.003 &&
-      this.groundGroupRef.visible &&
-      Math.abs(this.groundGroupRef.position.y) < 0.08 &&
-      scrollProgress > 0.15;
+      this.firstGroupRef.visible &&
+      Math.abs(this.firstGroupRef.position.y) < 0.08 &&
+      scrollProgress > 0.40;
     this.pitchedRoofRipplesMesh.visible =
       rainW > 0.003 &&
       this.roofGroupRef.visible &&
