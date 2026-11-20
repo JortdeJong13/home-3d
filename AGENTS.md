@@ -122,3 +122,33 @@ All chains are automatically asserted by `npm run verify` (`src/scripts/verifyDi
 - `src/viewer/dayNightController.ts` — Day/Night lighting transition and 180° rotating celestial backdrop wheel.
 - `src/viewer/cameraController.ts` — Orthographic isometric diorama camera controller.
 - `src/scripts/verifyDimensions.ts` — Automated dimensional chain, wall orientation, roof intersection, and 3D scene verification suite.
+
+---
+
+## 7. Reference Files & Visual Inspiration (`references/`)
+The `references/` directory is gitignored (contains personal house documents and local symlinks) and organized into three subdirectories:
+
+### `references/technical/` — Technical Drawings & Specifications
+| File | When to Use | Notes |
+| --- | --- | --- |
+| `Tekening woonwensen 55.1.pdf` | Ground floor (*Begane Grond*) layout with selected buyer options (e.g. `2.40 m` rear extension `B11a`, interior doors). | Option drawing; contains limited measurements. |
+| `Tekening woonwensen 55.2.pdf` | 1st floor (*1e Verdieping*) layout with selected buyer options (walk-in closet, bathroom, office). | Option drawing; contains limited measurements. |
+| `Tekening woonwensen 55.3.pdf` | 2nd floor (*Zolder*) layout with selected buyer options (overloop walls, *knieschotten*, *dakraam*, WP unit). | Option drawing; contains limited measurements. |
+| `Verkooptekening.pdf` | Base architectural floorplans, exact room & wall dimensions, façade elevations (*Voor-/Achter-/Zijgevel*), and cross-sections (*Doorsnede AA*). | Primary source for verified base measurements (`VK-01`..`VK-06`). |
+| `Technische omschrijving.pdf` | Material specifications, brickwork/roof tile/window frame finishes, wall build-ups, and technical installation details. | Textual specification document. |
+| `Doorsnede.png` | Quick visual reference for vertical heights (*Peil*, `2.60 m` ceilings, `0.25 m` slabs, eaves `+6.13 m`, ridge `+10.90 m`, *knieschot* heights). | Cropped cross-section image. |
+| `Plattegrond.png` | High-level coloured overview of the floorplans and room arrangement. | Marketing overview; use `Verkooptekening.pdf` for exact dimensions. |
+
+### `references/visual/` — Visual Inspiration & Renders
+| File | When to Use | Notes |
+| --- | --- | --- |
+| `3d-rendering-isometric-house.jpg` | Visual inspiration for the 3D isometric diorama aesthetic, lighting, and cutaway presentation style. | **From the internet** — style inspiration only, not Bouwnummer 55 geometry. |
+| `Woning.jpg` | Exterior architectural look & feel (yellow-tan brickwork, terracotta trim, dark roof tiles, gutters, front door). | Project exterior render. |
+| `Eetkamer 3.png` | Interior dining/living mood, colour palette, and furniture styling inspiration. | Interior render. |
+| `Garden layout.png` | Back garden, terrace, *Berging* exterior, and fence/gate layout inspiration. | Exterior garden render. |
+| `Ground level HomeByMe.png` | Ground floor furniture placement and room flow reference. | HomeByMe layout export. |
+| `First floor HomeByMe.png` | 1st floor furniture placement and room flow reference. | HomeByMe layout export. |
+| `Keuken rose groot.webp` | Kitchen cabinetry/island colour and style reference. | Kitchen inspiration image. |
+
+### `references/files-used/` — Development Screenshots
+- Holds screenshots and ad-hoc visual captures shared during development so AI agents can re-reference them when needed.
