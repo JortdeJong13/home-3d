@@ -3595,6 +3595,7 @@ function buildBoxGutterAndKlossen(
     const count = Math.max(2, Math.round(length / 0.68));
     for (let i = 0; i <= count; i++) {
       const xPos = spanStart + 0.25 + (i / count) * (length - 0.50);
+      if (skipZones.some((sx) => Math.abs(xPos - sx) < 0.16)) continue;
       addBox(0.055, 0.065, 0.16, xPos, yTop - gutterHeight - 0.0325, eavesCoord + outwardSign * 0.08, klossenMat);
     }
   }
@@ -4280,7 +4281,8 @@ function buildPitchedRoofSystem(
     1,
     gutterTopY,
     getMat('neighbour_trim_grey'),
-    getMat('neighbour_trim_grey')
+    getMat('neighbour_trim_grey'),
+    [6.02, 11.23]
   );
   buildBoxGutterAndKlossen(
     roofGroup,
@@ -4291,7 +4293,8 @@ function buildPitchedRoofSystem(
     -1,
     gutterTopY,
     getMat('neighbour_trim_grey'),
-    getMat('neighbour_trim_grey')
+    getMat('neighbour_trim_grey'),
+    [6.02, 11.00]
   );
 }
 
