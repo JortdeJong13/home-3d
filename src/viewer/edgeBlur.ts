@@ -97,11 +97,11 @@ export class EdgeBlurPass {
         uniform vec3 uRanges;     // blurStart, blurFull, fadeStart
         varying vec2 vUv;
 
-        float outsideDistance(vec2 p) {
+        float outsideDistance(vec2 p, float rightEdgeX) {
           float tZ = clamp((p.y - uPlot.x) / (uPlot.y - uPlot.x), 0.0, 1.0);
           float leftX = mix(uPlotLeft.x, uPlotLeft.y, tZ);
           vec2 dMin = vec2(leftX - p.x, uPlot.x - p.y);
-          vec2 dMax = vec2(p.x - uPlot.z, p.y - uPlot.y);
+          vec2 dMax = vec2(p.x - rightEdgeX, p.y - uPlot.y);
           vec2 d = max(max(dMin, dMax), vec2(0.0));
           return length(d);
         }
@@ -127,13 +127,18 @@ export class EdgeBlurPass {
             );
           }
 
-          float dist = 0.0;
+          float blurDist = 0.0;
+          float fadeDist = 0.0;
           if (depth < 0.99999) {
             vec4 ndc = vec4(vUv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
             vec4 view = uProjInv * ndc;
             view /= view.w;
             vec3 world = (uCamWorld * view).xyz;
-            dist = outsideDistance(world.xz);
+            blurDist = outsideDistance(world.xz, uPlot.z);
+            // Keep ground fade unchanged (0% at X=9.87m), but extend above-ground building fade
+            // by +2.0m so the white section-cut wall at X=10.05m stays softly visible instead of invisible.
+            float buildingMask = smoothstep(0.02, 0.35, world.y);
+            fadeDist = outsideDistance(world.xz, uPlot.z + buildingMask * 2.0);
           } else {
             // Silhouette edge where MSAA resolved depth to clear depth (1.0).
             // Reconstruct the world ray and find where it hits the ground plinth level (Y = -0.15).
@@ -143,11 +148,12 @@ export class EdgeBlurPass {
             vec3 rayDir = normalize((uCamWorld * vec4(0.0, 0.0, -1.0, 0.0)).xyz);
             float tG = abs(rayDir.y) > 0.0001 ? (-0.15 - rayOrigin.y) / rayDir.y : 0.0;
             vec3 hitPos = rayOrigin + rayDir * tG;
-            dist = outsideDistance(hitPos.xz);
+            blurDist = outsideDistance(hitPos.xz, uPlot.z);
+            fadeDist = blurDist;
           }
 
-          float blurAmt = smoothstep(uRanges.x, uRanges.y, dist);
-          float fade = 1.0 - smoothstep(uRanges.z, uRanges.y, dist);
+          float blurAmt = smoothstep(uRanges.x, uRanges.y, blurDist);
+          float fade = 1.0 - smoothstep(uRanges.z, uRanges.y, fadeDist);
           if (fade <= 0.0001) {
             gl_FragColor = vec4(0.0);
             return;
