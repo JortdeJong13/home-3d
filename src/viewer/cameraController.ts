@@ -94,7 +94,7 @@ export class IsometricCameraController {
     this.controls.zoomSpeed = 0.9;
 
     // Crucial: Disable wheel zoom on OrbitControls so mouse wheel scrolling drives the floor construction sequence!
-    // We handle pinch-to-zoom (ctrlKey + wheel) and UI +/- zoom buttons explicitly.
+    // We handle trackpad pinch-to-zoom (ctrlKey + wheel) in main.ts and two-finger touch pinch-to-zoom below.
     this.controls.enableZoom = false;
 
     // Limit zoom range: allow zooming in closely for room/furniture inspection while keeping diorama overview
@@ -112,6 +112,49 @@ export class IsometricCameraController {
         this.autoRotate = false;
       }
     });
+
+    // Mobile two-finger pinch-to-zoom (OrbitControls skips dolly when enableZoom = false)
+    let lastPinchDist = 0;
+    const getPinchDistance = (touches: TouchList): number => {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.hypot(dx, dy);
+    };
+
+    domElement.addEventListener(
+      'touchstart',
+      (e: TouchEvent) => {
+        if (e.touches.length === 2) {
+          lastPinchDist = getPinchDistance(e.touches);
+          this.animActive = false;
+          this.autoRotate = false;
+        } else {
+          lastPinchDist = 0;
+        }
+      },
+      { passive: true }
+    );
+
+    domElement.addEventListener(
+      'touchmove',
+      (e: TouchEvent) => {
+        if (e.touches.length === 2) {
+          e.preventDefault();
+          const dist = getPinchDistance(e.touches);
+          if (lastPinchDist > 0 && dist > 0) {
+            this.zoomByFactor(dist / lastPinchDist);
+          }
+          lastPinchDist = dist;
+        }
+      },
+      { passive: false }
+    );
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      lastPinchDist = e.touches.length === 2 ? getPinchDistance(e.touches) : 0;
+    };
+    domElement.addEventListener('touchend', handleTouchEnd, { passive: true });
+    domElement.addEventListener('touchcancel', handleTouchEnd, { passive: true });
   }
 
   public handleResize(width: number, height: number) {
@@ -130,8 +173,11 @@ export class IsometricCameraController {
       this.controls.minZoom,
       this.controls.maxZoom
     );
-    this.camera.zoom = nextZoom;
-    this.camera.updateProjectionMatrix();
+    if (Math.abs(nextZoom - this.camera.zoom) > 1e-6) {
+      this.camera.zoom = nextZoom;
+      this.camera.updateProjectionMatrix();
+      this.zoomDirty = true;
+    }
   }
 
   public transitionToPreset(presetId: CameraPreset['id']) {
@@ -156,8 +202,11 @@ export class IsometricCameraController {
   private prevPos = new THREE.Vector3();
   private prevTarget = new THREE.Vector3();
   private prevZoom = -1;
+  private zoomDirty = false;
 
   public update(dt: number): boolean {
+    const wasZoomDirty = this.zoomDirty;
+    this.zoomDirty = false;
     this.prevPos.copy(this.camera.position);
     this.prevTarget.copy(this.controls.target);
     this.prevZoom = this.camera.zoom;
@@ -190,6 +239,7 @@ export class IsometricCameraController {
     this.controls.update();
 
     return (
+      wasZoomDirty ||
       this.animActive ||
       this.autoRotate ||
       this.prevPos.distanceToSquared(this.camera.position) > 1e-8 ||

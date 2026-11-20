@@ -269,7 +269,7 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-// Camera Presets & Zoom Buttons
+// Camera Presets & Reset
 const camPresetBtns = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-cam-preset]'));
 for (const btn of camPresetBtns) {
   btn.addEventListener('click', () => {
@@ -279,14 +279,6 @@ for (const btn of camPresetBtns) {
     for (const b of camPresetBtns) b.classList.toggle('active', b === btn);
   });
 }
-
-document.getElementById('btn-zoom-in')?.addEventListener('click', () => {
-  cameraController.zoomByFactor(1.18);
-});
-
-document.getElementById('btn-zoom-out')?.addEventListener('click', () => {
-  cameraController.zoomByFactor(1 / 1.18);
-});
 
 document.getElementById('btn-cam-reset')?.addEventListener('click', () => {
   cameraController.resetToDefault();
