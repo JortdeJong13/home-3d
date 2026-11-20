@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="180" height="180">
+  <!-- Full-bleed sage background (Safari clips to rounded square automatically) -->
+  <rect width="180" height="180" fill="#3d6b58"/>
+
+  <!-- Soft diorama shadow -->
+  <polygon points="10.83,133.91 84.63,110.45 168.85,154.3 95.06,177.75" fill="#29493b" stroke="none" stroke-width="0" opacity="0.55"/>
+
+  <!-- Diorama plinth base -->
+  <polygon points="95.61,178.85 165.79,156.55 165.79,153.62 95.61,175.92" fill="#dedad2" stroke="none" stroke-width="0" />
+  <polygon points="14.5,136.62 95.61,178.85 95.61,175.92 14.5,133.69" fill="#c9c4ba" stroke="none" stroke-width="0" />
+  <polygon points="14.5,133.69 84.67,111.39 165.79,153.62 95.61,175.92" fill="#b8c7a3" stroke="none" stroke-width="0" />
+
+  <!-- Berging (Attached garage on left: X=-3.27..0, Z=-7.73..-13.72, Y=0..2.85) -->
+  <polygon points="18.1,133.87 51.96,151.5 51.96,127.59 18.1,109.97" fill="#d1b07f" stroke="none" stroke-width="0" />
+  <polygon points="18.1,133.87 51.96,151.5 51.96,148.81 18.1,131.19" fill="#b89f7d" stroke="none" stroke-width="0" />
+  <polygon points="51.96,151.5 75.62,143.98 75.62,120.07 51.96,127.59" fill="#e4c79a" stroke="none" stroke-width="0" />
+  <polygon points="51.96,151.5 75.62,143.98 75.62,141.29 51.96,148.81" fill="#b89f7d" stroke="none" stroke-width="0" />
+  <polygon points="55.0,150.11 72.36,144.59 72.36,126.14 55.0,131.66" fill="#b5654d" stroke="none" stroke-width="0" />
+  <polygon points="55.87,149.84 71.5,144.87 71.5,127.26 55.87,132.22" fill="#f5f2eb" stroke="none" stroke-width="0" />
+  <polygon points="56.45,149.4 63.54,147.15 63.54,130.37 56.45,132.62" fill="#4f6b58" stroke="none" stroke-width="0" />
+  <polygon points="63.83,147.05 70.92,144.8 70.92,128.03 63.83,130.28" fill="#4f6b58" stroke="none" stroke-width="0" />
+  <polygon points="17.72,109.95 41.59,102.36 75.79,120.16 51.91,127.75" fill="#3a3e42" stroke="#b8bec4" stroke-width="1.1" />
+
+  <!-- Main House Left Wall (X = 0.0, Z = 0..-10.46) -->
+  <polygon points="60.19,135.94 119.31,166.73 119.31,115.31 60.19,84.53" fill="#d1b07f" stroke="none" stroke-width="0" />
+  <polygon points="75.62,143.98 119.31,166.73 119.31,164.04 75.62,141.29" fill="#a88f6e" stroke="none" stroke-width="0" />
+
+  <!-- Left Wall Openings (X = 0.0) -->
+  <polygon points="102.92,152.15 112.25,157.01 112.25,144.18 102.92,139.32" fill="#b5654d" stroke="none" stroke-width="0" />
+  <polygon points="103.37,151.88 111.8,156.27 111.8,144.53 103.37,140.14" fill="#f5f2eb" stroke="none" stroke-width="0" />
+  <polygon points="103.94,151.34 111.23,155.14 111.23,145.07 103.94,141.28" fill="#8fbcd4" stroke="none" stroke-width="0" />
+  <polygon points="81.44,146.59 89.36,150.71 89.36,129.74 81.44,125.62" fill="#b5654d" stroke="none" stroke-width="0" />
+  <polygon points="82.12,146.94 88.68,150.36 88.68,130.81 82.12,127.4" fill="#f5f2eb" stroke="none" stroke-width="0" />
+  <polygon points="82.69,146.99 88.11,149.81 88.11,131.36 82.69,128.53" fill="#4f6b58" stroke="none" stroke-width="0" />
+  <polygon points="103.2,127.72 111.97,132.29 111.97,119.7 103.2,115.14" fill="#b5654d" stroke="none" stroke-width="0" />
+  <polygon points="103.66,127.37 111.51,131.46 111.51,120.06 103.66,115.97" fill="#f5f2eb" stroke="none" stroke-width="0" />
+  <polygon points="104.22,126.83 110.95,130.33 110.95,120.6 104.22,117.1" fill="#8fbcd4" stroke="none" stroke-width="0" />
+  <polygon points="82.57,116.98 88.51,120.07 88.51,107.49 82.57,104.4" fill="#b5654d" stroke="none" stroke-width="0" />
+  <polygon points="83.03,116.63 88.06,119.25 88.06,107.84 83.03,105.22" fill="#f5f2eb" stroke="none" stroke-width="0" />
+  <polygon points="83.59,116.09 87.49,118.12 87.49,108.39 83.59,106.36" fill="#8fbcd4" stroke="none" stroke-width="0" />
+
+  <!-- Right/Rear Roof Slopes (behind front gable) -->
+  <polygon points="140.91,68.44 161.78,101.81 149.06,95.19 111.35,53.05" fill="#33373c" stroke="none" stroke-width="0" />
+  <polygon points="111.35,53.05 132.22,46.42 149.06,95.19" fill="#3b4046" stroke="none" stroke-width="0" />
+  <polygon points="111.35,53.05 115.38,77.66 132.22,46.42" fill="#2b2f34" stroke="none" stroke-width="0" />
+  <polygon points="111.35,53.05 115.38,77.66 102.66,71.03 81.79,37.66" fill="#33373c" stroke="none" stroke-width="0" />
+
+  <!-- Main House Front Wall & Gable (Z = 0.0, X = 0..5.87) -->
+  <polygon points="119.31,166.73 161.78,153.23 161.78,101.81 140.91,68.44 119.31,115.31" fill="#e4c79a" stroke="none" stroke-width="0" />
+  <polygon points="119.31,166.73 161.78,153.23 161.78,150.55 119.31,164.04" fill="#b89f7d" stroke="none" stroke-width="0" />
+  <polygon points="126.91,160.54 153.68,152.03 153.68,136.09 126.91,144.6" fill="#b5654d" stroke="none" stroke-width="0" />
+  <polygon points="127.63,159.47 152.96,151.42 152.96,137.08 127.63,145.13" fill="#f5f2eb" stroke="none" stroke-width="0" />
+  <polygon points="128.5,158.27 140.01,154.61 140.01,142.12 128.5,145.77" fill="#8fbcd4" stroke="none" stroke-width="0" />
+  <polygon points="140.73,154.38 152.09,150.77 152.09,138.28 140.73,141.89" fill="#8fbcd4" stroke="none" stroke-width="0" />
+  <polygon points="133.06,136.78 148.62,131.83 148.62,113.8 133.06,118.74" fill="#b5654d" stroke="none" stroke-width="0" />
+  <polygon points="133.78,135.96 147.89,131.47 147.89,114.7 133.78,119.18" fill="#f5f2eb" stroke="none" stroke-width="0" />
+  <polygon points="134.51,134.89 140.44,133.0 140.44,117.91 134.51,119.79" fill="#8fbcd4" stroke="none" stroke-width="0" />
+  <polygon points="141.24,132.75 147.17,130.87 147.17,115.77 141.24,117.65" fill="#8fbcd4" stroke="none" stroke-width="0" />
+  <polygon points="133.78,135.96 147.89,131.47 147.89,125.35 133.78,129.84" fill="none" stroke="#4f6b58" stroke-width="1.1" />
+  <polygon points="137.98,109.21 143.84,107.35 143.84,89.73 137.98,91.6" fill="#b5654d" stroke="none" stroke-width="0" />
+  <polygon points="138.56,108.36 143.26,106.86 143.26,90.59 138.56,92.08" fill="#f5f2eb" stroke="none" stroke-width="0" />
+  <polygon points="139.14,107.42 142.68,106.29 142.68,91.53 139.14,92.66" fill="#8fbcd4" stroke="none" stroke-width="0" />
+
+  <!-- Left Roof Slope & Trim (in front) -->
+  <polygon points="119.31,115.31 140.91,68.44 81.79,37.66 60.19,84.53" fill="#454b52" stroke="#2d3136" stroke-width="0.8" />
+  <line x1="141.19" y1="68.59" x2="81.79" y2="37.66" stroke="#23272b" stroke-width="2.4" stroke-linecap="round"/>
+  <line x1="111.35" y1="53.05" x2="132.22" y2="46.42" stroke="#23272b" stroke-width="2.4" stroke-linecap="round"/>
+  <polyline points="119.6,115.46 141.19,68.59 162.07,101.96" fill="none" stroke="#2d3136" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+  <polygon points="118.29,117.38 119.6,115.46 59.96,84.41 58.66,86.34" fill="#f7f5f0" stroke="#d8d4cc" stroke-width="0.5" />
+  <polygon points="80.44,72.66 86.95,58.51 93.73,62.05 87.22,76.19" fill="#23272b" stroke="none" stroke-width="0" />
+  <polygon points="81.72,71.38 86.79,60.38 92.44,63.32 87.38,74.33" fill="#7aa9c4" stroke="none" stroke-width="0" />
+</svg>
