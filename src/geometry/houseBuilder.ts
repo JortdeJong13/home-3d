@@ -4523,12 +4523,14 @@ function buildSanitaryFinishesAndCisterns(
   const gfTileH = 1.35;
   // Left wall above cistern (Y: 1.00..1.35 m)
   addTilePanel(groundGroup, 'ground', 0.00, 'gf_toilet_tile_left_above', 'Wandtegels Toiletruimte Links (450×225 Mat Wit)', 1.44 + WALL_GAP, 1.44 + WALL_GAP + TILE_T, 1.00, gfTileH, -7.37 + WALL_GAP, -6.45 - WALL_GAP, gfTileSource);
-  // Rear wall (starts cleanly in front of cistern at X = 1.61 m)
+  // Rear wall (in front of cistern + 17 cm strip above cistern plateau)
   addTilePanel(groundGroup, 'ground', 0.00, 'gf_toilet_tile_rear', 'Wandtegels Toiletruimte Achterwand (450×225 Mat Wit)', 1.61 + WALL_GAP, 2.94 - WALL_GAP - TILE_T, 0.001, gfTileH, -7.37 + WALL_GAP, -7.37 + WALL_GAP + TILE_T, gfTileSource);
+  addTilePanel(groundGroup, 'ground', 0.00, 'gf_toilet_tile_rear_above_cistern', 'Wandtegels Toiletruimte Achterwand Boven Reservoir (450×225 Mat Wit)', 1.44 + WALL_GAP + TILE_T, 1.61 + WALL_GAP, 1.00, gfTileH, -7.37 + WALL_GAP, -7.37 + WALL_GAP + TILE_T, gfTileSource);
   // Right wall
   addTilePanel(groundGroup, 'ground', 0.00, 'gf_toilet_tile_right', 'Wandtegels Toiletruimte Rechterwand (450×225 Mat Wit)', 2.94 - WALL_GAP - TILE_T, 2.94 - WALL_GAP, 0.001, gfTileH, -7.37 + WALL_GAP, -6.45 - WALL_GAP, gfTileSource);
-  // Front wall split around gf_door_toilet (X: 1.73..2.71 m)
+  // Front wall split around gf_door_toilet (X: 1.73..2.71 m) + 17 cm strip above cistern plateau
   addTilePanel(groundGroup, 'ground', 0.00, 'gf_toilet_tile_front_left', 'Wandtegels Toiletruimte Voorwand Links (450×225 Mat Wit)', 1.61 + WALL_GAP, 1.73, 0.001, gfTileH, -6.45 - WALL_GAP - TILE_T, -6.45 - WALL_GAP, gfTileSource);
+  addTilePanel(groundGroup, 'ground', 0.00, 'gf_toilet_tile_front_above_cistern', 'Wandtegels Toiletruimte Voorwand Boven Reservoir (450×225 Mat Wit)', 1.44 + WALL_GAP + TILE_T, 1.61 + WALL_GAP, 1.00, gfTileH, -6.45 - WALL_GAP - TILE_T, -6.45 - WALL_GAP, gfTileSource);
   addTilePanel(groundGroup, 'ground', 0.00, 'gf_toilet_tile_front_right', 'Wandtegels Toiletruimte Voorwand Rechts (450×225 Mat Wit)', 2.71, 2.94 - WALL_GAP - TILE_T, 0.001, gfTileH, -6.45 - WALL_GAP - TILE_T, -6.45 - WALL_GAP, gfTileSource);
 
   // ===========================================================================
@@ -4580,9 +4582,11 @@ function buildSanitaryFinishesAndCisterns(
   addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_right', 'Wandtegels Badkamer Rechterwand (450×225 Mat Wit)', 2.41 - WALL_GAP - TILE_T, 2.41 - WALL_GAP, Y1 + 0.001, Y1Top, bathRearInnerZ + WALL_GAP, -6.30 - WALL_GAP, ffTileSource);
 
   // 4. Front interior wall (Z = -6.30 m), cut cleanly around ff_door_badkamer (X: 1.36..2.34 m, Y: Y1..Y1+2.20 m)
+  //    plus the 17 cm strip above the cistern plateau (X: 0.70..0.87 m, Y: Y1+1.00..Y1Top)
   const doorMinX = 1.36;
   const doorMaxX = 2.34;
   const doorHeadY = Y1 + 2.20;
+  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_front_above_cistern', 'Wandtegels Badkamer Voorwand Boven Reservoir (450×225 Mat Wit)', 0.70 + WALL_GAP + TILE_T, 0.87 + WALL_GAP, Y1 + 1.00, Y1Top, -6.30 - WALL_GAP - TILE_T, -6.30 - WALL_GAP, ffTileSource);
   addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_front_left', 'Wandtegels Badkamer Voorwand Links van Deur (450×225 Mat Wit)', 0.87 + WALL_GAP, doorMinX, Y1 + 0.001, Y1Top, -6.30 - WALL_GAP - TILE_T, -6.30 - WALL_GAP, ffTileSource);
   addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_front_right', 'Wandtegels Badkamer Voorwand Rechts van Deur (450×225 Mat Wit)', doorMaxX, 2.41 - WALL_GAP - TILE_T, Y1 + 0.001, Y1Top, -6.30 - WALL_GAP - TILE_T, -6.30 - WALL_GAP, ffTileSource);
   addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_front_above_door', 'Wandtegels Badkamer Boven Deur (450×225 Mat Wit)', doorMinX, doorMaxX, doorHeadY, Y1Top, -6.30 - WALL_GAP - TILE_T, -6.30 - WALL_GAP, ffTileSource);
@@ -4591,7 +4595,9 @@ function buildSanitaryFinishesAndCisterns(
   addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_shaft_above', 'Wandtegels Badkamer Boven Inbouwreservoir (450×225 Mat Wit)', 0.70 + WALL_GAP, 0.70 + WALL_GAP + TILE_T, Y1 + 1.00, Y1Top, -7.21 + WALL_GAP, -6.30 - WALL_GAP, ffTileSource);
 
   // 6. Shower divider wall (ff_int_badkamer_shaft_rear: X: 0.408..1.30 m, Z: -7.28..-7.21 m) — tiled on all 3 exposed faces
+  //    including the 17 cm strip above the cistern plateau on the toilet side!
   addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_divider_shower', 'Wandtegels Douchewand Douchezijde (450×225 Mat Wit)', bathLeftInnerX + WALL_GAP, 1.30 + WALL_GAP + TILE_T, Y1 + 0.001, Y1Top, -7.28 - WALL_GAP - TILE_T, -7.28 - WALL_GAP, ffTileSource);
+  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_divider_toilet_above_cistern', 'Wandtegels Douchewand Boven Reservoir (450×225 Mat Wit)', 0.70 + WALL_GAP + TILE_T, 0.87 + WALL_GAP, Y1 + 1.00, Y1Top, -7.21 + WALL_GAP, -7.21 + WALL_GAP + TILE_T, ffTileSource);
   addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_divider_toilet', 'Wandtegels Douchewand Toiletzijde (450×225 Mat Wit)', 0.87 + WALL_GAP, 1.30 + WALL_GAP + TILE_T, Y1 + 0.001, Y1Top, -7.21 + WALL_GAP, -7.21 + WALL_GAP + TILE_T, ffTileSource);
   addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_divider_end', 'Wandtegels Douchewand Kopse Kant (450×225 Mat Wit)', 1.30 + WALL_GAP, 1.30 + WALL_GAP + TILE_T, Y1 + 0.001, Y1Top, -7.28 - WALL_GAP, -7.21 + WALL_GAP, ffTileSource);
 }
