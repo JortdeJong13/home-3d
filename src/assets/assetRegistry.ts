@@ -12,7 +12,6 @@ import { loungeLanternPrefab } from './items/loungeLantern';
 import { diningTableOakPrefab } from './items/diningTableOak';
 import { kitchenTallCabinetWallPrefab } from './items/kitchenTallCabinetWall';
 import { kitchenIslandSavinoPrefab } from './items/kitchenIslandSavino';
-import { loungeSofaAvaPrefab } from './items/loungeSofaAva';
 
 /**
  * CENTRAL ASSET PREFAB CATALOG
@@ -36,7 +35,6 @@ export const ASSET_PREFABS: Record<string, AssetPrefabDefinition> = {
   dining_table_oak: diningTableOakPrefab,
   kitchen_tall_cabinet_wall: kitchenTallCabinetWallPrefab,
   kitchen_island_savino: kitchenIslandSavinoPrefab,
-  lounge_sofa_ava: loungeSofaAvaPrefab,
 };
 
 /**
@@ -261,15 +259,5 @@ export const PLACED_ASSETS: PlacedAssetSpec[] = [
     rotationDeg: 270,
     provenance: 'verified_drawing',
     source: 'Leidingschema 47359_1_1 & User specification: 252 × 108 × 97 cm island parallel to left wall (100 cm from X=0.40 m) and 960 mm from rear garden doors (Z=-12.46 m)',
-  },
-  {
-    id: 'gf_woonkamer_loungebank_ava',
-    prefabId: 'lounge_sofa_ava',
-    label: 'Loungebank Ava Rechts (334 × 175 cm · Beige)',
-    floor: 'ground',
-    positionXZ: [2.47, -1.525],
-    rotationDeg: 180,
-    provenance: 'user_supplied',
-    source: 'Goossens Loungebank Ava (art. 300885077, Chaise longue + 3-zits, Hoekrichting Rechts, 334 × 175 × 83 cm, beige naturel): placed in Woonkamer (Voorzijde) facing into the room, 40 cm from left wall (X=0.40 m) and 25 cm from front window wall (Z=-0.40 m)',
   },
 ];
