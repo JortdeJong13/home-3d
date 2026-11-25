@@ -2987,6 +2987,8 @@ function buildWallWithOpenings(
         panelMaterial: prefab.panelMaterial,
         hasArchTrim: prefab.hasArchTrim,
         hasTerracottaSurround: prefab.hasTerracottaSurround,
+        hingeSide: placement.hingeSide,
+        swingSide: placement.swingSide,
         provenance: prefab.provenance,
         source: prefab.source,
       };
@@ -4297,13 +4299,8 @@ function buildSanitaryFinishesAndCisterns(
   });
   const flushPlateMat = new THREE.MeshStandardMaterial({
     color: '#f2f1ed',
-    roughness: 0.42,
-    metalness: 0.06,
-  });
-  const shadowGapMat = new THREE.MeshStandardMaterial({
-    color: '#d4d0c8',
-    roughness: 0.90,
-    metalness: 0.0,
+    roughness: 0.44,
+    metalness: 0.02,
   });
 
   const TILE_T = 0.004; // 4 mm tile thickness proud of inner plaster faces (zero Z-fighting)
@@ -4451,10 +4448,10 @@ function buildSanitaryFinishesAndCisterns(
     registerMesh(edgeTrim, 'interior_wall_plaster', cisternMeta, false, true);
     targetGroup.add(edgeTrim);
 
-    // 5. Dual-flush actuator plate (bedieningsplaat) centered on +X face at Y = +84 cm
-    const plateW = 0.24;
-    const plateH = 0.155;
-    const plateD = 0.009;
+    // 5. Sleek Geberit Sigma30-style Dual-Flush Actuator Plate (matte white + fine chrome accent bar)
+    const plateW = 0.246;
+    const plateH = 0.164;
+    const plateD = 0.004;
     const plateY = floorBaseY + Math.min(heightM - 0.14, 0.84);
 
     const plateFrame = new THREE.Mesh(new THREE.BoxGeometry(plateD, plateH, plateW), flushPlateMat);
@@ -4462,33 +4459,41 @@ function buildSanitaryFinishesAndCisterns(
     registerMesh(plateFrame, 'interior_wall_plaster', cisternMeta, false, true);
     targetGroup.add(plateFrame);
 
-    const recessD = 0.0015;
-    const surround = new THREE.Mesh(
-      new THREE.BoxGeometry(recessD, plateH - 0.028, plateW - 0.026),
-      shadowGapMat
-    );
-    surround.position.set(x1 + plateD + recessD / 2, plateY, cz);
-    registerMesh(surround, 'interior_wall_plaster', cisternMeta, false, true);
-    targetGroup.add(surround);
-
-    const btnH = plateH - 0.036;
-    const btnD = 0.0035;
-    const largeBtnW = 0.118;
-    const smallBtnW = 0.072;
-    const btnGap = 0.010;
+    const btnMat = new THREE.MeshStandardMaterial({
+      color: '#fbfaf7',
+      roughness: 0.36,
+      metalness: 0.02,
+    });
+    const btnH = 0.086;
+    const btnD = 0.0025;
+    const largeBtnW = 0.114;
+    const smallBtnW = 0.064;
+    const btnGap = 0.007;
     const totalBtnsW = largeBtnW + btnGap + smallBtnW;
     const startZ = cz - totalBtnsW / 2;
-    const btnX = x1 + plateD + recessD + btnD / 2;
+    const btnX = x1 + plateD + btnD / 2;
+    const btnY = plateY + 0.004;
 
-    const largeBtn = new THREE.Mesh(new THREE.BoxGeometry(btnD, btnH, largeBtnW), chromeMat);
-    largeBtn.position.set(btnX, plateY, startZ + largeBtnW / 2);
+    const largeBtn = new THREE.Mesh(new THREE.BoxGeometry(btnD, btnH, largeBtnW), btnMat);
+    largeBtn.position.set(btnX, btnY, startZ + largeBtnW / 2);
     registerMesh(largeBtn, 'interior_wall_plaster', cisternMeta, false, true);
     targetGroup.add(largeBtn);
 
-    const smallBtn = new THREE.Mesh(new THREE.BoxGeometry(btnD, btnH, smallBtnW), chromeMat);
-    smallBtn.position.set(btnX, plateY, startZ + largeBtnW + btnGap + smallBtnW / 2);
+    const smallBtn = new THREE.Mesh(new THREE.BoxGeometry(btnD, btnH, smallBtnW), btnMat);
+    smallBtn.position.set(btnX, btnY, startZ + largeBtnW + btnGap + smallBtnW / 2);
     registerMesh(smallBtn, 'interior_wall_plaster', cisternMeta, false, true);
     targetGroup.add(smallBtn);
+
+    // Signature Sigma30 hairline satin-chrome accent strip neatly below the two buttons
+    const accentH = 0.004;
+    const accentD = 0.002;
+    const accentBar = new THREE.Mesh(
+      new THREE.BoxGeometry(accentD, accentH, totalBtnsW),
+      chromeMat
+    );
+    accentBar.position.set(x1 + plateD + accentD / 2, btnY - btnH / 2 - accentH / 2 - 0.003, cz);
+    registerMesh(accentBar, 'interior_wall_plaster', cisternMeta, false, true);
+    targetGroup.add(accentBar);
   };
 
   // ===========================================================================
@@ -4554,20 +4559,25 @@ function buildSanitaryFinishesAndCisterns(
   });
 
   // 1. Left exterior wall in shower zone (Z: -10.06..-7.28 m)
-  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_left_shower', 'Wandtegels Badkamer Linkerwand Douche (450×225 Mat Wit)', 0.40 + WALL_GAP, 0.40 + WALL_GAP + TILE_T, Y1 + 0.001, Y1Top, -10.06 + WALL_GAP + TILE_T, -7.28 - WALL_GAP - TILE_T, ffTileSource);
+  // Note: Exterior walls have an 8 mm interior plaster lining (inner face at X = 0.408 m, Z = -10.052 m).
+  const EXT_PLASTER = 0.008;
+  const bathLeftInnerX = 0.40 + EXT_PLASTER;     // 0.408 m
+  const bathRearInnerZ = -10.06 + EXT_PLASTER;   // -10.052 m
 
-  // 2. Rear exterior wall (Z = -10.06 m), cut cleanly around ff_win_rear_badkamer (X: 1.12..1.47 m, Y: Y1+0.70..Y1+2.30 m)
+  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_left_shower', 'Wandtegels Badkamer Linkerwand Douche (450×225 Mat Wit)', bathLeftInnerX + WALL_GAP, bathLeftInnerX + WALL_GAP + TILE_T, Y1 + 0.001, Y1Top, bathRearInnerZ + WALL_GAP + TILE_T, -7.28 - WALL_GAP - TILE_T, ffTileSource);
+
+  // 2. Rear exterior wall (inner plaster face Z = -10.052 m), cut cleanly around ff_win_rear_badkamer (X: 1.12..1.47 m, Y: Y1+0.70..Y1+2.30 m)
   const winMinX = 1.12;
   const winMaxX = 1.47;
   const winSillY = Y1 + 0.70;
   const winHeadY = Y1 + 2.30;
-  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_rear_left', 'Wandtegels Badkamer Achterwand Links (450×225 Mat Wit)', 0.40 + WALL_GAP, winMinX, Y1 + 0.001, Y1Top, -10.06 + WALL_GAP, -10.06 + WALL_GAP + TILE_T, ffTileSource);
-  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_rear_right', 'Wandtegels Badkamer Achterwand Rechts (450×225 Mat Wit)', winMaxX, 2.41 - WALL_GAP - TILE_T, Y1 + 0.001, Y1Top, -10.06 + WALL_GAP, -10.06 + WALL_GAP + TILE_T, ffTileSource);
-  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_rear_below_win', 'Wandtegels Badkamer Onder Raam (450×225 Mat Wit)', winMinX, winMaxX, Y1 + 0.001, winSillY, -10.06 + WALL_GAP, -10.06 + WALL_GAP + TILE_T, ffTileSource);
-  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_rear_above_win', 'Wandtegels Badkamer Boven Raam (450×225 Mat Wit)', winMinX, winMaxX, winHeadY, Y1Top, -10.06 + WALL_GAP, -10.06 + WALL_GAP + TILE_T, ffTileSource);
+  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_rear_left', 'Wandtegels Badkamer Achterwand Links (450×225 Mat Wit)', bathLeftInnerX + WALL_GAP, winMinX, Y1 + 0.001, Y1Top, bathRearInnerZ + WALL_GAP, bathRearInnerZ + WALL_GAP + TILE_T, ffTileSource);
+  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_rear_right', 'Wandtegels Badkamer Achterwand Rechts (450×225 Mat Wit)', winMaxX, 2.41 - WALL_GAP - TILE_T, Y1 + 0.001, Y1Top, bathRearInnerZ + WALL_GAP, bathRearInnerZ + WALL_GAP + TILE_T, ffTileSource);
+  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_rear_below_win', 'Wandtegels Badkamer Onder Raam (450×225 Mat Wit)', winMinX, winMaxX, Y1 + 0.001, winSillY, bathRearInnerZ + WALL_GAP, bathRearInnerZ + WALL_GAP + TILE_T, ffTileSource);
+  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_rear_above_win', 'Wandtegels Badkamer Boven Raam (450×225 Mat Wit)', winMinX, winMaxX, winHeadY, Y1Top, bathRearInnerZ + WALL_GAP, bathRearInnerZ + WALL_GAP + TILE_T, ffTileSource);
 
-  // 3. Right interior wall (separating Badkamer from Kantoor, X = 2.41 m, full 376 cm depth)
-  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_right', 'Wandtegels Badkamer Rechterwand (450×225 Mat Wit)', 2.41 - WALL_GAP - TILE_T, 2.41 - WALL_GAP, Y1 + 0.001, Y1Top, -10.06 + WALL_GAP, -6.30 - WALL_GAP, ffTileSource);
+  // 3. Right interior wall (separating Badkamer from Kantoor, X = 2.41 m, full depth from rear tile to front wall)
+  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_right', 'Wandtegels Badkamer Rechterwand (450×225 Mat Wit)', 2.41 - WALL_GAP - TILE_T, 2.41 - WALL_GAP, Y1 + 0.001, Y1Top, bathRearInnerZ + WALL_GAP, -6.30 - WALL_GAP, ffTileSource);
 
   // 4. Front interior wall (Z = -6.30 m), cut cleanly around ff_door_badkamer (X: 1.36..2.34 m, Y: Y1..Y1+2.20 m)
   const doorMinX = 1.36;
@@ -4580,8 +4590,8 @@ function buildSanitaryFinishesAndCisterns(
   // 5. Pipe chase wall above cistern (X = 0.70 m, Z: -7.21..-6.30 m, Y: Y1+1.00..Y1+2.60 m)
   addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_shaft_above', 'Wandtegels Badkamer Boven Inbouwreservoir (450×225 Mat Wit)', 0.70 + WALL_GAP, 0.70 + WALL_GAP + TILE_T, Y1 + 1.00, Y1Top, -7.21 + WALL_GAP, -6.30 - WALL_GAP, ffTileSource);
 
-  // 6. Shower divider wall (ff_int_badkamer_shaft_rear: X: 0.40..1.30 m, Z: -7.28..-7.21 m) — tiled on all 3 exposed faces
-  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_divider_shower', 'Wandtegels Douchewand Douchezijde (450×225 Mat Wit)', 0.40 + WALL_GAP, 1.30 + WALL_GAP + TILE_T, Y1 + 0.001, Y1Top, -7.28 - WALL_GAP - TILE_T, -7.28 - WALL_GAP, ffTileSource);
+  // 6. Shower divider wall (ff_int_badkamer_shaft_rear: X: 0.408..1.30 m, Z: -7.28..-7.21 m) — tiled on all 3 exposed faces
+  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_divider_shower', 'Wandtegels Douchewand Douchezijde (450×225 Mat Wit)', bathLeftInnerX + WALL_GAP, 1.30 + WALL_GAP + TILE_T, Y1 + 0.001, Y1Top, -7.28 - WALL_GAP - TILE_T, -7.28 - WALL_GAP, ffTileSource);
   addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_divider_toilet', 'Wandtegels Douchewand Toiletzijde (450×225 Mat Wit)', 0.87 + WALL_GAP, 1.30 + WALL_GAP + TILE_T, Y1 + 0.001, Y1Top, -7.21 + WALL_GAP, -7.21 + WALL_GAP + TILE_T, ffTileSource);
   addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_divider_end', 'Wandtegels Douchewand Kopse Kant (450×225 Mat Wit)', 1.30 + WALL_GAP, 1.30 + WALL_GAP + TILE_T, Y1 + 0.001, Y1Top, -7.28 - WALL_GAP, -7.21 + WALL_GAP, ffTileSource);
 }

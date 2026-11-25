@@ -3,29 +3,28 @@ import * as THREE from 'three';
 /**
  * Procedural Wall Tile Texture: T21c Motto Lake 450 × 225 mm White Mat (1594238)
  *
- * Per Tekening woonwensen 55.1 / 55.2 & Technische omschrijving §16.2:
- * - Tile dimensions: 22.5 cm wide × 45.0 cm tall (portrait / "staand geplaatst")
+ * - Tile dimensions: 45.0 cm wide × 22.5 cm tall (horizontal / landscape)
  * - Finish: Matte white ceramic ("White Mat") with subtle ceramic micro-variation
- * - Grout: Silver-grey ("zilvergrijs gevoegd"), crisp 2.5 mm straight grid joints
+ * - Grout: Silver-grey ("zilvergrijs gevoegd"), crisp straight grid joints
  *
  * Periodic world repeat:
- * - 4 columns × 0.225 m = 0.90 m (U / horizontal)
- * - 2 rows    × 0.450 m = 0.90 m (V / vertical)
+ * - 2 columns × 0.450 m = 0.90 m (U / horizontal)
+ * - 4 rows    × 0.225 m = 0.90 m (V / vertical)
  */
-export const WALL_TILE_W_M = 0.225;
-export const WALL_TILE_H_M = 0.450;
-export const WALL_TILE_COLS = 4;
-export const WALL_TILE_ROWS = 2;
+export const WALL_TILE_W_M = 0.450;
+export const WALL_TILE_H_M = 0.225;
+export const WALL_TILE_COLS = 2;
+export const WALL_TILE_ROWS = 4;
 export const WALL_TILE_REPEAT_U_M = WALL_TILE_W_M * WALL_TILE_COLS; // 0.90 m
 export const WALL_TILE_REPEAT_V_M = WALL_TILE_H_M * WALL_TILE_ROWS; // 0.90 m
 
 const TEX_SIZE = 512;
-const JOINT_HALF_M = 0.0014; // ~2.8 mm silver-grey grout line so it reads crisply in isometric view
+const JOINT_HALF_M = 0.0018; // ~3.6 mm silver-grey grout line so it reads crisply in isometric view
 
-// Soft silver-grey grout ("zilvergrijs gevoegd")
-const GROUT_R = 192;
-const GROUT_G = 196;
-const GROUT_B = 200;
+// Crisp silver-grey grout ("zilvergrijs gevoegd")
+const GROUT_R = 176;
+const GROUT_G = 180;
+const GROUT_B = 185;
 
 function hash2D(ix: number, iy: number, seed = 0): number {
   let n = Math.imul(ix, 374761393) + Math.imul(iy, 668265263) + Math.imul(seed, 1442695041);

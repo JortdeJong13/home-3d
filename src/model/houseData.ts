@@ -151,6 +151,10 @@ export interface WallOpeningPlacement {
   widthOverride?: number;
   heightOverride?: number;
   sillHeightOverride?: number;
+  /** Which jamb carries the hinge along the wall's start -> end axis (default: 'start') */
+  hingeSide?: 'start' | 'end';
+  /** Which local normal side the door swings toward when opened (default: '+z', or '-z' for inward exterior doors) */
+  swingSide?: '+z' | '-z';
 }
 
 export interface WallSpec {
@@ -288,6 +292,8 @@ export function getHouseWalls(): WallSpec[] {
           id: 'gf_door_entrance',
           prefabId: 'door_entrance_front',
           offsetAlongWall: 6.58, // Z = -12.46 + 6.58 = -5.88 m; front edge at -5.39 m = 143 cm inside Hal from 12 cm wall (-3.96 m)
+          hingeSide: 'end', // VK-06: hinged on front/south (stair) jamb, swinging inward (-z) into Hal
+          swingSide: '-z',
         },
         {
           id: 'gf_win_side_living',
@@ -478,6 +484,8 @@ export function getHouseWalls(): WallSpec[] {
           prefabId: 'door_inner_standard_b77b',
           label: 'Toiletdeur B77b (98 × 220 cm)',
           offsetAlongWall: 0.85,
+          hingeSide: 'end', // VK-06: hinged on east/living-room jamb, swinging outward (+z) into Hal
+          swingSide: '+z',
         },
       ],
     },
@@ -761,6 +769,8 @@ export function getHouseWalls(): WallSpec[] {
           prefabId: 'door_inner_standard_b77b',
           label: 'Deur Slaapkamer Voorzijde B77b (98 × 220 cm)',
           offsetAlongWall: 2.95,
+          hingeSide: 'start', // 55.2: hinged on west/stair jamb, swinging inward (+z) into Slaapkamer 2
+          swingSide: '+z',
         },
       ],
     },
@@ -799,6 +809,8 @@ export function getHouseWalls(): WallSpec[] {
           prefabId: 'door_inner_standard_b77b',
           label: 'Deur Inloopkast B77b (98 × 220 cm)',
           offsetAlongWall: 1.18,
+          hingeSide: 'start', // 55.2: hinged on front/south jamb, swinging outward (-z) into Overloop
+          swingSide: '-z',
         },
       ],
     },
@@ -822,12 +834,16 @@ export function getHouseWalls(): WallSpec[] {
           prefabId: 'door_inner_standard_b77b',
           label: 'Badkamerdeur B77b (98 × 220 cm)',
           offsetAlongWall: 1.45,
+          hingeSide: 'start', // VK-06 & 55.2: hinged on west/left jamb, swinging outward (+z) into Overloop
+          swingSide: '+z',
         },
         {
           id: 'ff_door_kantoor',
           prefabId: 'door_inner_standard_b77b',
           label: 'Deur Kantoor B77b (98 × 220 cm)',
           offsetAlongWall: 2.95,
+          hingeSide: 'start', // 55.2: hinged on west/bathroom-wall jamb, swinging inward (-z) into Kantoor
+          swingSide: '-z',
         },
       ],
     },
@@ -1156,6 +1172,8 @@ export function getHouseWalls(): WallSpec[] {
           prefabId: 'door_inner_standard_b77b',
           label: 'Deur Overloop naar Zolder B77b (98 × 220 cm — 19.6 cm van achterwand)',
           offsetAlongWall: 1.689, // Rear edge is 19.6 cm from inner rear wall (32.1 cm from outer corner)
+          hingeSide: 'end', // VK-06 & 55.3: hinged on rear/north jamb, swinging (+z) into Zolder
+          swingSide: '+z',
         },
       ],
     },

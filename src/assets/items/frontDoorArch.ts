@@ -244,21 +244,34 @@ export function buildDoorLeafWithVisionCutout(params: {
   frameMat: THREE.MeshStandardMaterial;
   glassMat: THREE.MeshStandardMaterial;
   handleMat: THREE.MeshStandardMaterial;
+  hingeSide?: 'start' | 'end';
 }): { leafPivotContent: THREE.Group; leafMesh: THREE.Mesh } {
-  const { innerW, innerH, leafThickness, doorMat, frameMat, glassMat, handleMat } = params;
+  const {
+    innerW,
+    innerH,
+    leafThickness,
+    doorMat,
+    frameMat,
+    glassMat,
+    handleMat,
+    hingeSide = 'start',
+  } = params;
   const container = new THREE.Group();
+  const dir = hingeSide === 'start' ? 1 : -1;
+  const xMin = hingeSide === 'start' ? 0 : -innerW;
+  const xMax = hingeSide === 'start' ? innerW : 0;
 
   const visionW = 0.22;
   const visionH = Math.min(1.28, innerH * 0.64);
-  const visionCenterX = innerW / 2;
+  const visionCenterX = dir * (innerW / 2);
   const visionCenterY = 0.08; // Slightly above vertical midpoint
 
   // Extruded door leaf with real rectangular hole for the glass
   const leafShape = new THREE.Shape();
-  leafShape.moveTo(0, -innerH / 2);
-  leafShape.lineTo(innerW, -innerH / 2);
-  leafShape.lineTo(innerW, innerH / 2);
-  leafShape.lineTo(0, innerH / 2);
+  leafShape.moveTo(xMin, -innerH / 2);
+  leafShape.lineTo(xMax, -innerH / 2);
+  leafShape.lineTo(xMax, innerH / 2);
+  leafShape.lineTo(xMin, innerH / 2);
   leafShape.closePath();
 
   const hole = new THREE.Path();
@@ -322,9 +335,9 @@ export function buildDoorLeafWithVisionCutout(params: {
   const handleGroup = createBrushedSteelLeverHandle({
     leafThickness,
     handleMat,
-    leverDirection: -1,
+    leverDirection: dir === 1 ? -1 : 1,
   });
-  handleGroup.position.set(innerW - 0.075, -0.02, 0);
+  handleGroup.position.set(dir * (innerW - 0.075), -0.02, 0);
   container.add(handleGroup);
 
   return { leafPivotContent: container, leafMesh };
@@ -413,7 +426,7 @@ export const frontDoorArchPrefab: AssetPrefabDefinition = {
     threshold.receiveShadow = true;
     group.add(threshold);
 
-    // Hinged Door Leaf with real cutout vision glass (swings inward -Z)
+    // Hinged Door Leaf with real cutout vision glass (hinged right/+X per VK-06, swings inward -Z)
     const innerW = doorW - frameThick * 2;
     const innerH = doorH - frameThick - thresholdH;
     const { leafPivotContent, leafMesh } = buildDoorLeafWithVisionCutout({
@@ -424,11 +437,12 @@ export const frontDoorArchPrefab: AssetPrefabDefinition = {
       frameMat,
       glassMat,
       handleMat,
+      hingeSide: 'end',
     });
 
     const pivot = new THREE.Group();
     pivot.position.set(
-      doorCenterX - innerW / 2,
+      doorCenterX + innerW / 2,
       thresholdH + innerH / 2,
       frameCenterZ
     );
@@ -445,7 +459,7 @@ export const frontDoorArchPrefab: AssetPrefabDefinition = {
       group.add(trigger);
 
       ctx.registerInteractiveDoor({
-        pivots: [{ group: pivot, openAngle: Math.PI * 0.45, closedAngle: 0, currentAngle: 0 }],
+        pivots: [{ group: pivot, openAngle: -Math.PI * 0.45, closedAngle: 0, currentAngle: 0 }],
         triggerMeshes: [trigger, leafMesh],
       });
     }

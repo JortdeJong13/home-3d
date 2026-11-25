@@ -44,6 +44,8 @@ export interface OpeningPrefabSpec {
   panelMaterial: MaterialId;
   hasArchTrim?: boolean;
   hasTerracottaSurround?: boolean;
+  hingeSide?: 'start' | 'end';
+  swingSide?: '+z' | '-z';
   provenance: ProvenanceType;
   source: string;
 }
@@ -273,6 +275,8 @@ export interface ResolvedOpeningInstance {
   panelMaterial: MaterialId;
   hasArchTrim?: boolean;
   hasTerracottaSurround?: boolean;
+  hingeSide?: 'start' | 'end';
+  swingSide?: '+z' | '-z';
   provenance: ProvenanceType;
   source: string;
 }
@@ -490,7 +494,7 @@ function createRoundedRosetteLeverHandle(params: {
       new THREE.BoxGeometry(0.010, 0.026, 0.012),
       handleMat
     );
-    latchBolt.position.set(latchEdgeOffset + 0.004, 0, 0);
+    latchBolt.position.set(latchEdgeOffset + Math.sign(latchEdgeOffset) * 0.004, 0, 0);
     group.add(latchBolt);
   }
 
@@ -929,9 +933,21 @@ export function instantiateOpeningPrefab3D(
     }
   };
 
-  const buildSingleSwingingDoor = (leafThickness: number, openAngle: number, hasVisionGlass = false) => {
+  const buildSingleSwingingDoor = (
+    leafThickness: number,
+    openAngleMag: number,
+    hasVisionGlass = false,
+    defaultSwingSide: '+z' | '-z' = '+z'
+  ) => {
+    const hingeSide: 'start' | 'end' = op.hingeSide ?? 'start';
+    const swingSide: '+z' | '-z' = op.swingSide ?? defaultSwingSide;
+    const dir = hingeSide === 'start' ? 1 : -1;
+    // Rotation around +Y: (dir*r, 0, 0) rotates to z' = -dir * r * sin(theta)
+    // To swing toward +z (z' > 0): sign = -dir; toward -z (z' < 0): sign = +dir
+    const openAngle = (swingSide === '+z' ? -dir : dir) * Math.abs(openAngleMag);
+
     const pivot = new THREE.Group();
-    pivot.position.set(-innerW / 2, -frameThick / 2, frameCenterZ);
+    pivot.position.set(hingeSide === 'start' ? -innerW / 2 : innerW / 2, -frameThick / 2, frameCenterZ);
 
     let leaf: THREE.Mesh;
     if (hasVisionGlass) {
@@ -949,6 +965,7 @@ export function instantiateOpeningPrefab3D(
         frameMat: getMat(op.frameMaterial),
         glassMat: getMat('window_glass_day'),
         handleMat,
+        hingeSide,
       });
       leaf = built.leafMesh;
       pivot.add(built.leafPivotContent);
@@ -957,7 +974,7 @@ export function instantiateOpeningPrefab3D(
         new THREE.BoxGeometry(innerW, innerH, leafThickness),
         getMat(op.panelMaterial)
       );
-      leaf.position.set(innerW / 2, 0, 0);
+      leaf.position.set(dir * (innerW / 2), 0, 0);
       pivot.add(leaf);
 
       const handleMat = new THREE.MeshStandardMaterial({
@@ -970,10 +987,10 @@ export function instantiateOpeningPrefab3D(
       const handle = createRoundedRosetteLeverHandle({
         leafThickness,
         handleMat,
-        leverDirection: -1,
-        latchEdgeOffset: latchBackset,
+        leverDirection: dir === 1 ? -1 : 1,
+        latchEdgeOffset: dir * latchBackset,
       });
-      handle.position.set(innerW - latchBackset, -0.12 - (-frameThick / 2), 0);
+      handle.position.set(dir * (innerW - latchBackset), -0.12 - (-frameThick / 2), 0);
       pivot.add(handle);
     }
 
@@ -1004,11 +1021,7 @@ export function instantiateOpeningPrefab3D(
   // 4. Prefab-Specific 3D Inner Assembly
   switch (op.prefabId) {
     case 'door_inner_standard_b77b': {
-      const openAngle =
-        op.id === 'ff_door_badkamer' || op.id === 'ff_door_kantoor'
-          ? Math.PI * 0.44
-          : -Math.PI * 0.44;
-      buildSingleSwingingDoor(0.042, openAngle);
+      buildSingleSwingingDoor(0.042, Math.PI * 0.44, false, '+z');
       break;
     }
 
@@ -1528,7 +1541,7 @@ export function instantiateOpeningPrefab3D(
     case 'door_entrance_front': {
       addExteriorDoorThreshold('floor_ground_tile');
       // Sage-green front entrance door with vertical glass vision panel, swings inward (-Z) into Hal
-      buildSingleSwingingDoor(0.055, Math.PI * 0.45, true);
+      buildSingleSwingingDoor(0.055, Math.PI * 0.45, true, '-z');
       break;
     }
 
