@@ -267,7 +267,7 @@ export const PLACED_ASSETS: PlacedAssetSpec[] = [
     prefabId: 'wall_hung_toilet',
     label: 'Wandcloset & Inbouwreservoir (Toiletruimte Begane Grond)',
     floor: 'ground',
-    positionXZ: [1.79, -6.91],
+    positionXZ: [1.795, -6.91],
     rotationDeg: 90,
     dimensionsOverride: {
       width: m(0.92, 'verified_drawing', 'Toiletruimte Begane Grond inner depth 92 cm (Z: -7.37..-6.45 m)'),
@@ -280,7 +280,7 @@ export const PLACED_ASSETS: PlacedAssetSpec[] = [
     prefabId: 'wall_hung_toilet',
     label: 'Wandcloset & Inbouwreservoir (Badkamer 1e Verdieping)',
     floor: 'first',
-    positionXZ: [1.05, -6.755],
+    positionXZ: [1.055, -6.755],
     rotationDeg: 90,
     provenance: 'user_supplied',
     source: 'Technische omschrijving §16.2/§23 (Geberit Renova wandcloset + betegeld plateau), Tekening 55.2 & HomeByMe (91 cm alcove, 17 cm deep × 100 cm high reservoir)',
