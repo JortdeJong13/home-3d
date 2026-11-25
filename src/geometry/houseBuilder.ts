@@ -12,6 +12,7 @@ import { MaterialId, MATERIAL_PALETTE } from '../model/materials';
 import { MATERIAL_SURFACE_WEATHER } from '../model/seasons';
 import { getExteriorBrickTextures, applyWorldBrickUVs } from '../model/brickTexture';
 import { getGroundFloorTileTextures, applyWorldFloorTileUVs } from '../model/floorTileTexture';
+import { getBathroomWallTileTextures, applyWorldWallTileUVs } from '../model/wallTileTexture';
 import { ProvenanceType } from '../model/units';
 import {
   OPENING_PREFABS,
@@ -207,6 +208,7 @@ export function buildHouseScene(): HouseSceneGroups {
   // Material instances (strictly separated from geometry)
   const exteriorBrickTextures = getExteriorBrickTextures();
   const groundTileTextures = getGroundFloorTileTextures();
+  const bathroomWallTileTextures = getBathroomWallTileTextures();
   const seasonUniforms: SeasonSurfaceUniforms = {
     uSeasonSnow: { value: 0 },
     uSeasonWet: { value: 0 },
@@ -238,6 +240,13 @@ export function buildHouseScene(): HouseSceneGroups {
             normalMap: groundTileTextures.normalMap,
             normalScale: new THREE.Vector2(0.55, 0.55),
             roughnessMap: groundTileTextures.roughnessMap,
+          }
+        : {}),
+      ...(id === 'wall_tile_bathroom'
+        ? {
+            map: bathroomWallTileTextures.map,
+            bumpMap: bathroomWallTileTextures.bumpMap,
+            bumpScale: 0.0016,
           }
         : {}),
     });
@@ -497,6 +506,10 @@ void main() {`
 
     buildWallWithOpenings(wall, targetGroup, getMat, registerMesh, doorManager);
   }
+
+  // Built-in concealed toilet cisterns (inbouwreservoirs) & T21c Motto Lake 450×225 White Mat wall tiles
+  // Built directly onto groundGroup / firstGroup so they drop together with their floor!
+  buildSanitaryFinishesAndCisterns(groundGroup, firstGroup, getMat, registerMesh);
 
   // ===========================================================================
   // 4. STAIRCASES (White Double 90°-Turn Staircases: Ground -> 1st & 1st -> 2nd)
@@ -4259,4 +4272,316 @@ function buildPlacedAssets(
     furnitureGroups[placed.floor].add(assetGroup);
     registerStaggered(placed.id, assetGroup, placed.floor, baseY);
   }
+}
+
+/**
+ * Builds the built-in concealed toilet cisterns (inbouwreservoirs, 17 cm deep × 100 cm high)
+ * with tiled plateaus & dual-flush actuator plates, plus the T21c Motto Lake 450 × 225 mm
+ * White Mat wall tiles ("staand geplaatst, zilvergrijs gevoegd") in both the Ground-Floor
+ * Toiletruimte (up to 1.35 m) and 1st-Floor Badkamer (full ceiling height 2.60 m).
+ *
+ * Added directly to `groundGroup` and `firstGroup` (category: 'construction') so they
+ * drop in together with the floor structure rather than as staggered secondary assets.
+ */
+function buildSanitaryFinishesAndCisterns(
+  groundGroup: THREE.Group,
+  firstGroup: THREE.Group,
+  getMat: (id: MaterialId) => THREE.MeshStandardMaterial,
+  registerMesh: RegisterMeshFn
+): void {
+  const tileMat = getMat('wall_tile_bathroom');
+  const chromeMat = new THREE.MeshStandardMaterial({
+    color: '#cfd4d8',
+    roughness: 0.34,
+    metalness: 0.40,
+  });
+  const flushPlateMat = new THREE.MeshStandardMaterial({
+    color: '#f2f1ed',
+    roughness: 0.42,
+    metalness: 0.06,
+  });
+  const shadowGapMat = new THREE.MeshStandardMaterial({
+    color: '#d4d0c8',
+    roughness: 0.90,
+    metalness: 0.0,
+  });
+
+  const TILE_T = 0.004; // 4 mm tile thickness proud of inner plaster faces (zero Z-fighting)
+  const WALL_GAP = 0.002; // 2 mm clearance from adjacent wall faces
+
+  const addTilePanel = (
+    targetGroup: THREE.Group,
+    floor: FloorLayerId,
+    floorBaseY: number,
+    id: string,
+    label: string,
+    minX: number,
+    maxX: number,
+    minY: number,
+    maxY: number,
+    minZ: number,
+    maxZ: number,
+    source: string
+  ) => {
+    const w = maxX - minX;
+    const h = maxY - minY;
+    const d = maxZ - minZ;
+    if (w <= 0.001 || h <= 0.001 || d <= 0.001) return;
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const cz = (minZ + maxZ) / 2;
+    const geo = new THREE.BoxGeometry(w, h, d);
+    applyWorldWallTileUVs(geo, cx, cy, cz, floorBaseY);
+    const mesh = new THREE.Mesh(geo, tileMat);
+    mesh.position.set(cx, cy, cz);
+    const spanW = Math.max(w, d);
+    registerMesh(
+      mesh,
+      'wall_tile_bathroom',
+      {
+        id,
+        label,
+        dimensionsLabel: `${(spanW * 100).toFixed(0)} × ${(h * 100).toFixed(0)} cm (450×225 mm mat wit)`,
+        provenance: 'verified_drawing',
+        source,
+        floor,
+        category: 'construction',
+      },
+      false,
+      true
+    );
+    targetGroup.add(mesh);
+  };
+
+  /**
+   * Builds a flush-mounted tiled concealed cistern enclosure facing +X at `frontX`,
+   * spanning `minZ..maxZ`, `floorBaseY..floorBaseY + heightM`, with a satin-chrome
+   * tegelhoekprofiel along the top front edge and a Geberit dual-flush actuator plate.
+   */
+  const addBuiltInCistern = (opts: {
+    targetGroup: THREE.Group;
+    floor: FloorLayerId;
+    floorBaseY: number;
+    idPrefix: string;
+    roomLabel: string;
+    backX: number;
+    depthM: number;
+    heightM: number;
+    minZ: number;
+    maxZ: number;
+    source: string;
+  }) => {
+    const { targetGroup, floor, floorBaseY, idPrefix, roomLabel, backX, depthM, heightM, minZ, maxZ, source } = opts;
+    const x0 = backX + WALL_GAP;
+    const x1 = backX + depthM;
+    const z0 = minZ + WALL_GAP;
+    const z1 = maxZ - WALL_GAP;
+    const y0 = floorBaseY + 0.001;
+    const y1 = floorBaseY + heightM;
+    const trimSize = 0.008;
+    const plateauThick = 0.022;
+    const bodyTopY = y1 - plateauThick;
+
+    // 1. Main tiled cistern enclosure body
+    addTilePanel(
+      targetGroup,
+      floor,
+      floorBaseY,
+      `${idPrefix}_cistern_body`,
+      `Inbouwreservoir Toilet (${roomLabel} — ${(depthM * 100).toFixed(0)} × ${(heightM * 100).toFixed(0)} cm)`,
+      x0,
+      x1,
+      y0,
+      bodyTopY,
+      z0,
+      z1,
+      source
+    );
+
+    // 2. Tiled top plateau stepped back by trimSize at front edge (zero overlap with chrome trim)
+    addTilePanel(
+      targetGroup,
+      floor,
+      floorBaseY,
+      `${idPrefix}_cistern_plateau`,
+      `Betegeld Plateau Inbouwreservoir (${roomLabel})`,
+      x0,
+      x1 - trimSize,
+      bodyTopY,
+      y1,
+      z0,
+      z1,
+      source
+    );
+
+    // 3. Front tile lip beneath the chrome edge trim
+    const lowerLipH = plateauThick - trimSize;
+    if (lowerLipH > 0.001) {
+      addTilePanel(
+        targetGroup,
+        floor,
+        floorBaseY,
+        `${idPrefix}_cistern_front_lip`,
+        `Voorrand Plateau Inbouwreservoir (${roomLabel})`,
+        x1 - trimSize,
+        x1,
+        bodyTopY,
+        bodyTopY + lowerLipH,
+        z0,
+        z1,
+        source
+      );
+    }
+
+    const cz = (z0 + z1) / 2;
+    const spanZ = z1 - z0;
+    const cisternMeta = {
+      id: `${idPrefix}_cistern_trim`,
+      label: `Tegelhoekprofiel & Bedieningsplaat (${roomLabel})`,
+      dimensionsLabel: `${(spanZ * 100).toFixed(0)} × ${(depthM * 100).toFixed(0)} × ${(heightM * 100).toFixed(0)} cm`,
+      provenance: 'user_supplied' as ProvenanceType,
+      source,
+      floor,
+      category: 'construction' as ElementCategory,
+    };
+
+    // 4. Satin-chrome tile corner trim (tegelhoekprofiel) along the top front edge
+    const edgeTrim = new THREE.Mesh(new THREE.BoxGeometry(trimSize, trimSize, spanZ), chromeMat);
+    edgeTrim.position.set(x1 - trimSize / 2, y1 - trimSize / 2, cz);
+    registerMesh(edgeTrim, 'interior_wall_plaster', cisternMeta, false, true);
+    targetGroup.add(edgeTrim);
+
+    // 5. Dual-flush actuator plate (bedieningsplaat) centered on +X face at Y = +84 cm
+    const plateW = 0.24;
+    const plateH = 0.155;
+    const plateD = 0.009;
+    const plateY = floorBaseY + Math.min(heightM - 0.14, 0.84);
+
+    const plateFrame = new THREE.Mesh(new THREE.BoxGeometry(plateD, plateH, plateW), flushPlateMat);
+    plateFrame.position.set(x1 + plateD / 2, plateY, cz);
+    registerMesh(plateFrame, 'interior_wall_plaster', cisternMeta, false, true);
+    targetGroup.add(plateFrame);
+
+    const recessD = 0.0015;
+    const surround = new THREE.Mesh(
+      new THREE.BoxGeometry(recessD, plateH - 0.028, plateW - 0.026),
+      shadowGapMat
+    );
+    surround.position.set(x1 + plateD + recessD / 2, plateY, cz);
+    registerMesh(surround, 'interior_wall_plaster', cisternMeta, false, true);
+    targetGroup.add(surround);
+
+    const btnH = plateH - 0.036;
+    const btnD = 0.0035;
+    const largeBtnW = 0.118;
+    const smallBtnW = 0.072;
+    const btnGap = 0.010;
+    const totalBtnsW = largeBtnW + btnGap + smallBtnW;
+    const startZ = cz - totalBtnsW / 2;
+    const btnX = x1 + plateD + recessD + btnD / 2;
+
+    const largeBtn = new THREE.Mesh(new THREE.BoxGeometry(btnD, btnH, largeBtnW), chromeMat);
+    largeBtn.position.set(btnX, plateY, startZ + largeBtnW / 2);
+    registerMesh(largeBtn, 'interior_wall_plaster', cisternMeta, false, true);
+    targetGroup.add(largeBtn);
+
+    const smallBtn = new THREE.Mesh(new THREE.BoxGeometry(btnD, btnH, smallBtnW), chromeMat);
+    smallBtn.position.set(btnX, plateY, startZ + largeBtnW + btnGap + smallBtnW / 2);
+    registerMesh(smallBtn, 'interior_wall_plaster', cisternMeta, false, true);
+    targetGroup.add(smallBtn);
+  };
+
+  // ===========================================================================
+  // A. GROUND FLOOR — TOILETRUIMTE (X: 1.44..2.94 m, Z: -7.37..-6.45 m, Y: 0.00 m)
+  //    - Built-in cistern: 92 × 17 × 100 cm against X = 1.44 m (front at X = 1.61 m)
+  //    - Wall tiles: T21c Motto Lake 450 × 225 White Mat up to 1.35 m (§16.2)
+  // ===========================================================================
+  const gfTileSource =
+    'Tekening 55.1 (T21c Motto Lake 450×225 White Mat) & Technische omschrijving §16.2 (tot 1,35 m, staand, zilvergrijs gevoegd)';
+  const gfCisternSource =
+    'HomeByMe (17 cm diep × 100 cm hoog inbouwreservoir) & Technische omschrijving §16.2 (betegeld plateau)';
+
+  addBuiltInCistern({
+    targetGroup: groundGroup,
+    floor: 'ground',
+    floorBaseY: 0.00,
+    idPrefix: 'gf_toilet',
+    roomLabel: 'Toiletruimte BG',
+    backX: 1.44,
+    depthM: 0.17,
+    heightM: 1.00,
+    minZ: -7.37,
+    maxZ: -6.45,
+    source: gfCisternSource,
+  });
+
+  const gfTileH = 1.35;
+  // Left wall above cistern (Y: 1.00..1.35 m)
+  addTilePanel(groundGroup, 'ground', 0.00, 'gf_toilet_tile_left_above', 'Wandtegels Toiletruimte Links (450×225 Mat Wit)', 1.44 + WALL_GAP, 1.44 + WALL_GAP + TILE_T, 1.00, gfTileH, -7.37 + WALL_GAP, -6.45 - WALL_GAP, gfTileSource);
+  // Rear wall (starts cleanly in front of cistern at X = 1.61 m)
+  addTilePanel(groundGroup, 'ground', 0.00, 'gf_toilet_tile_rear', 'Wandtegels Toiletruimte Achterwand (450×225 Mat Wit)', 1.61 + WALL_GAP, 2.94 - WALL_GAP - TILE_T, 0.001, gfTileH, -7.37 + WALL_GAP, -7.37 + WALL_GAP + TILE_T, gfTileSource);
+  // Right wall
+  addTilePanel(groundGroup, 'ground', 0.00, 'gf_toilet_tile_right', 'Wandtegels Toiletruimte Rechterwand (450×225 Mat Wit)', 2.94 - WALL_GAP - TILE_T, 2.94 - WALL_GAP, 0.001, gfTileH, -7.37 + WALL_GAP, -6.45 - WALL_GAP, gfTileSource);
+  // Front wall split around gf_door_toilet (X: 1.73..2.71 m)
+  addTilePanel(groundGroup, 'ground', 0.00, 'gf_toilet_tile_front_left', 'Wandtegels Toiletruimte Voorwand Links (450×225 Mat Wit)', 1.61 + WALL_GAP, 1.73, 0.001, gfTileH, -6.45 - WALL_GAP - TILE_T, -6.45 - WALL_GAP, gfTileSource);
+  addTilePanel(groundGroup, 'ground', 0.00, 'gf_toilet_tile_front_right', 'Wandtegels Toiletruimte Voorwand Rechts (450×225 Mat Wit)', 2.71, 2.94 - WALL_GAP - TILE_T, 0.001, gfTileH, -6.45 - WALL_GAP - TILE_T, -6.45 - WALL_GAP, gfTileSource);
+
+  // ===========================================================================
+  // B. FIRST FLOOR — BADKAMER (X: 0.40..2.41 m, Z: -10.06..-6.30 m, Y: +2.85..+5.45 m)
+  //    - Built-in cistern: 91 × 17 × 100 cm against pipe chase X = 0.70 m (front at X = 0.87 m)
+  //    - Wall tiles: T21c Motto Lake 450 × 225 White Mat full height 2.60 m (§16.2)
+  // ===========================================================================
+  const Y1 = HOUSE_DIMENSIONS.firstFloorElevation.metres; // +2.85 m
+  const H1 = HOUSE_DIMENSIONS.firstFloorCeilingHeight.metres; // 2.60 m
+  const Y1Top = Y1 + H1;
+  const ffTileSource =
+    'Tekening 55.2 (T21c Motto Lake 450×225 White Mat) & Technische omschrijving §16.2 (tot plafond, staand, zilvergrijs gevoegd)';
+  const ffCisternSource =
+    'HomeByMe (17 cm diep × 100 cm hoog inbouwreservoir, 91 cm nis) & Technische omschrijving §16.2 (betegeld plateau)';
+
+  addBuiltInCistern({
+    targetGroup: firstGroup,
+    floor: 'first',
+    floorBaseY: Y1,
+    idPrefix: 'ff_badkamer',
+    roomLabel: 'Badkamer 1e Verd.',
+    backX: 0.70,
+    depthM: 0.17,
+    heightM: 1.00,
+    minZ: -7.21,
+    maxZ: -6.30,
+    source: ffCisternSource,
+  });
+
+  // 1. Left exterior wall in shower zone (Z: -10.06..-7.28 m)
+  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_left_shower', 'Wandtegels Badkamer Linkerwand Douche (450×225 Mat Wit)', 0.40 + WALL_GAP, 0.40 + WALL_GAP + TILE_T, Y1 + 0.001, Y1Top, -10.06 + WALL_GAP + TILE_T, -7.28 - WALL_GAP - TILE_T, ffTileSource);
+
+  // 2. Rear exterior wall (Z = -10.06 m), cut cleanly around ff_win_rear_badkamer (X: 1.12..1.47 m, Y: Y1+0.70..Y1+2.30 m)
+  const winMinX = 1.12;
+  const winMaxX = 1.47;
+  const winSillY = Y1 + 0.70;
+  const winHeadY = Y1 + 2.30;
+  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_rear_left', 'Wandtegels Badkamer Achterwand Links (450×225 Mat Wit)', 0.40 + WALL_GAP, winMinX, Y1 + 0.001, Y1Top, -10.06 + WALL_GAP, -10.06 + WALL_GAP + TILE_T, ffTileSource);
+  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_rear_right', 'Wandtegels Badkamer Achterwand Rechts (450×225 Mat Wit)', winMaxX, 2.41 - WALL_GAP - TILE_T, Y1 + 0.001, Y1Top, -10.06 + WALL_GAP, -10.06 + WALL_GAP + TILE_T, ffTileSource);
+  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_rear_below_win', 'Wandtegels Badkamer Onder Raam (450×225 Mat Wit)', winMinX, winMaxX, Y1 + 0.001, winSillY, -10.06 + WALL_GAP, -10.06 + WALL_GAP + TILE_T, ffTileSource);
+  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_rear_above_win', 'Wandtegels Badkamer Boven Raam (450×225 Mat Wit)', winMinX, winMaxX, winHeadY, Y1Top, -10.06 + WALL_GAP, -10.06 + WALL_GAP + TILE_T, ffTileSource);
+
+  // 3. Right interior wall (separating Badkamer from Kantoor, X = 2.41 m, full 376 cm depth)
+  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_right', 'Wandtegels Badkamer Rechterwand (450×225 Mat Wit)', 2.41 - WALL_GAP - TILE_T, 2.41 - WALL_GAP, Y1 + 0.001, Y1Top, -10.06 + WALL_GAP, -6.30 - WALL_GAP, ffTileSource);
+
+  // 4. Front interior wall (Z = -6.30 m), cut cleanly around ff_door_badkamer (X: 1.36..2.34 m, Y: Y1..Y1+2.20 m)
+  const doorMinX = 1.36;
+  const doorMaxX = 2.34;
+  const doorHeadY = Y1 + 2.20;
+  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_front_left', 'Wandtegels Badkamer Voorwand Links van Deur (450×225 Mat Wit)', 0.87 + WALL_GAP, doorMinX, Y1 + 0.001, Y1Top, -6.30 - WALL_GAP - TILE_T, -6.30 - WALL_GAP, ffTileSource);
+  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_front_right', 'Wandtegels Badkamer Voorwand Rechts van Deur (450×225 Mat Wit)', doorMaxX, 2.41 - WALL_GAP - TILE_T, Y1 + 0.001, Y1Top, -6.30 - WALL_GAP - TILE_T, -6.30 - WALL_GAP, ffTileSource);
+  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_front_above_door', 'Wandtegels Badkamer Boven Deur (450×225 Mat Wit)', doorMinX, doorMaxX, doorHeadY, Y1Top, -6.30 - WALL_GAP - TILE_T, -6.30 - WALL_GAP, ffTileSource);
+
+  // 5. Pipe chase wall above cistern (X = 0.70 m, Z: -7.21..-6.30 m, Y: Y1+1.00..Y1+2.60 m)
+  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_shaft_above', 'Wandtegels Badkamer Boven Inbouwreservoir (450×225 Mat Wit)', 0.70 + WALL_GAP, 0.70 + WALL_GAP + TILE_T, Y1 + 1.00, Y1Top, -7.21 + WALL_GAP, -6.30 - WALL_GAP, ffTileSource);
+
+  // 6. Shower divider wall (ff_int_badkamer_shaft_rear: X: 0.40..1.30 m, Z: -7.28..-7.21 m) — tiled on all 3 exposed faces
+  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_divider_shower', 'Wandtegels Douchewand Douchezijde (450×225 Mat Wit)', 0.40 + WALL_GAP, 1.30 + WALL_GAP + TILE_T, Y1 + 0.001, Y1Top, -7.28 - WALL_GAP - TILE_T, -7.28 - WALL_GAP, ffTileSource);
+  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_divider_toilet', 'Wandtegels Douchewand Toiletzijde (450×225 Mat Wit)', 0.87 + WALL_GAP, 1.30 + WALL_GAP + TILE_T, Y1 + 0.001, Y1Top, -7.21 + WALL_GAP, -7.21 + WALL_GAP + TILE_T, ffTileSource);
+  addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_divider_end', 'Wandtegels Douchewand Kopse Kant (450×225 Mat Wit)', 1.30 + WALL_GAP, 1.30 + WALL_GAP + TILE_T, Y1 + 0.001, Y1Top, -7.28 - WALL_GAP, -7.21 + WALL_GAP, ffTileSource);
 }

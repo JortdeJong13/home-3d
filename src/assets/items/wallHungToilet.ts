@@ -5,7 +5,7 @@ import { cm } from '../../model/units';
 /**
  * Creates a Geberit Renova-inspired softly rounded D-shaped 2D contour in XY
  * spanning X in [-w/2, +w/2] and Y in [0, d], where Y=0 is the flat back
- * mounted against the concealed cistern wall and Y=d is the smooth semicircular nose.
+ * mounted against the built-in cistern wall and Y=d is the smooth semicircular nose.
  */
 function createDShape(w: number, d: number): THREE.Shape {
   const halfW = w / 2;
@@ -26,7 +26,13 @@ function createDShape(w: number, d: number): THREE.Shape {
  * Creates a rounded oval hole Path inside a D-shaped ring (for the hollow toilet rim
  * and open toilet seat ring). Centered in X, shifted slightly forward in Y.
  */
-function createBowlHolePath(w: number, d: number, rimMarginX: number, rimBack: number, rimFront: number): THREE.Path {
+function createBowlHolePath(
+  w: number,
+  d: number,
+  rimMarginX: number,
+  rimBack: number,
+  rimFront: number
+): THREE.Path {
   const rx = Math.max(0.04, w / 2 - rimMarginX);
   const holeLen = Math.max(0.08, d - rimBack - rimFront);
   const ry = holeLen / 2;
@@ -107,7 +113,8 @@ function createDExtrusion(
 
 /**
  * Builds a smoothly lofted, tapered lower ceramic bowl body (Geberit Renova
- * rimless wall-hung silhouette) from yBottom to yTop with outward-facing normals.
+ * rimless wall-hung silhouette) from yBottom to yTop with outward-facing normals
+ * and a clean white porcelain interior basin floor (no water).
  */
 function createLoftedBowlBelly(
   topW: number,
@@ -179,10 +186,10 @@ function createLoftedBowlBelly(
     indices.push(bottomCenterIdx, i, iNext);
   }
 
-  // Top inner basin floor cap at yTop (cleanly closes the belly under the hollow rim!)
+  // Clean recessed porcelain basin floor cap at yTop
   const topCenterIdx = positions.length / 3;
   const topRowStart = (numRings - 1) * ptsPerRing;
-  positions.push(0, yTop - 0.035, zBack + topD * 0.52);
+  positions.push(0, yTop - 0.04, zBack + topD * 0.52);
   for (let i = 0; i < ptsPerRing; i++) {
     const iNext = (i + 1) % ptsPerRing;
     indices.push(topCenterIdx, topRowStart + iNext, topRowStart + i);
@@ -196,47 +203,29 @@ function createLoftedBowlBelly(
 }
 
 /**
- * Modern Wall-Hung Toilet (Geberit Renova Rimfree Wandcloset) with Concealed Cistern Enclosure
+ * Modern Wall-Hung Toilet (Geberit Renova Rimfree Wandcloset) — Secondary Asset
  *
- * Verified against Geberit Renova specifications, Technische Omschrijving (§16.2 & §23), and HomeByMe:
- * - Concealed flush reservoir (inbouwreservoir voorzetwand): 17 cm deep × 100 cm high,
- *   spanning alcove width with 2 mm shadow clearance against surrounding plaster walls to eliminate Z-fighting,
- *   finished in matte white wall-tile tone with a bevelled top plateau and non-overlapping satin-chrome edge trim.
- * - Wall-hung toilet bowl (Geberit Renova): 35.5 cm wide × 54 cm projection (total depth 71 cm),
- *   softly rounded rimless D-silhouette floating 10 cm above the floor, ceramic rim at 40 cm,
- *   recessed inner basin with subtle water surface, and open slim seat ring.
- * - Interactive animated lid: smoothly lifts open on hover and pins open on click via `registerInteractiveDoor`.
+ * Mounts directly onto the built-in tiled concealed cistern (built as part of the floor construction).
+ * - Dimensions: 35.5 cm wide × 54 cm projection, floating 10 cm above the floor, rim at 40 cm,
+ *   slim soft-close seat & animated lid top at 43.5 cm.
+ * - Clean white porcelain interior basin (no water).
+ * - Interactive animated lid: smoothly lifts upright (~92°) on hover and pins open on click.
  */
 export const wallHungToiletPrefab: AssetPrefabDefinition = {
   prefabId: 'wall_hung_toilet',
-  defaultLabel: 'Wandcloset met Inbouwreservoir (Geberit Renova)',
+  defaultLabel: 'Wandcloset (Geberit Renova)',
   defaultDimensions: {
-    width: cm(91, 'user_supplied', '1st floor Badkamer toilet alcove width (91 cm); overridden to 92 cm on Ground floor'),
-    depth: cm(71, 'user_supplied', '17 cm concealed flush reservoir (HomeByMe) + 54 cm Geberit Renova wandcloset = 71 cm'),
-    height: cm(100, 'user_supplied', 'HomeByMe concealed flush reservoir (inbouwreservoir) height 100 cm'),
+    width: cm(35.5, 'verified_drawing', 'Geberit Renova wall-hung toilet standard width 35.5 cm'),
+    depth: cm(54, 'verified_drawing', 'Geberit Renova wall-hung toilet standard projection 54 cm'),
+    height: cm(43.5, 'verified_drawing', 'Floating wall-hung toilet (10 cm clearance + 30 cm ceramic body + 3.5 cm seat & lid)'),
   },
   build3D: ({ width, depth, height, registerInteractiveDoor }) => {
     const group = new THREE.Group();
 
-    const cisternTileMat = new THREE.MeshStandardMaterial({
-      color: '#f4f1ea',
-      roughness: 0.84,
-      metalness: 0.0,
-    });
-    const plateauMat = new THREE.MeshStandardMaterial({
-      color: '#f7f4ee',
-      roughness: 0.80,
-      metalness: 0.0,
-    });
     const ceramicMat = new THREE.MeshStandardMaterial({
       color: '#fafaf7',
       roughness: 0.28,
       metalness: 0.02,
-    });
-    const bowlWaterMat = new THREE.MeshStandardMaterial({
-      color: '#c6dfe8',
-      roughness: 0.16,
-      metalness: 0.05,
     });
     const seatMat = new THREE.MeshStandardMaterial({
       color: '#f5f4f0',
@@ -248,151 +237,24 @@ export const wallHungToiletPrefab: AssetPrefabDefinition = {
       roughness: 0.32,
       metalness: 0.42,
     });
-    const flushPlateMat = new THREE.MeshStandardMaterial({
-      color: '#f2f1ed',
-      roughness: 0.42,
-      metalness: 0.06,
-    });
-    const shadowGapMat = new THREE.MeshStandardMaterial({
-      color: '#d4d0c8',
-      roughness: 0.90,
-      metalness: 0.0,
-    });
 
-    const wallClearance = 0.002; // 2 mm inset prevents coplanar Z-fighting with plaster walls & floor slab
-    const cisternDepth = Math.min(0.17, depth * 0.45);
-    const bowlProj = Math.max(0.30, depth - cisternDepth); // 54 cm at canonical 71 cm depth
-    const zBack = -depth / 2;
-    const zCisternBack = zBack + wallClearance;
-    const zCisternFront = zBack + cisternDepth;
-    const cisternW = Math.max(0.40, width - wallClearance * 2);
-    const cisternD = Math.max(0.08, cisternDepth - wallClearance);
+    // 1 mm micro-clearance from cistern face prevents any coplanar Z-fighting
+    const zBowlBack = -depth / 2 + 0.001;
+    const actualBowlProj = depth - 0.001;
 
-    // -------------------------------------------------------------------------
-    // 1. Concealed Cistern Enclosure (Non-overlapping body, plateau, and edge trim)
-    // -------------------------------------------------------------------------
-    const plateauThick = 0.022;
-    const trimSize = 0.008;
-    const bodyBottomY = 0.001;
-    const bodyTopY = Math.max(0.20, height - plateauThick);
-    const bodyH = bodyTopY - bodyBottomY;
-
-    const cisternBody = new THREE.Mesh(
-      new THREE.BoxGeometry(cisternW, bodyH, cisternD),
-      cisternTileMat
-    );
-    cisternBody.name = 'toilet_cistern_enclosure';
-    cisternBody.position.set(0, bodyBottomY + bodyH / 2, zCisternBack + cisternD / 2);
-    group.add(cisternBody);
-
-    // Tiled top ledge (plateau) stepped back by `trimSize` at the front edge so trim never overlaps it
-    const plateauD = cisternD - trimSize;
-    const plateau = new THREE.Mesh(
-      new THREE.BoxGeometry(cisternW, plateauThick, plateauD),
-      plateauMat
-    );
-    plateau.name = 'toilet_cistern_plateau';
-    plateau.position.set(0, bodyTopY + plateauThick / 2, zCisternBack + plateauD / 2);
-    group.add(plateau);
-
-    // Lower front lip beneath the chrome edge trim (fills the gap between bodyTopY and trim bottom)
-    const lowerLipH = plateauThick - trimSize;
-    if (lowerLipH > 0.001) {
-      const lowerLip = new THREE.Mesh(
-        new THREE.BoxGeometry(cisternW, lowerLipH, trimSize),
-        cisternTileMat
-      );
-      lowerLip.name = 'toilet_plateau_front_lip';
-      lowerLip.position.set(0, bodyTopY + lowerLipH / 2, zCisternFront - trimSize / 2);
-      group.add(lowerLip);
-    }
-
-    // Crisp satin-chrome tile corner trim (tegelhoekprofiel) occupying the exact front-top corner
-    const edgeTrim = new THREE.Mesh(
-      new THREE.BoxGeometry(cisternW, trimSize, trimSize),
-      chromeMat
-    );
-    edgeTrim.name = 'toilet_plateau_trim';
-    edgeTrim.position.set(0, height - trimSize / 2, zCisternFront - trimSize / 2);
-    group.add(edgeTrim);
-
-    // -------------------------------------------------------------------------
-    // 2. Dual-Flush Actuator Plate (Strictly layered in +Z, zero overlap)
-    // -------------------------------------------------------------------------
-    const plateW = 0.24;
-    const plateH = 0.155;
-    const plateD = 0.009;
-    const plateY = Math.min(height - 0.14, 0.84);
-
-    const plateFrame = new THREE.Mesh(
-      new THREE.BoxGeometry(plateW, plateH, plateD),
-      flushPlateMat
-    );
-    plateFrame.name = 'toilet_flush_plate';
-    plateFrame.position.set(0, plateY, zCisternFront + plateD / 2);
-    group.add(plateFrame);
-
-    const recessD = 0.0015;
-    const surround = new THREE.Mesh(
-      new THREE.BoxGeometry(plateW - 0.026, plateH - 0.028, recessD),
-      shadowGapMat
-    );
-    surround.name = 'toilet_flush_plate_recess';
-    surround.position.set(0, plateY, zCisternFront + plateD + recessD / 2);
-    group.add(surround);
-
-    const btnH = plateH - 0.036;
-    const btnD = 0.0035;
-    const largeBtnW = 0.118;
-    const smallBtnW = 0.072;
-    const btnGap = 0.010;
-    const totalBtnsW = largeBtnW + btnGap + smallBtnW;
-    const leftEdgeX = -totalBtnsW / 2;
-    const btnZ = zCisternFront + plateD + recessD + btnD / 2;
-
-    const largeBtn = new THREE.Mesh(
-      new THREE.BoxGeometry(largeBtnW, btnH, btnD),
-      chromeMat
-    );
-    largeBtn.name = 'toilet_flush_button_full';
-    largeBtn.position.set(leftEdgeX + largeBtnW / 2, plateY, btnZ);
-    group.add(largeBtn);
-
-    const smallBtn = new THREE.Mesh(
-      new THREE.BoxGeometry(smallBtnW, btnH, btnD),
-      chromeMat
-    );
-    smallBtn.name = 'toilet_flush_button_eco';
-    smallBtn.position.set(leftEdgeX + largeBtnW + btnGap + smallBtnW / 2, plateY, btnZ);
-    group.add(smallBtn);
-
-    // -------------------------------------------------------------------------
-    // 3. Wall-Hung Ceramic Bowl (Geberit Renova — 35.5 × 54 cm, floating, hollow rim)
-    // -------------------------------------------------------------------------
-    const bowlW = Math.min(0.355, width - 0.08);
-    const zBowlBack = zCisternFront + 0.001; // 1 mm clearance from tiled cistern
-    const actualBowlProj = bowlProj - 0.001;
     const bowlBottomY = 0.100; // Floating 10 cm above floor
     const bowlMidY = 0.275;
-    const bowlRimY = 0.400; // Standard 40 cm ceramic rim height
+    const bowlRimY = Math.min(0.400, height - 0.035);
 
-    // Lower smoothly tapered ceramic belly (Y: 0.100 .. 0.275 m)
-    const bellyGeo = createLoftedBowlBelly(bowlW, actualBowlProj, bowlBottomY, bowlMidY, zBowlBack);
+    // 1. Lower smoothly tapered ceramic belly (Y: 0.100 .. 0.275 m)
+    const bellyGeo = createLoftedBowlBelly(width, actualBowlProj, bowlBottomY, bowlMidY, zBowlBack);
     const bellyMesh = new THREE.Mesh(bellyGeo, ceramicMat);
     bellyMesh.name = 'toilet_bowl_lower';
     group.add(bellyMesh);
 
-    // Subtle pale-blue water surface inside the lower basin (visible when lid opens!)
-    const waterGeo = new THREE.CylinderGeometry(0.075, 0.065, 0.004, 24);
-    waterGeo.scale(1.0, 1.0, 1.35);
-    const waterMesh = new THREE.Mesh(waterGeo, bowlWaterMat);
-    waterMesh.name = 'toilet_bowl_water';
-    waterMesh.position.set(0, bowlMidY - 0.014, zBowlBack + actualBowlProj * 0.54);
-    group.add(waterMesh);
-
-    // Upper hollow rimless ceramic bowl ring (Y: 0.275 .. 0.400 m, exact non-overlapping seam at bowlMidY)
+    // 2. Upper hollow rimless ceramic bowl ring (Y: 0.275 .. 0.400 m)
     const upperGeo = createDExtrusion(
-      bowlW,
+      width,
       actualBowlProj,
       bowlRimY - bowlMidY,
       0.010,
@@ -404,16 +266,13 @@ export const wallHungToiletPrefab: AssetPrefabDefinition = {
     upperMesh.name = 'toilet_bowl_upper';
     group.add(upperMesh);
 
-    // -------------------------------------------------------------------------
-    // 4. Open Slim Seat Ring + Animated Hinged Soft-Close Lid
-    // -------------------------------------------------------------------------
-    const seatW = bowlW - 0.004;
+    // 3. Open Slim Seat Ring + Animated Hinged Soft-Close Lid
+    const seatW = width - 0.004;
     const seatD = actualBowlProj - 0.006;
     const seatThick = 0.015;
     const lidThick = 0.015;
     const seatBottomY = bowlRimY + 0.003;
 
-    // Open toilet seat ring (visible when the lid lifts open!)
     const seatGeo = createDExtrusion(
       seatW,
       seatD,
@@ -464,7 +323,7 @@ export const wallHungToiletPrefab: AssetPrefabDefinition = {
       depthWrite: false,
     });
     const trigger = new THREE.Mesh(
-      new THREE.BoxGeometry(bowlW + 0.06, 0.48, actualBowlProj + 0.04),
+      new THREE.BoxGeometry(width + 0.06, 0.48, actualBowlProj + 0.04),
       triggerMat
     );
     trigger.name = 'toilet_lid_trigger';
@@ -478,7 +337,7 @@ export const wallHungToiletPrefab: AssetPrefabDefinition = {
         {
           group: lidPivot,
           closedAngle: 0,
-          openAngle: -Math.PI * 0.51, // ~92° upright, stays ~1.5 cm clear of cistern
+          openAngle: -Math.PI * 0.51, // ~92° upright, clears cistern cleanly
           currentAngle: 0,
           onUpdate: (currentAngle) => {
             lidPivot.rotation.x = currentAngle;

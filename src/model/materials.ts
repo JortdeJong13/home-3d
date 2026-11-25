@@ -13,6 +13,7 @@ export type MaterialId =
   | 'exterior_arch_brick'
   | 'exterior_arch_brick_infill'
   | 'interior_wall_plaster'
+  | 'wall_tile_bathroom'
   | 'floor_living_oak'
   | 'floor_hall_warm'
   | 'floor_ground_tile'
@@ -134,6 +135,15 @@ export const MATERIAL_PALETTE: Record<MaterialId, MaterialStyleDef> = {
     metalness: 0.0,
     emissiveNight: '#ffcf96',
     emissiveIntensityNight: 0.14,
+  },
+  // Bathroom & Toilet Wall Tiles (T21c Motto Lake 450×225 White Mat, silver-grey grout)
+  wall_tile_bathroom: {
+    colorDay: '#ffffff',
+    colorNight: '#dcd5c8',
+    roughness: 0.84,
+    metalness: 0.0,
+    emissiveNight: '#ffcf96',
+    emissiveIntensityNight: 0.13,
   },
 
   // Floors & Slabs
