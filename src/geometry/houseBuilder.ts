@@ -4600,4 +4600,39 @@ function buildSanitaryFinishesAndCisterns(
   addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_divider_toilet_above_cistern', 'Wandtegels Douchewand Boven Reservoir (450×225 Mat Wit)', 0.70 + WALL_GAP + TILE_T, 0.87 + WALL_GAP, Y1 + 1.00, Y1Top, -7.21 + WALL_GAP, -7.21 + WALL_GAP + TILE_T, ffTileSource);
   addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_divider_toilet', 'Wandtegels Douchewand Toiletzijde (450×225 Mat Wit)', 0.87 + WALL_GAP, 1.30 + WALL_GAP + TILE_T, Y1 + 0.001, Y1Top, -7.21 + WALL_GAP, -7.21 + WALL_GAP + TILE_T, ffTileSource);
   addTilePanel(firstGroup, 'first', Y1, 'ff_bath_tile_divider_end', 'Wandtegels Douchewand Kopse Kant (450×225 Mat Wit)', 1.30 + WALL_GAP, 1.30 + WALL_GAP + TILE_T, Y1 + 0.001, Y1Top, -7.28 - WALL_GAP, -7.21 + WALL_GAP, ffTileSource);
+
+  // 7. Solid infill for the enclosed pipe chase (leidingkoker / standleiding stl) behind the 1st-floor toilet
+  //    Spans strictly inside the 23 × 91 cm cavity (X: 0.408..0.630 m, Z: -7.21..-6.30 m, Y: Y1..Y1Top)
+  const shaftMinX = bathLeftInnerX + 0.001;
+  const shaftMaxX = 0.630 - 0.001;
+  const shaftMinZ = -7.210 + 0.001;
+  const shaftMaxZ = -6.300 - 0.001;
+  const shaftW = shaftMaxX - shaftMinX;
+  const shaftD = shaftMaxZ - shaftMinZ;
+  const shaftH = H1 - 0.001;
+  const shaftInfill = new THREE.Mesh(
+    new THREE.BoxGeometry(shaftW, shaftH, shaftD),
+    getMat('interior_wall_plaster')
+  );
+  shaftInfill.position.set(
+    (shaftMinX + shaftMaxX) / 2,
+    Y1 + 0.001 + shaftH / 2,
+    (shaftMinZ + shaftMaxZ) / 2
+  );
+  registerMesh(
+    shaftInfill,
+    'interior_wall_plaster',
+    {
+      id: 'ff_badkamer_shaft_infill',
+      label: 'Gesloten Leidingkoker / Standleiding Badkamer (23 × 91 cm)',
+      dimensionsLabel: '23 × 91 × 260 cm',
+      provenance: 'verified_drawing',
+      source: 'Verkooptekening VK-06 & Tekening 55.2 (gesloten standleidingkoker achter toilet 1e verdieping)',
+      floor: 'first',
+      category: 'construction',
+    },
+    true,
+    true
+  );
+  firstGroup.add(shaftInfill);
 }
