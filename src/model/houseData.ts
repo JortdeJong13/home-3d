@@ -505,6 +505,37 @@ export function getHouseWalls(): WallSpec[] {
       provenance: 'verified_drawing',
       source: 'VK-06 & User specification (97 cm niche + 7 cm wall + 150 cm toilet = 254 cm Hal)',
     },
+    // 5f. Meterkast Pipe Chase ("stl" Standleidingkoker) & Rear Service Chase in 97 × 99 cm Hal Niche
+    // Verified on VK-06 & Tekening 55.1: 16 cm wide stl koker along X = 0.40..0.56 m, plus 37 cm deep
+    // enclosed rear chase (Z = -7.37..-7.00 m) behind the 81 × 45 cm NEN 2768 meterkast.
+    {
+      id: 'gf_int_meterkast_stl_koker',
+      label: 'Standleidingkoker Meterkast (stl — 16 × 82 cm)',
+      floor: 'ground',
+      start: [0.48, -7.37],
+      end: [0.48, -6.55],
+      thickness: 0.16,
+      baseY: 0.00,
+      height: H0,
+      exteriorMaterial: 'interior_wall_plaster',
+      interiorMaterial: 'interior_wall_plaster',
+      provenance: 'verified_drawing',
+      source: 'Verkooptekening VK-06 & Tekening 55.1 (stl standleidingkoker links naast meterkast)',
+    },
+    {
+      id: 'gf_int_meterkast_rear_chase',
+      label: 'Leidingschacht Achter Meterkast (81 × 37 cm)',
+      floor: 'ground',
+      start: [0.56, -7.185],
+      end: [1.37, -7.185],
+      thickness: 0.37,
+      baseY: 0.00,
+      height: H0,
+      exteriorMaterial: 'interior_wall_plaster',
+      interiorMaterial: 'interior_wall_plaster',
+      provenance: 'verified_drawing',
+      source: 'Verkooptekening VK-06 & Tekening 55.1 (afgesloten schacht achter meterkast)',
+    },
 
     // 6. Attached Berging (Garage) Walls:
     // - Front wall with garage door: 20 cm (0.20 m) thick!

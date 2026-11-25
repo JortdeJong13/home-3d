@@ -13,6 +13,7 @@ import { diningTableOakPrefab } from './items/diningTableOak';
 import { kitchenTallCabinetWallPrefab } from './items/kitchenTallCabinetWall';
 import { kitchenIslandSavinoPrefab } from './items/kitchenIslandSavino';
 import { wallHungToiletPrefab } from './items/wallHungToilet';
+import { meterkastUnitPrefab } from './items/meterkastUnit';
 
 /**
  * CENTRAL ASSET PREFAB CATALOG
@@ -37,6 +38,7 @@ export const ASSET_PREFABS: Record<string, AssetPrefabDefinition> = {
   kitchen_tall_cabinet_wall: kitchenTallCabinetWallPrefab,
   kitchen_island_savino: kitchenIslandSavinoPrefab,
   wall_hung_toilet: wallHungToiletPrefab,
+  meterkast_unit: meterkastUnitPrefab,
 };
 
 /**
@@ -281,5 +283,15 @@ export const PLACED_ASSETS: PlacedAssetSpec[] = [
     rotationDeg: 90,
     provenance: 'verified_drawing',
     source: 'Technische omschrijving §23 (Geberit Renova wandcloset 35.5 × 54 cm), mounted on built-in cistern at X = 0.87 m',
+  },
+  {
+    id: 'gf_hal_meterkast',
+    prefabId: 'meterkast_unit',
+    label: 'Meterkast / Meterruimte (Hal Begane Grond)',
+    floor: 'ground',
+    positionXZ: [0.965, -6.774],
+    rotationDeg: 0,
+    provenance: 'verified_drawing',
+    source: 'Verkooptekening VK-06, Tekening 55.1 & Technische omschrijving §13, §15.4, §21.1, §22.1 (80.6 × 44.8 × 260 cm)',
   },
 ];
