@@ -416,18 +416,19 @@ export const meterkastUnitPrefab: AssetPrefabDefinition = {
     addBox(group, gkW + 0.02, 0.022, 0.016, gkX, conduitStartY + 0.30, zBoardFace + 0.014, aluminiumMat);
 
     // =========================================================================
-    // 5. FACTORY-FINISHED WHITE WOODEN METERKASTFRONT (KOZIJN + BOVENPANEEL)
+    // 5. FACTORY-FINISHED WHITE WOODEN METERKASTFRONT (220 CM KOZIJN) + PLASTER HEADER
     // =========================================================================
     const jambW = 0.044;
     const doorClearH = Math.min(2.20, bodyH - 0.25); // Matches adjacent B77b toilet door (220 cm)!
     const headerRailH = 0.044;
-    const topPanelH = Math.max(0.01, bodyH - doorClearH - headerRailH);
+    const frameTopY = doorClearH + headerRailH;
+    const headerBulkheadH = Math.max(0.01, bodyH - frameTopY);
     const zFrameCenter = zFrontFace - frameDepth / 2;
 
-    // Left & right full-height wooden jambs (stopping cleanly under top cap)
-    addBox(group, jambW, bodyH, frameDepth, -width / 2 + jambW / 2, bodyH / 2, zFrameCenter, frameWhiteMat);
-    addBox(group, jambW, bodyH, frameDepth, width / 2 - jambW / 2, bodyH / 2, zFrameCenter, frameWhiteMat);
-    // Horizontal transom rail above the 220 cm door
+    // Left & right wooden jambs (matching the 220 cm B77b door frame height)
+    addBox(group, jambW, frameTopY, frameDepth, -width / 2 + jambW / 2, frameTopY / 2, zFrameCenter, frameWhiteMat);
+    addBox(group, jambW, frameTopY, frameDepth, width / 2 - jambW / 2, frameTopY / 2, zFrameCenter, frameWhiteMat);
+    // Horizontal head rail above the 220 cm door
     const doorOpenW = width - 2 * jambW;
     addBox(
       group,
@@ -439,17 +440,16 @@ export const meterkastUnitPrefab: AssetPrefabDefinition = {
       zFrameCenter,
       frameWhiteMat
     );
-    // White factory-finished upper panel (bovenpaneel) from transom rail up to top cap
-    const topPanelCenterY = doorClearH + headerRailH + topPanelH / 2;
+    // Full-width matte plaster wall header above the door frame up to the ceiling (matches adjacent walls)
     addBox(
       group,
-      doorOpenW,
-      topPanelH,
+      width,
+      headerBulkheadH,
       frameDepth,
       0,
-      topPanelCenterY,
+      frameTopY + headerBulkheadH / 2,
       zFrameCenter,
-      doorWhiteMat
+      topPlasterMat
     );
 
     // =========================================================================
