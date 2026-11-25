@@ -14,6 +14,7 @@ import { kitchenTallCabinetWallPrefab } from './items/kitchenTallCabinetWall';
 import { kitchenIslandSavinoPrefab } from './items/kitchenIslandSavino';
 import { wallHungToiletPrefab } from './items/wallHungToilet';
 import { meterkastUnitPrefab } from './items/meterkastUnit';
+import { atticHeatPumpBoilerPrefab } from './items/atticHeatPumpBoiler';
 
 /**
  * CENTRAL ASSET PREFAB CATALOG
@@ -39,6 +40,7 @@ export const ASSET_PREFABS: Record<string, AssetPrefabDefinition> = {
   kitchen_island_savino: kitchenIslandSavinoPrefab,
   wall_hung_toilet: wallHungToiletPrefab,
   meterkast_unit: meterkastUnitPrefab,
+  attic_heat_pump_boiler: atticHeatPumpBoilerPrefab,
 };
 
 /**
@@ -293,5 +295,15 @@ export const PLACED_ASSETS: PlacedAssetSpec[] = [
     rotationDeg: 0,
     provenance: 'verified_drawing',
     source: 'Verkooptekening VK-06, Tekening 55.1 & Technische omschrijving §13, §15.4, §21.1, §22.1 (80.9 × 44.9 × 260 cm)',
+  },
+  {
+    id: 'sf_zolder_warmtepomp_boiler',
+    prefabId: 'attic_heat_pump_boiler',
+    label: 'Warmtepomp Binnenunit & 171 L Boilervat (Opstelplaats Installaties Zolder)',
+    floor: 'second',
+    positionXZ: [2.30, -6.69],
+    rotationDeg: 180,
+    provenance: 'verified_drawing',
+    source: 'Verkooptekening VK-06, Tekening 55.3 & Technische omschrijving §6, §19 (171 L boilervat), §21.1, §22.1',
   },
 ];

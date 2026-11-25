@@ -553,9 +553,9 @@ void main() {`
   registerStaggered('stair_ff_to_sf', stairFfGroup, 'first', 0);
 
   // ===========================================================================
-  // 5. ZOLDER TECHNICAL INSTALLATIONS (WP, WTW)
+  // 5. ZOLDER TECHNICAL INSTALLATIONS
+  //    (Placed via PLACED_ASSETS in src/assets/assetRegistry.ts — e.g. sf_zolder_warmtepomp_boiler)
   // ===========================================================================
-  buildZolderDetails(secondGroup, getMat, registerMesh, registerStaggered);
 
   // ===========================================================================
   // 6. FLAT ROOFS OF EXTENSION (B11a) & BERGING -> PART OF 1e VERDIEPING (firstGroup)!
@@ -3213,35 +3213,6 @@ function buildQuarterTurnStaircase(
   }
 
   targetGroup.add(stairGroup);
-}
-
-/**
- * Add Zolder technical installation (warmtepomp reservoir) in the rear-left installation zone
- * matching Verkooptekening VK-06.
- */
-function buildZolderDetails(
-  secondGroup: THREE.Group,
-  getMat: (id: MaterialId) => THREE.MeshStandardMaterial,
-  registerMesh: RegisterMeshFn,
-  registerStaggered: (id: string, object: THREE.Object3D, floor: FloorLayerId, baseY: number) => void
-) {
-  const Y2 = HOUSE_DIMENSIONS.secondFloorElevation.metres; // 5.70 m
-
-  // Heat pump buffer tank / boiler reservoir (VK-06 circular 'wp' symbol)
-  const wpGeo = new THREE.CylinderGeometry(0.32, 0.32, 1.65, 24);
-  const wpMesh = new THREE.Mesh(wpGeo, getMat('window_frame_cream'));
-  wpMesh.position.set(2.22, Y2 + 0.825, -6.95);
-  registerMesh(wpMesh, 'window_frame_cream', {
-    id: 'sf_tech_wp',
-    label: 'Warmtepomp Boilervat (WP)',
-    dimensionsLabel: 'Ø 0.64 × 1.65 m',
-    provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06 & Tekening 55.3 (wp)',
-    floor: 'second',
-    category: 'furniture',
-  });
-  secondGroup.add(wpMesh);
-  registerStaggered('sf_tech_wp', wpMesh, 'second', Y2 + 0.825);
 }
 
 /**
