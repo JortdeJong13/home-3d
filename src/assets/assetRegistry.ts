@@ -289,9 +289,9 @@ export const PLACED_ASSETS: PlacedAssetSpec[] = [
     prefabId: 'meterkast_unit',
     label: 'Meterkast / Meterruimte (Hal Begane Grond)',
     floor: 'ground',
-    positionXZ: [0.965, -6.774],
+    positionXZ: [0.965, -6.7745],
     rotationDeg: 0,
     provenance: 'verified_drawing',
-    source: 'Verkooptekening VK-06, Tekening 55.1 & Technische omschrijving §13, §15.4, §21.1, §22.1 (80.6 × 44.8 × 260 cm)',
+    source: 'Verkooptekening VK-06, Tekening 55.1 & Technische omschrijving §13, §15.4, §21.1, §22.1 (80.9 × 44.9 × 260 cm)',
   },
 ];

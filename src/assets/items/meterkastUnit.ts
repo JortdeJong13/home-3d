@@ -25,14 +25,14 @@ export const meterkastUnitPrefab: AssetPrefabDefinition = {
   defaultLabel: 'Meterkast / Meterruimte (81 × 45 × 260 cm)',
   defaultDimensions: {
     width: cm(
-      80.6,
+      80.9,
       'verified_drawing',
-      'VK-06 & 55.1: 97 cm nis − 16 cm stl-koker − 0.4 cm speling = 80.6 cm (75 cm NEN 2768 inwendig)'
+      'VK-06 & 55.1: 97 cm nis − 16 cm stl-koker − 0.1 cm speling = 80.9 cm (75 cm NEN 2768 inwendig)'
     ),
     depth: cm(
-      44.8,
+      44.9,
       'verified_drawing',
-      'VK-06 & NEN 2768: 45 cm diepe meterkast vóór achterliggende leidingschacht (Z = -6.998..-6.550 m)'
+      'VK-06 & NEN 2768: 45 cm diepe meterkast vóór achterliggende leidingschacht (Z = -6.999..-6.550 m)'
     ),
     height: cm(
       260,
@@ -44,9 +44,10 @@ export const meterkastUnitPrefab: AssetPrefabDefinition = {
   build3D: ({ width, depth, height, getMat, registerInteractiveDoor }) => {
     const group = new THREE.Group();
 
-    // Shared house materials (factory-finished white RAL 9010 door & frame)
+    // Shared house materials (factory-finished white RAL 9010 door, frame & matching plaster top)
     const doorWhiteMat = getMat('door_interior_white');
     const frameWhiteMat = getMat('window_frame_cream');
+    const topPlasterMat = getMat('interior_wall_plaster');
 
     // Soft matte architectural diorama materials for interior & technical hardware
     const rawWallMat = new THREE.MeshStandardMaterial({
@@ -188,40 +189,33 @@ export const meterkastUnitPrefab: AssetPrefabDefinition = {
     const zBackInner = -depth / 2 + backT;
     const zFrontFace = depth / 2;
 
+    const bodyH = height - topCapT;
+
     // Rear backing shell
-    addBox(group, width, height, backT, 0, height / 2, -depth / 2 + backT / 2, rawWallMat);
+    addBox(group, width, bodyH, backT, 0, bodyH / 2, -depth / 2 + backT / 2, rawWallMat);
     // Left & right raw interior lining cheeks (stopping behind the white front kozijn)
     addBox(
       group,
       sideT,
-      height,
+      bodyH,
       depth - frameDepth,
       -width / 2 + sideT / 2,
-      height / 2,
+      bodyH / 2,
       -frameDepth / 2,
       rawWallMat
     );
     addBox(
       group,
       sideT,
-      height,
+      bodyH,
       depth - frameDepth,
       width / 2 - sideT / 2,
-      height / 2,
+      bodyH / 2,
       -frameDepth / 2,
       rawWallMat
     );
-    // Unfinished top cap
-    addBox(
-      group,
-      innerW,
-      topCapT,
-      depth - frameDepth,
-      0,
-      height - topCapT / 2,
-      -frameDepth / 2,
-      rawWallMat
-    );
+    // Seamless full-width, full-depth top cap flush at ceiling height (matching surrounding plaster walls)
+    addBox(group, width, topCapT, depth, 0, height - topCapT / 2, 0, topPlasterMat);
     // Airtight grey floor entry plate (bodemplaat / invoerplaat)
     addBox(
       group,
@@ -425,14 +419,14 @@ export const meterkastUnitPrefab: AssetPrefabDefinition = {
     // 5. FACTORY-FINISHED WHITE WOODEN METERKASTFRONT (KOZIJN + BOVENPANEEL)
     // =========================================================================
     const jambW = 0.044;
-    const doorClearH = Math.min(2.20, height - 0.25); // Matches adjacent B77b toilet door (220 cm)!
+    const doorClearH = Math.min(2.20, bodyH - 0.25); // Matches adjacent B77b toilet door (220 cm)!
     const headerRailH = 0.044;
-    const topPanelH = Math.max(0.01, height - doorClearH - headerRailH);
+    const topPanelH = Math.max(0.01, bodyH - doorClearH - headerRailH);
     const zFrameCenter = zFrontFace - frameDepth / 2;
 
-    // Left & right full-height wooden jambs
-    addBox(group, jambW, height, frameDepth, -width / 2 + jambW / 2, height / 2, zFrameCenter, frameWhiteMat);
-    addBox(group, jambW, height, frameDepth, width / 2 - jambW / 2, height / 2, zFrameCenter, frameWhiteMat);
+    // Left & right full-height wooden jambs (stopping cleanly under top cap)
+    addBox(group, jambW, bodyH, frameDepth, -width / 2 + jambW / 2, bodyH / 2, zFrameCenter, frameWhiteMat);
+    addBox(group, jambW, bodyH, frameDepth, width / 2 - jambW / 2, bodyH / 2, zFrameCenter, frameWhiteMat);
     // Horizontal transom rail above the 220 cm door
     const doorOpenW = width - 2 * jambW;
     addBox(
@@ -445,26 +439,18 @@ export const meterkastUnitPrefab: AssetPrefabDefinition = {
       zFrameCenter,
       frameWhiteMat
     );
-    // White factory-finished upper panel (bovenpaneel) from transom rail to ceiling
+    // White factory-finished upper panel (bovenpaneel) from transom rail up to top cap
     const topPanelCenterY = doorClearH + headerRailH + topPanelH / 2;
     addBox(
       group,
       doorOpenW,
       topPanelH,
-      0.028,
+      frameDepth,
       0,
       topPanelCenterY,
-      zFrontFace - 0.018,
+      zFrameCenter,
       doorWhiteMat
     );
-
-    // Doorbell chime (schel, §22.4 & VK-06 drawing symbol) centered on front upper panel
-    const chimeY = doorClearH + headerRailH + Math.min(0.16, topPanelH * 0.45);
-    addBox(group, 0.115, 0.155, 0.036, 0, chimeY, zFrontFace + 0.018, plasticWhiteMat);
-    // Subtle acoustic speaker slot lines on chime front
-    for (let s = -1; s <= 1; s++) {
-      addBox(group, 0.072, 0.005, 0.003, 0, chimeY + s * 0.018, zFrontFace + 0.0365, ventSlotDarkMat);
-    }
 
     // =========================================================================
     // 6. INTERACTIVE HINGED METERKAST DOOR (LEFT-HINGED, SWINGS OUTWARD +Z)
