@@ -12,6 +12,7 @@ import { loungeLanternPrefab } from './items/loungeLantern';
 import { diningTableOakPrefab } from './items/diningTableOak';
 import { kitchenTallCabinetWallPrefab } from './items/kitchenTallCabinetWall';
 import { kitchenIslandSavinoPrefab } from './items/kitchenIslandSavino';
+import { wallHungToiletPrefab } from './items/wallHungToilet';
 
 /**
  * CENTRAL ASSET PREFAB CATALOG
@@ -35,6 +36,7 @@ export const ASSET_PREFABS: Record<string, AssetPrefabDefinition> = {
   dining_table_oak: diningTableOakPrefab,
   kitchen_tall_cabinet_wall: kitchenTallCabinetWallPrefab,
   kitchen_island_savino: kitchenIslandSavinoPrefab,
+  wall_hung_toilet: wallHungToiletPrefab,
 };
 
 /**
@@ -259,5 +261,28 @@ export const PLACED_ASSETS: PlacedAssetSpec[] = [
     rotationDeg: 270,
     provenance: 'verified_drawing',
     source: 'Leidingschema 47359_1_1 & User specification: 252 × 108 × 97 cm island parallel to left wall (100 cm from X=0.40 m) and 960 mm from rear garden doors (Z=-12.46 m)',
+  },
+  {
+    id: 'gf_toilet_wandcloset',
+    prefabId: 'wall_hung_toilet',
+    label: 'Wandcloset & Inbouwreservoir (Toiletruimte Begane Grond)',
+    floor: 'ground',
+    positionXZ: [1.79, -6.91],
+    rotationDeg: 90,
+    dimensionsOverride: {
+      width: m(0.92, 'verified_drawing', 'Toiletruimte Begane Grond inner depth 92 cm (Z: -7.37..-6.45 m)'),
+    },
+    provenance: 'verified_drawing',
+    source: 'Technische omschrijving §16.2/§23 (Geberit Renova wandcloset + betegeld plateau), Tekening 55.1 & HomeByMe (17 cm deep × 100 cm high reservoir)',
+  },
+  {
+    id: 'ff_badkamer_wandcloset',
+    prefabId: 'wall_hung_toilet',
+    label: 'Wandcloset & Inbouwreservoir (Badkamer 1e Verdieping)',
+    floor: 'first',
+    positionXZ: [1.05, -6.755],
+    rotationDeg: 90,
+    provenance: 'user_supplied',
+    source: 'Technische omschrijving §16.2/§23 (Geberit Renova wandcloset + betegeld plateau), Tekening 55.2 & HomeByMe (91 cm alcove, 17 cm deep × 100 cm high reservoir)',
   },
 ];
