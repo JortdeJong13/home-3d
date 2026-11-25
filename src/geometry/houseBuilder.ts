@@ -3006,7 +3006,11 @@ function buildWallWithOpenings(
   }
 
   let baseWallGeo: THREE.BufferGeometry;
-  if (wall.clipToRoof) {
+  if (wall.oneSidedExteriorOnly) {
+    const faceGeo = new THREE.ShapeGeometry(shape);
+    faceGeo.translate(0, 0, wall.thickness / 2);
+    baseWallGeo = faceGeo;
+  } else if (wall.clipToRoof) {
     baseWallGeo = buildClippedWallPrismGeometry(
       wall,
       length,
@@ -3039,14 +3043,20 @@ function buildWallWithOpenings(
     }
   }
   const wallMesh = new THREE.Mesh(mainWallGeo, getMat(matId));
-  registerMesh(wallMesh, matId, {
-    id: wall.id,
-    label: wall.label,
-    dimensionsLabel: `${length.toFixed(2)} × ${wall.height.toFixed(2)} × ${(wall.thickness * 100).toFixed(1).replace('.0', '')} cm`,
-    provenance: wall.provenance,
-    source: wall.source,
-    floor: wall.floor,
-  });
+  registerMesh(
+    wallMesh,
+    matId,
+    {
+      id: wall.id,
+      label: wall.label,
+      dimensionsLabel: `${length.toFixed(2)} × ${wall.height.toFixed(2)} × ${(wall.thickness * 100).toFixed(1).replace('.0', '')} cm`,
+      provenance: wall.provenance,
+      source: wall.source,
+      floor: wall.floor,
+    },
+    !wall.oneSidedExteriorOnly,
+    true
+  );
   wallContainer.add(wallMesh);
 
   if (wall.isExterior && !wall.isNeighbour && wall.interiorMaterial === 'interior_wall_plaster') {

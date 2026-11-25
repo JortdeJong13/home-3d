@@ -178,6 +178,8 @@ export interface WallSpec {
   interiorEndTrim?: number;
   isExterior?: boolean;
   isNeighbour?: boolean;
+  /** Render only the outward-facing (+Z) exterior face so the wall is invisible/see-through from the inside */
+  oneSidedExteriorOnly?: boolean;
   openings?: WallOpeningPlacement[];
   provenance: ProvenanceType;
   source: string;
@@ -1285,6 +1287,7 @@ export function getHouseWalls(): WallSpec[] {
       source: 'Verkooptekening VK-06 bnr. 56 achtergevel borstwering zolder',
     },
     // Solid white architectural section-cut cap closing the open cutaway side of bnr. 56 at X = 10.05 m
+    // One-sided (outward +X only): solid white from the outside, see-through from inside / bnr. 55 side.
     {
       id: 'nb_gf_cut_cap',
       label: 'Buurwoning bnr. 56 Doorsnedewand (Begane Grond)',
@@ -1298,8 +1301,9 @@ export function getHouseWalls(): WallSpec[] {
       interiorMaterial: 'plinth_base_white',
       isExterior: true,
       isNeighbour: true,
+      oneSidedExteriorOnly: true,
       provenance: 'assumed',
-      source: 'Architectural maquette section-cut cap closing bnr. 56 cutaway',
+      source: 'Architectural maquette section-cut cap closing bnr. 56 cutaway (one-sided outward)',
     },
     {
       id: 'nb_ff_cut_cap',
@@ -1314,8 +1318,9 @@ export function getHouseWalls(): WallSpec[] {
       interiorMaterial: 'plinth_base_white',
       isExterior: true,
       isNeighbour: true,
+      oneSidedExteriorOnly: true,
       provenance: 'assumed',
-      source: 'Architectural maquette section-cut cap closing bnr. 56 cutaway',
+      source: 'Architectural maquette section-cut cap closing bnr. 56 cutaway (one-sided outward)',
     },
     {
       id: 'nb_sf_cut_cap',
@@ -1334,8 +1339,9 @@ export function getHouseWalls(): WallSpec[] {
       interiorMaterial: 'plinth_base_white',
       isExterior: true,
       isNeighbour: true,
+      oneSidedExteriorOnly: true,
       provenance: 'assumed',
-      source: 'Architectural maquette section-cut cap closing bnr. 56 cutaway under Langskap',
+      source: 'Architectural maquette section-cut cap closing bnr. 56 cutaway under Langskap (one-sided outward)',
     },
   ];
 
