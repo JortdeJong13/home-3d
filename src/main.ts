@@ -148,13 +148,16 @@ function animateScrollTo(targetY: number, targetIdx?: number) {
   };
   requestAnimationFrame(step);
 }
-// Manual wheel / touch input cancels a running click-scroll
-window.addEventListener('wheel', () => {
+// Manual wheel / page-scroll touch input cancels a running click-scroll
+// (ignore pinch-zoom and touches on the 3D canvas or UI controls so orbiting/panning/toggling keeps the floor animation running)
+window.addEventListener('wheel', (e) => {
+  if (e.ctrlKey || e.metaKey) return;
   scrollAnimId++;
   programmaticTargetIndex = null;
 }, { passive: true });
 window.addEventListener('touchstart', (e) => {
-  if ((e.target as Element | null)?.closest?.('#floor-selector')) return;
+  const target = e.target as Element | null;
+  if (target?.closest?.('#webgl-canvas, #floor-selector, #bottom-bar')) return;
   scrollAnimId++;
   programmaticTargetIndex = null;
 }, { passive: true });
